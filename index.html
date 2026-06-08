@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>USGA/GC Membership Dashboard</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div>
+      <h1>USGA/GC Membership Dashboard</h1>
+    </div>
+  </div>
+</header>
+
+<noscript>
+  <div style="max-width:1100px;margin:24px auto;padding:16px 18px;border:1px solid #d7dee9;border-radius:12px;background:#fff7ed;color:#442b09;font-family:Arial,Helvetica,sans-serif;">
+    This dashboard requires JavaScript to display the data and charts. Please open it in a modern browser with JavaScript enabled.
+  </div>
+</noscript>
+
+<main>
+  <div class="tabs" role="tablist" aria-label="Dashboard sections">
+    <button class="tab-btn active" data-tab="summary" onclick="setTab('summary')">Summary</button>
+    <button class="tab-btn" data-tab="acquisition" onclick="setTab('acquisition')">Acquisition</button>
+    <button class="tab-btn" data-tab="retention" onclick="setTab('retention')">Retention</button>
+    <button class="tab-btn" data-tab="recovery" onclick="setTab('recovery')">Recovery</button>
+  </div>
+
+  
+
+  <div class="tab-panel active" id="tab-summary">
+  <section class="section" id="membershipSection">
+    
+    <div class="grid">
+      <div class="card full summary-strip-card" id="membershipHero"></div>
+      <div class="card full square-card square-exec summary-full" id="annualCard"></div>
+      <div class="card full square-card square-exec summary-full" id="targetMonthCard"></div>
+      <div class="card full membership-tile summary-full" id="projectionCard"></div>
+    </div>
+  </section>
+  </div>
+
+  <div class="tab-panel" id="tab-acquisition">
+  <section class="section" id="acquisitionSection">
+    <h2 class="section-title">Acquisition</h2>
+    <div class="grid">
+      <div class="card full acquisition-card" id="newGolfersCard"></div>
+      <div class="card full acquisition-card" id="ytdNewGolfersCard"></div>
+    </div>
+  </section>
+  </div>
+
+  <div class="tab-panel" id="tab-retention">
+  <section class="section" id="retentionSection">
+    <h2 class="section-title">Retention</h2>
+    <div class="grid">
+      <div class="card full retention-card" id="renewalCard"></div>
+      <div class="card full retention-card" id="retentionCard"></div>
+    </div>
+  </section>
+  </div>
+
+  <div class="tab-panel" id="tab-recovery">
+  <section class="section" id="recoverySection">
+    <h2 class="section-title">Recovery</h2>
+    <div class="grid">
+      <div class="card full" id="reactivationsCard"></div>
+    </div>
+  </section>
+  </div>
+</main>
+<div class="tooltip" id="tooltip"></div>
+
+<script defer src="assets/app.js"></script>
+</body>
+</html>
