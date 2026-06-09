@@ -4,7 +4,843 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>USGA/GC Membership Dashboard</title>
-<link rel="stylesheet" href="assets/styles.css">
+<style>
+:root {
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --ink:#1f2937;
+  --muted:#64748b;
+  --line:#d7dee9;
+  --navy:#14395f;
+  --blue:#a9bdd2;
+  --blue-strong:#6f95bb;
+  --orange:#d85a32;
+  --orange-dark:#b94725;
+  --green:#188552;
+  --gray:#f8fafc;
+  --black:#111827;
+  --shadow:0 10px 28px rgba(15,23,42,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
+header{background:linear-gradient(135deg,#0f2d52,#1e5a99);color:white;padding:24px 32px}
+.header-inner{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;flex-wrap:wrap}
+h1{margin:0;font-size:30px;letter-spacing:.2px}
+.subtitle{margin:8px 0 0;color:#dbeafe;font-size:14px;line-height:1.45;max-width:920px}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.control{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.24);padding:8px;border-radius:12px}
+.control label{font-size:13px;font-weight:800}
+select{border:1px solid var(--line);border-radius:9px;padding:8px 9px;background:#fff;font-size:14px}
+main{max-width:1500px;margin:0 auto;padding:24px 32px 44px}
+.note{background:#fff7ed;border-left:5px solid #f28c28;border-radius:10px;padding:12px 14px;margin-bottom:18px;color:#442b09;font-size:14px;line-height:1.35}
+.section{margin:0 0 30px}
+.section-title{font-size:21px;font-weight:950;margin:0 0 12px;color:#263420}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+.card{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;padding:20px}
+.card.hidden,.section.hidden{display:none !important}
+.hero-card{grid-column:span 6;background:linear-gradient(180deg,#ffffff,#f8fafc)}
+.hero-chart{grid-column:span 8}
+.full{grid-column:span 12}
+.half{grid-column:span 6}
+.card-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px}
+.story-card-head{margin-bottom:14px;gap:16px}
+.story-header-stack{display:flex;flex-direction:column;gap:8px;max-width:820px}
+.story-header-stack h3{margin:0;font-size:18px;line-height:1.2}
+.story-value-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:2px}
+.story-value-big{font-size:40px;line-height:1;font-weight:950;letter-spacing:-1px;color:var(--navy)}
+.story-value-label{font-size:12px;color:var(--muted);font-weight:950;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.story-value-copy{font-size:13px;color:#475569;line-height:1.4;margin:0}
+@media(max-width:900px){
+  .story-value-big{font-size:34px}
+  .story-value-label{font-size:11.5px}
+}
+.square-card{
+  aspect-ratio:1 / 1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.square-card .card-head{
+  margin-bottom:4px;
+}
+.square-card h3{
+  font-size:21px;
+}
+.square-card .card-sub{
+  font-size:12px;
+  margin-top:1px;
+}
+.square-card .chart{
+  flex:1;
+  height:auto !important;
+  min-height:0;
+  margin-top:0;
+}
+.square-card svg{
+  display:block;
+}
+.square-exec{
+  padding:18px;
+}
+.square-exec .card-head{
+  margin-bottom:8px;
+}
+.square-exec-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 6px;
+}
+.square-exec-metric{
+  font-size:42px;
+  line-height:0.95;
+  font-weight:950;
+  letter-spacing:-1.2px;
+  color:var(--navy);
+}
+.square-exec-submetric{
+  text-align:right;
+}
+.square-exec-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff7ed;
+  color:#9a3412;
+  border:1px solid #fed7aa;
+  border-radius:999px;
+  padding:7px 11px;
+  font-size:14px;
+  font-weight:950;
+}
+.square-exec-chip.cool{
+  background:#eff6ff;
+  color:#1d4ed8;
+  border-color:#bfdbfe;
+}
+.square-exec-chip-label{
+  font-size:10.5px;
+  color:var(--muted);
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin-bottom:5px;
+}
+.square-exec-story{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+}
+.square-exec-story.inline{
+  flex-direction:row;
+  align-items:baseline;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.square-exec-story.inline .square-exec-chip-label{
+  margin-bottom:0;
+  font-size:13px;
+}
+.square-exec-story.inline .square-exec-hero{
+  line-height:0.9;
+}
+.square-exec-hero{
+  font-size:42px;
+  line-height:.95;
+  font-weight:950;
+  letter-spacing:-1.2px;
+  color:var(--navy);
+}
+.square-exec-copy{
+  font-size:12.5px;
+  color:#475569;
+  line-height:1.4;
+  margin:4px 0 18px;
+}
+.square-mini-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:0 0 10px;
+}
+.square-mini-stat{
+  background:#f8fafc;
+  border:1px solid #e8eef6;
+  border-radius:12px;
+  padding:8px 10px;
+}
+.square-mini-stat-label{
+  font-size:10px;
+  color:var(--muted);
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.square-mini-stat-value{
+  font-size:18px;
+  font-weight:950;
+  margin-top:5px;
+}
+.square-mini-chart{
+  flex:1;
+  min-height:0;
+  border:1px solid #e6edf5;
+  border-radius:14px;
+  background:linear-gradient(180deg,#fbfdff,#f8fafc);
+  padding:10px 10px 6px;
+}
+.square-insight{
+  margin-top:8px;
+  padding:10px 11px;
+  font-size:12.5px;
+  color:#334155;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  line-height:1.35;
+}
+
+.card h2,.card h3{margin:0;font-weight:950}
+.card h2{font-size:25px}
+.card h3{font-size:18px}
+.card-sub{font-size:12px;color:var(--muted);line-height:1.35;margin-top:4px}
+.hero-eyebrow{font-size:12px;color:var(--muted);font-weight:950;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.hero-number{font-size:40px;line-height:1;font-weight:950;letter-spacing:-1.1px;color:var(--navy);margin:8px 0}
+.hero-growth{display:inline-flex;align-items:center;gap:8px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:999px;padding:7px 11px;font-weight:950;margin:8px 0 12px}
+.hero-copy{font-size:13px;color:#475569;line-height:1.38;margin:8px 0 0}
+.hero-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.hero-stat{background:#fff;border:1px solid #e8eef6;border-radius:14px;padding:10px}
+.hero-stat-label{font-size:10.5px;color:var(--muted);font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.hero-stat-value{font-size:18px;font-weight:950;margin-top:5px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0 8px}
+.kpi{background:#f8fafc;border:1px solid #e8eef6;border-radius:12px;padding:11px}
+.kpi-label{font-size:10.5px;color:var(--muted);font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.kpi-value{font-size:23px;font-weight:950;margin-top:7px;white-space:nowrap}
+.context{font-size:12px;color:#475569;line-height:1.35;margin:6px 0 8px}
+.toggle{display:flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#f8fafc}
+.toggle button{border:0;background:transparent;padding:8px 10px;font-weight:800;color:#334155;cursor:pointer}
+.toggle button.active{background:var(--navy);color:#fff}
+.year-toggle{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.year-toggle-label{
+  font-size:12px;
+  color:#64748b;
+  font-weight:900;
+  margin-right:2px;
+}
+.year-toggle button{
+  border:1px solid #d7dee9;
+  background:#ffffff;
+  color:#334155;
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.year-toggle button.active{
+  background:#14395f;
+  color:#ffffff;
+  border-color:#14395f;
+}
+.year-toggle button:not(.active){
+  opacity:.48;
+}
+.year-toggle button:hover{
+  opacity:1;
+}
+.projection-scenario-toggle{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:#f8fafc;
+  border:1px solid #d7dee9;
+  border-radius:999px;
+  padding:5px;
+}
+.projection-scenario-toggle button{
+  border:0;
+  background:transparent;
+  color:#475569;
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.projection-scenario-toggle button.active{
+  background:#14395f;
+  color:#ffffff;
+  box-shadow:0 2px 6px rgba(15,23,42,.16);
+}
+.projection-scenario-toggle button:hover:not(.active){
+  background:#eef3f8;
+}
+.chart{height:350px;width:100%;margin-top:6px}
+.chart.short{height:470px}
+.chart.tall{height:430px}
+.projection-chart{display:flex;justify-content:center;align-items:flex-start}
+.projection-chart-inner{width:min(100%,1240px);margin:0 auto}
+.projection-chart-inner svg{display:block;width:100%;height:100%}
+svg{height:100%;width:100%;overflow:visible}
+.gridline{stroke:#e2e8f0;stroke-width:1}
+.axis{stroke:#8a8f98;stroke-width:2}
+.axis-label{fill:#5b6573;font-size:12.5px}
+.value-label{fill:#334155;font-size:12px;font-weight:900}
+.legend{fill:#4b5563;font-size:13.5px;font-weight:800}
+.bar-muted{fill:var(--blue)}
+.bar-current{fill:var(--orange)}
+.bar-label{fill:#334155;font-size:13px;font-weight:900}
+.bar-year{fill:#64748b;font-size:12px;font-weight:700}
+.growth-pill{fill:#ffffff;stroke:#cbd5e1;stroke-width:1}
+.growth-pill-text{fill:#475569;font-size:11px;font-weight:900}
+.story-band{fill:#f8fafc;stroke:#e2e8f0;stroke-width:1}
+.story-band-text{fill:#334155;font-size:12px;font-weight:800}
+.line-2022{fill:none;stroke:#a86d74;stroke-width:2.5}
+.line-2023{fill:none;stroke:#55b85a;stroke-width:2.5}
+.line-2024{fill:none;stroke:#6b9ac4;stroke-width:2.5}
+.line-2025{fill:none;stroke:#111827;stroke-width:3}
+.line-2026{fill:none;stroke:#d85a32;stroke-width:3.2}
+.line-proj{fill:none;stroke:#d85a32;stroke-width:3.2;stroke-dasharray:8 6}
+.dot{fill:#fff;stroke-width:2}
+.square{fill:#d85a32;stroke:#d85a32}
+.mini-gridline{stroke:#e5ebf3;stroke-width:1}
+.mini-axis-label{fill:#64748b;font-size:10px}
+.mini-bar-label{fill:#334155;font-size:12px;font-weight:900}
+.mini-bar-year{fill:#64748b;font-size:10.5px;font-weight:700}
+.mini-bar-muted{fill:#a8bbcf}
+.mini-bar-current{fill:#d85a32}
+.mini-chip{fill:#ffffff;stroke:#d8e1ec;stroke-width:1}
+.mini-chip-text{fill:#475569;font-size:10.5px;font-weight:900}
+.proj-shade{fill:#fff7ed;opacity:.55}
+.empty-note{font-size:13px;color:#64748b;background:#f8fafc;border:1px dashed #d7dee9;border-radius:12px;padding:14px}
+.insight{font-size:13px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:11px 12px;margin-top:10px;line-height:1.4}
+
+.membership-tile{
+  aspect-ratio:1 / 1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.membership-tile .chart,
+.membership-tile .chart.short,
+.membership-tile .chart.tall{
+  flex:1;
+  height:auto !important;
+  min-height:0;
+}
+.membership-tile .kpis{
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+  margin:8px 0 8px;
+}
+.membership-tile .kpi{
+  padding:9px 10px;
+}
+.membership-tile .kpi-label{
+  font-size:10px;
+}
+.membership-tile .kpi-value{
+  font-size:18px;
+  margin-top:5px;
+}
+.membership-tile .context{
+  margin:6px 0 6px;
+  font-size:12px;
+}
+.membership-tile .insight{
+  margin-top:8px;
+  padding:9px 10px;
+  font-size:12px;
+}
+
+
+.summary-strip-card{
+  grid-column:span 12;
+  min-height:310px;
+  max-height:none;
+  height:auto;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  background:linear-gradient(180deg,#ffffff,#f8fafc);
+}
+.summary-strip-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:18px;
+  flex-wrap:wrap;
+}
+.summary-strip-copy{
+  max-width:760px;
+}
+.summary-strip-kicker{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  margin-bottom:10px;
+}
+.summary-strip-copy h2{
+  margin:0 0 8px 0;
+  font-size:30px;
+  line-height:1.08;
+}
+.summary-strip-copy p{
+  margin:0;
+  color:#475569;
+  font-size:14px;
+  line-height:1.45;
+}
+.summary-strip-ref{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:999px;
+  padding:10px 14px;
+  color:#334155;
+  font-size:13px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.summary-strip-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+  margin-top:12px;
+}
+.summary-strip-kpi{
+  background:#ffffff;
+  border:1px solid #e8eef6;
+  border-radius:14px;
+  padding:12px 13px;
+}
+.summary-strip-kpi-label{
+  font-size:10.5px;
+  color:var(--muted);
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.summary-strip-kpi-value{
+  font-size:25px;
+  line-height:1.05;
+  font-weight:950;
+  color:#0f172a;
+  margin-top:7px;
+  white-space:nowrap;
+}
+.summary-strip-kpi-sub{
+  font-size:12px;
+  color:#64748b;
+  margin-top:4px;
+}
+.summary-strip-insight{
+  margin-top:10px;
+  padding:10px 12px;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  color:#334155;
+  font-size:12.5px;
+  line-height:1.4;
+}
+@media(max-width:1100px){
+  .summary-strip-card{
+    height:auto;
+    min-height:0;
+    max-height:none;
+  }
+  .summary-strip-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+#membershipSection .summary-full{
+  grid-column:span 12;
+  min-height:760px;
+  max-height:760px;
+  height:760px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding-left:20px;
+  padding-right:20px;
+}
+#membershipSection .square-card.summary-full,
+#membershipSection .membership-tile.summary-full{
+  aspect-ratio:auto;
+}
+#membershipSection .summary-full .chart,
+#membershipSection .summary-full .chart.short,
+#membershipSection .summary-full .chart.tall,
+#membershipSection .summary-full .square-mini-chart{
+  flex:1;
+  height:auto !important;
+  min-height:0;
+  width:100%;
+}
+#membershipSection .summary-full .card-head{
+  min-height:0;
+  align-items:flex-start;
+  margin-bottom:10px;
+}
+#membershipSection .summary-full .card-head > div:first-child{
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+}
+#membershipSection .summary-full h3{
+  margin:0 0 6px 0;
+}
+#membershipSection .summary-full .card-sub{
+  min-height:34px;
+  display:block;
+}
+
+
+#projectionCard .kpis{
+  margin:6px 0 6px;
+}
+#projectionCard .kpi{
+  padding:8px 10px;
+}
+#projectionCard .kpi-value{
+  font-size:17px;
+}
+#projectionCard .context{
+  margin:4px 0 4px;
+}
+#projectionCard .insight{
+  margin-top:6px;
+  padding:8px 10px;
+  font-size:11.5px;
+}
+
+
+.acquisition-card{
+  grid-column:span 12;
+  min-height:760px;
+  max-height:760px;
+  display:flex;
+  flex-direction:column;
+  padding-left:20px;
+  padding-right:20px;
+}
+.acquisition-card .chart,
+.acquisition-card .chart.short{
+  flex:1;
+  height:auto !important;
+  min-height:0;
+  width:100%;
+}
+
+
+.acquisition-card .card-head{
+  min-height:74px;
+  align-items:flex-start;
+}
+.acquisition-card .card-head > div:first-child{
+  min-height:74px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+}
+.acquisition-card h3{
+  margin:0 0 6px 0;
+}
+.acquisition-card .card-sub{
+  min-height:34px;
+  display:block;
+}
+.acquisition-kpis{
+  margin:10px 0 8px;
+}
+.acquisition-kpi{
+  background:#ffffff;
+  border:1px solid #dfe7f1;
+}
+.kpi-change{
+  font-size:11px;
+  font-weight:900;
+  margin-top:6px;
+  line-height:1.2;
+}
+.kpi-change.positive{color:#15803d}
+.kpi-change.negative{color:#b91c1c}
+.kpi-change.neutral{color:#475569}
+.kpi-sub{
+  font-size:12px;
+  color:#64748b;
+  margin-top:5px;
+}
+.acquisition-highlights{
+  margin:0 0 14px;
+}
+.acquisition-highlights .kpis{
+  margin:0;
+}
+.acquisition-pacing-note{
+  font-size:12px;
+  color:#475569;
+  line-height:1.4;
+  margin:4px 0 8px;
+}
+.acquisition-card .chart svg{
+  display:block;
+}
+
+.retention-highlights{
+  margin:0 0 14px;
+}
+.retention-highlights .kpis{
+  margin:0;
+}
+.retention-card{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.retention-card .card-head{
+  margin-bottom:14px;
+}
+.retention-card .chart.short{
+  height:470px;
+}
+.retention-card .chart svg{
+  display:block;
+}
+
+
+.header-note{
+  color:#dbeafe;
+  font-size:14px;
+  font-weight:800;
+  padding:10px 0;
+}
+.widget-controls{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.widget-control{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  padding:6px;
+  background:#f8fafc;
+}
+.widget-control label{
+  font-size:12px;
+  font-weight:900;
+  color:#475569;
+  padding-left:4px;
+}
+.widget-control select{
+  padding:6px 8px;
+  font-size:13px;
+}
+
+
+.yoy-controls{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+}
+.yoy-control{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  border:1px solid var(--line);
+  background:#f8fafc;
+  border-radius:12px;
+  padding:7px 8px;
+}
+.yoy-control label{
+  font-size:11px;
+  font-weight:950;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.yoy-control select{
+  padding:7px 9px;
+  font-size:13px;
+  font-weight:800;
+}
+
+.tabs{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin:0 0 18px;
+  background:#ffffff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:8px;
+  box-shadow:var(--shadow);
+}
+.tab-btn{
+  border:0;
+  background:#f8fafc;
+  color:#334155;
+  border-radius:12px;
+  padding:12px 18px;
+  font-size:15px;
+  font-weight:950;
+  cursor:pointer;
+}
+.tab-btn.active{
+  background:var(--navy);
+  color:#ffffff;
+}
+.tab-panel{
+  display:none;
+}
+.tab-panel.active{
+  display:block;
+}
+
+.tooltip{position:fixed;display:none;background:#111827;color:#fff;padding:8px 10px;border-radius:9px;font-size:12px;line-height:1.35;pointer-events:none;z-index:99;box-shadow:0 12px 28px rgba(2,6,23,.28)}
+@media(max-width:1100px){.hero-card,.hero-chart,.half{grid-column:span 12}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){header,main{padding-left:16px;padding-right:16px}h1{font-size:24px}.hero-number{font-size:38px}.hero-stat-grid,.kpis{grid-template-columns:1fr}.chart{height:280px}.chart.tall{height:330px}}
+
+.dashboard-summary-title{
+  font-size:24px;
+  line-height:1.15;
+  font-weight:950;
+  color:#0f172a;
+  margin:0 0 4px 0;
+}
+.dashboard-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:18px;
+  margin-top:24px;
+}
+.dashboard-summary-group{
+  background:#ffffff;
+  border:1px solid #e8eef6;
+  border-radius:18px;
+  padding:0 16px 16px;
+  box-shadow:0 6px 18px rgba(15,23,42,.05);
+  overflow:hidden;
+}
+.dashboard-summary-group-title{
+  display:block;
+  margin:0 -16px 14px;
+  padding:12px 16px 11px;
+  font-size:12px;
+  color:#334155;
+  font-weight:950;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  line-height:1;
+}
+.dashboard-summary-group.membership .dashboard-summary-group-title{background:#dce8f6;color:#315987}
+.dashboard-summary-group.acquisition .dashboard-summary-group-title{background:#dcefe5;color:#2f7a56}
+.dashboard-summary-group.retention .dashboard-summary-group-title{background:#f5e7d4;color:#9a620e}
+.dashboard-summary-group.recovery .dashboard-summary-group-title{background:#f7dddd;color:#b64545}
+.dashboard-summary-metrics{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+.dashboard-summary-label{
+  font-size:10px;
+  color:#64748b;
+  font-weight:900;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.dashboard-summary-value{
+  font-size:24px;
+  line-height:1.05;
+  font-weight:950;
+  color:#0f172a;
+  margin-top:5px;
+  white-space:nowrap;
+}
+.dashboard-summary-sub{
+  font-size:11px;
+  color:#64748b;
+  margin-top:4px;
+}
+.dashboard-summary-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  margin-top:16px;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  text-decoration:none;
+  letter-spacing:.01em;
+  cursor:pointer;
+  border:1px solid #dde6f0;
+  background:#f8fafc;
+  color:#355b8c;
+  box-shadow:0 1px 2px rgba(15,23,42,.04);
+  transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.dashboard-summary-link:hover{
+  text-decoration:none;
+  transform:translateY(-1px);
+  box-shadow:0 4px 10px rgba(15,23,42,.08);
+}
+.dashboard-summary-group.acquisition .dashboard-summary-link{
+  background:#eef8f2;
+  border-color:#cfe7d9;
+  color:#2f7a56;
+}
+.dashboard-summary-group.retention .dashboard-summary-link{
+  background:#fbf3e8;
+  border-color:#ead8bf;
+  color:#9a620e;
+}
+.dashboard-summary-group.recovery .dashboard-summary-link{
+  background:#fdf0f0;
+  border-color:#efd0d0;
+  color:#b64545;
+}
+.dashboard-summary-change{
+  font-size:11px;
+  font-weight:900;
+  margin-top:6px;
+  letter-spacing:.01em;
+}
+.dashboard-summary-change.positive{color:#15803d}
+.dashboard-summary-change.negative{color:#b91c1c}
+.dashboard-summary-change.neutral{color:#475569}
+@media(max-width:1100px){
+  .dashboard-summary-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:700px){
+  .dashboard-summary-grid,
+  .dashboard-summary-metrics{grid-template-columns:1fr}
+}
+
+</style>
 </head>
 <body>
 <header>
@@ -14,13 +850,6 @@
     </div>
   </div>
 </header>
-
-<noscript>
-  <div style="max-width:1100px;margin:24px auto;padding:16px 18px;border:1px solid #d7dee9;border-radius:12px;background:#fff7ed;color:#442b09;font-family:Arial,Helvetica,sans-serif;">
-    This dashboard requires JavaScript to display the data and charts. Please open it in a modern browser with JavaScript enabled.
-  </div>
-</noscript>
-
 <main>
   <div class="tabs" role="tablist" aria-label="Dashboard sections">
     <button class="tab-btn active" data-tab="summary" onclick="setTab('summary')">Summary</button>
@@ -46,6 +875,7 @@
   <div class="tab-panel" id="tab-acquisition">
   <section class="section" id="acquisitionSection">
     <h2 class="section-title">Acquisition</h2>
+    <div id="acquisitionHighlights"></div>
     <div class="grid">
       <div class="card full acquisition-card" id="newGolfersCard"></div>
       <div class="card full acquisition-card" id="ytdNewGolfersCard"></div>
@@ -56,6 +886,7 @@
   <div class="tab-panel" id="tab-retention">
   <section class="section" id="retentionSection">
     <h2 class="section-title">Retention</h2>
+    <div id="retentionHighlights"></div>
     <div class="grid">
       <div class="card full retention-card" id="renewalCard"></div>
       <div class="card full retention-card" id="retentionCard"></div>
@@ -66,14 +897,1179 @@
   <div class="tab-panel" id="tab-recovery">
   <section class="section" id="recoverySection">
     <h2 class="section-title">Recovery</h2>
+    <div id="recoveryHighlights"></div>
     <div class="grid">
-      <div class="card full" id="reactivationsCard"></div>
+      <div class="card full acquisition-card" id="reactivationsCard"></div>
+      <div class="card full acquisition-card" id="ytdReactivationsCard"></div>
     </div>
   </section>
   </div>
 </main>
 <div class="tooltip" id="tooltip"></div>
 
-<script defer src="assets/app.js"></script>
+<script>
+const DATA = [{"year":2022,"month":"January","activeGolfers":0,"monthNum":1,"label":"January 2022","priorMonthActive":null,"netChange":null,"percentChange":null,"newGolfers":0,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"February","activeGolfers":2356,"monthNum":2,"label":"February 2022","priorMonthActive":0,"netChange":null,"percentChange":null,"newGolfers":2424,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"March","activeGolfers":10227,"monthNum":3,"label":"March 2022","priorMonthActive":2356,"netChange":7871,"percentChange":3.340831918505942,"newGolfers":7954,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"April","activeGolfers":23711,"monthNum":4,"label":"April 2022","priorMonthActive":10227,"netChange":13484,"percentChange":1.3184707147746162,"newGolfers":13558,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"May","activeGolfers":39064,"monthNum":5,"label":"May 2022","priorMonthActive":23711,"netChange":15353,"percentChange":0.6475053772510649,"newGolfers":15385,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"June","activeGolfers":58533,"monthNum":6,"label":"June 2022","priorMonthActive":39064,"netChange":19469,"percentChange":0.4983872619291419,"newGolfers":19476,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"July","activeGolfers":73802,"monthNum":7,"label":"July 2022","priorMonthActive":58533,"netChange":15269,"percentChange":0.26086139442707534,"newGolfers":15274,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"August","activeGolfers":85930,"monthNum":8,"label":"August 2022","priorMonthActive":73802,"netChange":12128,"percentChange":0.1643315899298122,"newGolfers":12190,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"September","activeGolfers":92954,"monthNum":9,"label":"September 2022","priorMonthActive":85930,"netChange":7024,"percentChange":0.08174095193762365,"newGolfers":7065,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"October","activeGolfers":97940,"monthNum":10,"label":"October 2022","priorMonthActive":92954,"netChange":4986,"percentChange":0.0536394345590292,"newGolfers":5026,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"November","activeGolfers":101032,"monthNum":11,"label":"November 2022","priorMonthActive":97940,"netChange":3092,"percentChange":0.0315703491933837,"newGolfers":3109,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2022,"month":"December","activeGolfers":104599,"monthNum":12,"label":"December 2022","priorMonthActive":101032,"netChange":3567,"percentChange":0.035305645736004435,"newGolfers":3598,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"January","activeGolfers":124171,"monthNum":1,"label":"January 2023","priorMonthActive":104599,"netChange":19572,"percentChange":0.18711459956596144,"newGolfers":19502,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"February","activeGolfers":137893,"monthNum":2,"label":"February 2023","priorMonthActive":124171,"netChange":13722,"percentChange":0.11050889499158419,"newGolfers":15271,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"March","activeGolfers":153515,"monthNum":3,"label":"March 2023","priorMonthActive":137893,"netChange":15622,"percentChange":0.11329073992153336,"newGolfers":20126,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"April","activeGolfers":176877,"monthNum":4,"label":"April 2023","priorMonthActive":153515,"netChange":23362,"percentChange":0.15218056867407093,"newGolfers":30194,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"May","activeGolfers":194183,"monthNum":5,"label":"May 2023","priorMonthActive":176877,"netChange":17306,"percentChange":0.09784200319996382,"newGolfers":25746,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"June","activeGolfers":212999,"monthNum":6,"label":"June 2023","priorMonthActive":194183,"netChange":18816,"percentChange":0.09689828666773095,"newGolfers":26118,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"July","activeGolfers":224406,"monthNum":7,"label":"July 2023","priorMonthActive":212999,"netChange":11407,"percentChange":0.053554242038695014,"newGolfers":21850,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"August","activeGolfers":234025,"monthNum":8,"label":"August 2023","priorMonthActive":224406,"netChange":9619,"percentChange":0.04286427279128009,"newGolfers":15775,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"September","activeGolfers":240022,"monthNum":9,"label":"September 2023","priorMonthActive":234025,"netChange":5997,"percentChange":0.0256254673645978,"newGolfers":9346,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"October","activeGolfers":244500,"monthNum":10,"label":"October 2023","priorMonthActive":240022,"netChange":4478,"percentChange":0.01865662314287857,"newGolfers":6709,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"November","activeGolfers":247180,"monthNum":11,"label":"November 2023","priorMonthActive":244500,"netChange":2680,"percentChange":0.01096114519427403,"newGolfers":4297,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2023,"month":"December","activeGolfers":248328,"monthNum":12,"label":"December 2023","priorMonthActive":247180,"netChange":1148,"percentChange":0.004644388704587749,"newGolfers":3614,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"January","activeGolfers":251532,"monthNum":1,"label":"January 2024","priorMonthActive":248328,"netChange":3204,"percentChange":0.012902290518991012,"newGolfers":6943,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"February","activeGolfers":257498,"monthNum":2,"label":"February 2024","priorMonthActive":251532,"netChange":5966,"percentChange":0.02371865209993162,"newGolfers":9617,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"March","activeGolfers":267340,"monthNum":3,"label":"March 2024","priorMonthActive":257498,"netChange":9842,"percentChange":0.03822165609053274,"newGolfers":14659,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"April","activeGolfers":281903,"monthNum":4,"label":"April 2024","priorMonthActive":267340,"netChange":14563,"percentChange":0.05447370389765841,"newGolfers":22239,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"May","activeGolfers":295391,"monthNum":5,"label":"May 2024","priorMonthActive":281903,"netChange":13488,"percentChange":0.0478462449849771,"newGolfers":22379,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"June","activeGolfers":313166,"monthNum":6,"label":"June 2024","priorMonthActive":295391,"netChange":17775,"percentChange":0.06017448060367445,"newGolfers":26565,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"July","activeGolfers":328171,"monthNum":7,"label":"July 2024","priorMonthActive":313166,"netChange":15005,"percentChange":0.04791388592631384,"newGolfers":22495,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"August","activeGolfers":340365,"monthNum":8,"label":"August 2024","priorMonthActive":328171,"netChange":12194,"percentChange":0.037157457544999405,"newGolfers":17640,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"September","activeGolfers":349316,"monthNum":9,"label":"September 2024","priorMonthActive":340365,"netChange":8951,"percentChange":0.02629823865556094,"newGolfers":12390,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"October","activeGolfers":354361,"monthNum":10,"label":"October 2024","priorMonthActive":349316,"netChange":5045,"percentChange":0.014442510506246493,"newGolfers":7585,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"November","activeGolfers":357630,"monthNum":11,"label":"November 2024","priorMonthActive":354361,"netChange":3269,"percentChange":0.009225055804673764,"newGolfers":4744,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2024,"month":"December","activeGolfers":360761,"monthNum":12,"label":"December 2024","priorMonthActive":357630,"netChange":3131,"percentChange":0.008754858373178983,"newGolfers":4420,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2025,"month":"January","activeGolfers":363707,"newGolfers":6891,"reactivations":2634,"retentionRate":0.7841,"onTimeRenewalRate":0.79,"monthNum":1,"label":"January 2025","priorMonthActive":360761,"netChange":2946,"percentChange":0.008166071166229166,"renewed":null,"upForRenewal":null},{"year":2025,"month":"February","activeGolfers":367516,"newGolfers":7875,"reactivations":2864,"retentionRate":0.7934,"onTimeRenewalRate":0.77,"monthNum":2,"label":"February 2025","priorMonthActive":363707,"netChange":3809,"percentChange":0.010472715674980135,"renewed":null,"upForRenewal":null},{"year":2025,"month":"March","activeGolfers":377075,"newGolfers":15895,"reactivations":3381,"retentionRate":0.7576,"onTimeRenewalRate":0.77,"monthNum":3,"label":"March 2025","priorMonthActive":367516,"netChange":9559,"percentChange":0.02600975195637741,"renewed":null,"upForRenewal":null},{"year":2025,"month":"April","activeGolfers":396329,"newGolfers":21123,"reactivations":4369,"retentionRate":0.7798,"onTimeRenewalRate":0.92,"monthNum":4,"label":"April 2025","priorMonthActive":377075,"netChange":19254,"percentChange":0.05106145992176623,"renewed":null,"upForRenewal":null},{"year":2025,"month":"May","activeGolfers":400804,"newGolfers":25795,"reactivations":4627,"retentionRate":0.8004,"onTimeRenewalRate":0.66,"monthNum":5,"label":"May 2025","priorMonthActive":396329,"netChange":4475,"percentChange":0.01129112429320085,"renewed":null,"upForRenewal":null},{"year":2025,"month":"June","activeGolfers":408288,"newGolfers":31092,"reactivations":4803,"retentionRate":0.7684,"onTimeRenewalRate":0.67,"monthNum":6,"label":"June 2025","priorMonthActive":400804,"netChange":7484,"percentChange":0.018672468338639336,"renewed":null,"upForRenewal":null},{"year":2025,"month":"July","activeGolfers":420286,"newGolfers":25436,"reactivations":7638,"retentionRate":0.7351,"onTimeRenewalRate":0.66,"monthNum":7,"label":"July 2025","priorMonthActive":408288,"netChange":11998,"percentChange":0.029386119601849673,"renewed":null,"upForRenewal":null},{"year":2025,"month":"August","activeGolfers":430376,"newGolfers":20302,"reactivations":7240,"retentionRate":0.7217,"onTimeRenewalRate":0.65,"monthNum":8,"label":"August 2025","priorMonthActive":420286,"netChange":10090,"percentChange":0.024007461585682132,"renewed":null,"upForRenewal":null},{"year":2025,"month":"September","activeGolfers":434817,"newGolfers":12769,"reactivations":6839,"retentionRate":0.7172,"onTimeRenewalRate":0.64,"monthNum":9,"label":"September 2025","priorMonthActive":430376,"netChange":4441,"percentChange":0.010318883952636764,"renewed":null,"upForRenewal":null},{"year":2025,"month":"October","activeGolfers":438198,"newGolfers":8449,"reactivations":6129,"retentionRate":0.7584,"onTimeRenewalRate":0.56,"monthNum":10,"label":"October 2025","priorMonthActive":434817,"netChange":3381,"percentChange":0.0077756849433209835,"renewed":null,"upForRenewal":null},{"year":2025,"month":"November","activeGolfers":441160,"newGolfers":5985,"reactivations":5154,"retentionRate":0.6273,"onTimeRenewalRate":0.66,"monthNum":11,"label":"November 2025","priorMonthActive":438198,"netChange":2962,"percentChange":0.006759501412603435,"renewed":null,"upForRenewal":null},{"year":2025,"month":"December","activeGolfers":444243,"newGolfers":5277,"reactivations":4741,"retentionRate":0.7092,"onTimeRenewalRate":0.67,"monthNum":12,"label":"December 2025","priorMonthActive":441160,"netChange":3083,"percentChange":0.006988394233384713,"renewed":null,"upForRenewal":null},{"year":2026,"month":"January","activeGolfers":447739,"newGolfers":8589,"reactivations":5504,"retentionRate":0.7086,"onTimeRenewalRate":0.75,"monthNum":1,"label":"January 2026","priorMonthActive":444243,"netChange":3496,"percentChange":0.0078695668811889,"renewed":null,"upForRenewal":null},{"year":2026,"month":"February","activeGolfers":451860,"newGolfers":8618,"reactivations":5580,"retentionRate":0.7073,"onTimeRenewalRate":0.75,"monthNum":2,"label":"February 2026","priorMonthActive":447739,"netChange":4121,"percentChange":0.009204022879400722,"renewed":null,"upForRenewal":null},{"year":2026,"month":"March","activeGolfers":457473,"newGolfers":14915,"reactivations":6516,"retentionRate":0.7082,"onTimeRenewalRate":0.72,"monthNum":3,"label":"March 2026","priorMonthActive":451860,"netChange":5613,"percentChange":0.012421989111671757,"renewed":null,"upForRenewal":null},{"year":2026,"month":"April","activeGolfers":474886,"newGolfers":25065,"reactivations":7561,"retentionRate":0.6217,"onTimeRenewalRate":0.77,"monthNum":4,"label":"April 2026","priorMonthActive":457473,"netChange":17413,"percentChange":0.038063448553247954,"renewed":null,"upForRenewal":null},{"year":2026,"month":"May","activeGolfers":495933,"newGolfers":25675,"reactivations":5393,"retentionRate":0.7076,"onTimeRenewalRate":0.7897940913160251,"renewed":35288,"upForRenewal":44680,"monthNum":5,"label":"May 2026","priorMonthActive":474886,"netChange":21047,"percentChange":0.044320110510733104},{"year":2026,"month":"June","monthNum":6,"label":"June 2026","activeGolfers":null,"priorMonthActive":null,"netChange":null,"percentChange":null,"newGolfers":null,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2026,"month":"July","monthNum":7,"label":"July 2026","activeGolfers":null,"priorMonthActive":null,"netChange":null,"percentChange":null,"newGolfers":null,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2026,"month":"August","monthNum":8,"label":"August 2026","activeGolfers":null,"priorMonthActive":null,"netChange":null,"percentChange":null,"newGolfers":null,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2026,"month":"September","monthNum":9,"label":"September 2026","activeGolfers":null,"priorMonthActive":null,"netChange":null,"percentChange":null,"newGolfers":null,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2026,"month":"October","monthNum":10,"label":"October 2026","activeGolfers":null,"priorMonthActive":null,"netChange":null,"percentChange":null,"newGolfers":null,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2026,"month":"November","monthNum":11,"label":"November 2026","activeGolfers":null,"priorMonthActive":null,"netChange":null,"percentChange":null,"newGolfers":null,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null},{"year":2026,"month":"December","monthNum":12,"label":"December 2026","activeGolfers":null,"priorMonthActive":null,"netChange":null,"percentChange":null,"newGolfers":null,"reactivations":null,"onTimeRenewalRate":null,"renewed":null,"upForRenewal":null,"retentionRate":null}];
+
+const MONTHS = [
+  ["January",1],["February",2],["March",3],["April",4],["May",5],["June",6],
+  ["July",7],["August",8],["September",9],["October",10],["November",11],["December",12]
+];
+
+const MONTH_LOOKUP = Object.fromEntries(MONTHS.map(([n,i]) => [n,i]));
+const BY_YEAR_MONTH = Object.fromEntries(DATA.map(r => [r.year + "-" + MONTH_LOOKUP[r.month], r]));
+const CHART_PREFS = JSON.parse(localStorage.getItem("pa_presentation_chart_prefs") || "{}");
+
+const DEFAULT_REF_ROW = DATA.filter(r => r.activeGolfers != null).slice(-1)[0] || DATA[DATA.length-1];
+const DEFAULT_REF = {month: MONTH_LOOKUP[DEFAULT_REF_ROW.month], year: DEFAULT_REF_ROW.year};
+const WIDGET_REFS = JSON.parse(localStorage.getItem("pa_widget_refs") || "{}");
+
+["membership","newGolfersCard","ytdNewGolfersCard","renewalCard","retentionCard","reactivationsCard","ytdReactivationsCard"].forEach(id => {
+  if(!WIDGET_REFS[id]) WIDGET_REFS[id] = {...DEFAULT_REF};
+});
+
+let YOY_REF = {...DEFAULT_REF};
+
+function validYoyRow(monthNumValue, yearValue) {
+  const row = BY_YEAR_MONTH[Number(yearValue) + "-" + Number(monthNumValue)];
+  const prior = BY_YEAR_MONTH[(Number(yearValue)-1) + "-" + Number(monthNumValue)];
+  return row && prior && row.activeGolfers != null && prior.activeGolfers != null;
+}
+
+function normalizeYoyRef() {
+  if(validYoyRow(YOY_REF.month, YOY_REF.year)) return;
+  const candidates = DATA
+    .filter(r => r.activeGolfers != null && validYoyRow(monthNum(r.month), r.year))
+    .sort((a,b)=>rowIdx(a)-rowIdx(b));
+  const latest = candidates[candidates.length-1];
+  YOY_REF = latest ? {month: monthNum(latest.month), year: latest.year} : {...DEFAULT_REF};
+}
+
+function setYoyRef(key, value) {
+  YOY_REF[key] = Number(value);
+  normalizeYoyRef();
+  renderMembership();
+}
+
+function yoyControls() {
+  normalizeYoyRef();
+
+  const monthOptions = MONTHS.map(([name,num]) => {
+    const valid = validYoyRow(num, YOY_REF.year);
+    return `<option value="${num}" ${Number(YOY_REF.month)===num ? "selected" : ""} ${valid ? "" : "disabled"}>${name}</option>`;
+  }).join("");
+
+  const years = Array.from(new Set(DATA.map(r => r.year))).sort().filter(y => y >= 2023);
+  const yearOptions = years.map(y => {
+    const hasAnyValidMonth = MONTHS.some(([,m]) => validYoyRow(m, y));
+    return `<option value="${y}" ${Number(YOY_REF.year)===Number(y) ? "selected" : ""} ${hasAnyValidMonth ? "" : "disabled"}>${y}</option>`;
+  }).join("");
+
+  return `<div class="yoy-controls">
+    <div class="yoy-control">
+      <label>Compare</label>
+      <select onchange="setYoyRef('month', this.value)">${monthOptions}</select>
+      <select onchange="setYoyRef('year', this.value)">${yearOptions}</select>
+    </div>
+  </div>`;
+}
+
+
+function monthNum(name) { return MONTH_LOOKUP[name] || 1; }
+function monthName(n) { return MONTHS.find(m => m[1] === Number(n))?.[0] || ""; }
+function idx(year, month) { return Number(year) * 12 + Number(month); }
+function rowIdx(r) { return idx(r.year, monthNum(r.month)); }
+function fmt(v, type="count") {
+  if(type === "text") return v || "—";
+  if(v === null || v === undefined || v === "" || Number.isNaN(Number(v))) return "—";
+  if(type === "percent") return (Number(v)*100).toFixed(1) + "%";
+  return Math.round(Number(v)).toLocaleString();
+}
+function fmtShort(v) {
+  if(v === null || v === undefined || Number.isNaN(Number(v))) return "—";
+  const n = Number(v);
+  if(Math.abs(n) >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,"") + "M";
+  if(Math.abs(n) >= 1000) return Math.round(n/1000) + "K";
+  return Math.round(n).toString();
+}
+function pct(v, decimals=1) {
+  if(v === null || v === undefined || Number.isNaN(Number(v))) return "—";
+  return (v >= 0 ? "+" : "") + (Number(v)*100).toFixed(decimals) + "%";
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+function tooltip(lines) { return lines.filter(Boolean).join("<br>").replace(/"/g,"&quot;"); }
+function scale(values, zero=true) {
+  const vals = values.filter(v => v !== null && v !== undefined && !Number.isNaN(Number(v))).map(Number);
+  if(!vals.length) return {min:0,max:1,span:1};
+  let min = zero ? Math.min(0,...vals) : Math.min(...vals);
+  let max = Math.max(...vals);
+  if(min === max) { min = min * .95; max = max * 1.05 || 1; }
+  return {min,max,span:max-min};
+}
+function allRowsSorted() {
+  return DATA.slice().sort((a,b)=>rowIdx(a)-rowIdx(b));
+}
+function selectedReportRow(widgetId, field = "activeGolfers") {
+  const row = BY_YEAR_MONTH[DEFAULT_REF.year + "-" + DEFAULT_REF.month];
+  if(row && (field === null || row[field] != null)) return row;
+
+  const selectedIdx = idx(DEFAULT_REF.year, DEFAULT_REF.month);
+  const rows = allRowsSorted().filter(r => rowIdx(r) <= selectedIdx && (field === null || r[field] != null));
+  return rows.length ? rows[rows.length - 1] : null;
+}
+function rowsThroughReportMonth(widgetId, field = null) {
+  const end = idx(DEFAULT_REF.year, DEFAULT_REF.month);
+  return allRowsSorted().filter(r => rowIdx(r) <= end && (field === null || r[field] != null));
+}
+function rowsForReportYear(widgetId, field) {
+  return allRowsSorted().filter(r => r.year === DEFAULT_REF.year && (field === null || r[field] != null));
+}
+function latestActiveRow() {
+  return selectedReportRow("membership", "activeGolfers");
+}
+function ytdSum(year, thruMonth, field) {
+  let total = 0, seen = false;
+  for(let m=1;m<=thruMonth;m++) {
+    const r = BY_YEAR_MONTH[year + "-" + m];
+    if(r && r[field] != null) { total += Number(r[field]); seen = true; }
+  }
+  return seen ? total : null;
+}
+function enrich(r) {
+  if(!r) return null;
+  const m = monthNum(r.month);
+  const prior = BY_YEAR_MONTH[(r.year-1)+"-"+m];
+  const priorActive = prior?.activeGolfers ?? null;
+  const ytdNew = ytdSum(r.year, m, "newGolfers");
+  const priorYtdNew = ytdSum(r.year - 1, m, "newGolfers");
+  const ytdReactivations = ytdSum(r.year, m, "reactivations");
+  const priorYtdReactivations = ytdSum(r.year - 1, m, "reactivations");
+  return {
+    ...r,
+    priorYearActiveGolfers: priorActive,
+    yoyActiveChange: r.activeGolfers != null && priorActive != null ? r.activeGolfers - priorActive : null,
+    yoyActivePct: r.activeGolfers != null && priorActive ? (r.activeGolfers - priorActive) / priorActive : null,
+    ytdNewGolfers: ytdNew,
+    priorYtdNewGolfers: priorYtdNew,
+    ytdNewChange: ytdNew != null && priorYtdNew != null ? ytdNew - priorYtdNew : null,
+    ytdNewPct: ytdNew != null && priorYtdNew ? (ytdNew - priorYtdNew) / priorYtdNew : null,
+    ytdReactivations,
+    priorYtdReactivations,
+    ytdReactivationsChange: ytdReactivations != null && priorYtdReactivations != null ? ytdReactivations - priorYtdReactivations : null,
+    ytdReactivationsPct: ytdReactivations != null && priorYtdReactivations ? (ytdReactivations - priorYtdReactivations) / priorYtdReactivations : null,
+    retainedGolfers: r.retentionRate != null && priorActive != null ? Math.round(r.retentionRate * priorActive) : null,
+    notRenewed: r.upForRenewal != null && r.renewed != null ? r.upForRenewal - r.renewed : null,
+    newShare: r.activeGolfers && r.newGolfers != null ? r.newGolfers / r.activeGolfers : null,
+    recoveryShare: r.activeGolfers && r.reactivations != null ? r.reactivations / r.activeGolfers : null
+  };
+}
+function kpiBlock(items) {
+  return `<div class="kpis">${items.map(i => `<div class="kpi"><div class="kpi-label">${escapeHtml(i[0])}</div><div class="kpi-value">${fmt(i[1], i[2])}</div></div>`).join("")}</div>`;
+}
+function relChange(curr, prior) {
+  return (curr != null && prior != null && Number(prior) !== 0) ? (curr - prior) / prior : null;
+}
+function safeShare(num, denom) {
+  return (num != null && denom != null && Number(denom) !== 0) ? num / denom : null;
+}
+function kpiChangeMarkup(change, basisLabel) {
+  if(change == null) return `<div class="kpi-change neutral">No comparison available</div>`;
+  const cls = change > 0 ? "positive" : change < 0 ? "negative" : "neutral";
+  const arrow = change > 0 ? "▲" : change < 0 ? "▼" : "•";
+  return `<div class="kpi-change ${cls}">${arrow} ${pct(change)} vs ${basisLabel}</div>`;
+}
+function richKpiBlock(items) {
+  return `<div class="kpis acquisition-kpis">${items.map(i => `
+    <div class="kpi acquisition-kpi">
+      <div class="kpi-label">${escapeHtml(i.label)}</div>
+      <div class="kpi-value">${fmt(i.value, i.format || 'count')}</div>
+      ${i.changeHtml || ''}
+      <div class="kpi-sub">${escapeHtml(i.sub || '')}</div>
+    </div>`).join("")}</div>`;
+}
+function acquisitionPacingSeries(ref) {
+  const refMonth = monthNum(ref.month);
+  const years = [2022, 2023, 2024, 2025, ref.year].filter((y, i, arr) => arr.indexOf(y) === i).sort();
+  return years.map(year => {
+    const endMonth = year === ref.year ? refMonth : 12;
+    const pts = [];
+    for(let m = 1; m <= endMonth; m++) {
+      const row = BY_YEAR_MONTH[year + "-" + m];
+      if(row) pts.push({m, value: ytdSum(year, m, 'newGolfers') || 0});
+    }
+    return {year, current: year === ref.year, pts};
+  }).filter(s => s.pts.length);
+}
+function acquisitionPacingChart(ref) {
+  const visible = visibleYearsFor('acquisitionPacingCard', ref);
+  const series = acquisitionPacingSeries(ref).filter(s => visible[s.year]);
+  if(!series.length) return `<div class="empty-note">No acquisition pacing data for this selection.</div>`;
+  const w = 1220, h = 520, left = 78, right = 130, top = 16, bottom = 42;
+  const vals = [];
+  series.forEach(s => s.pts.forEach(pt => vals.push(pt.value)));
+  const maxVal = Math.max(...vals);
+  const step = maxVal <= 250000 ? 25000 : 50000;
+  const yMax = Math.ceil((maxVal * 1.12) / step) * step;
+  const plotW = w - left - right, plotH = h - top - bottom;
+  const x = m => left + (m - 1) * plotW / 11;
+  const y = v => h - bottom - (v / yMax) * plotH;
+  const colors = {2022:'#a86d74',2023:'#55b85a',2024:'#6b9ac4',2025:'#111827',2026:'#e65c33'};
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMin meet">`;
+  for(let t = 0; t <= yMax; t += step) {
+    svg += `<line class="gridline" x1="${left}" x2="${w-right}" y1="${y(t)}" y2="${y(t)}"></line>`;
+    svg += `<text class="axis-label" x="${left-12}" y="${y(t)+4}" text-anchor="end">${t ? Math.round(t).toLocaleString() : '0'}</text>`;
+  }
+  for(let m = 1; m <= 12; m++) {
+    svg += `<line class="gridline" x1="${x(m)}" x2="${x(m)}" y1="${top}" y2="${h-bottom}"></line>`;
+    svg += `<text class="axis-label" x="${x(m)}" y="${h-bottom+22}" text-anchor="middle">${monthName(m).slice(0,3)}</text>`;
+  }
+  svg += `<line class="axis" x1="${left}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+
+  series.forEach(s => {
+    const color = colors[s.year] || '#64748b';
+    const path = s.pts.map((pt,i)=>`${i?'L':'M'} ${x(pt.m)} ${y(pt.value)}`).join(' ');
+    const dash = s.current ? '' : '';
+    svg += `<path d="${path}" fill="none" stroke="${color}" stroke-width="${s.current ? 4 : 3.25}" ${dash}></path>`;
+    s.pts.forEach((pt, idx) => {
+      const r = (s.current && idx === s.pts.length - 1) ? 6 : 4.5;
+      const fill = s.current ? color : '#ffffff';
+      svg += `<circle class="tiptarget" data-tip="${tooltip(['Cumulative new golfers','<strong>'+fmt(pt.value)+'</strong>', monthName(pt.m) + ' ' + s.year, 'Year: ' + s.year])}" cx="${x(pt.m)}" cy="${y(pt.value)}" r="${r}" fill="${fill}" stroke="${color}" stroke-width="2.5"></circle>`;
+    });
+    const last = s.pts[s.pts.length - 1];
+    if(!last) return;
+    if(s.current) {
+      const cx = x(last.m), cy = y(last.value);
+      const calloutX = Math.max(left + 18, cx - 132);
+      const calloutY = cy - 78;
+      const leaderStartX = calloutX + 78;
+      const leaderStartY = calloutY + 8;
+      const labelText = `${s.year} YTD - ${fmtShort(last.value).toLowerCase()}`;
+      svg += `<circle cx="${cx}" cy="${cy}" r="14" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="6 5"></circle>`;
+      svg += `<path d="M ${leaderStartX} ${leaderStartY} L ${cx-7} ${cy-11}" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"></path>`;
+      svg += `<text class="legend" x="${calloutX}" y="${calloutY}" text-anchor="start" style="font-size:15px;font-weight:950;fill:#ef4444">${labelText}</text>`;
+    } else {
+      const ly = y(last.value);
+      svg += `<text class="legend" x="${w-right-42}" y="${ly-8}" style="font-size:13px;font-weight:900;fill:${color}">${s.year}</text>`;
+      svg += `<text class="value-label" x="${w-right+8}" y="${ly+4}" style="font-size:14px;font-weight:950">${fmtShort(last.value)}</text>`;
+    }
+  });
+
+  svg += `</svg>`;
+  return `<div class="chart short">${svg}</div>`;
+}
+function acquisitionStoryHeader(title, value, inlineLabel, copyHtml, controlsHtml='') {
+  return `
+    <div class="card-head story-card-head">
+      <div class="story-header-stack">
+        <h3>${title}</h3>
+        <div class="story-value-row">
+          <div class="story-value-big">${value}</div>
+          <div class="story-value-label">${inlineLabel}</div>
+        </div>
+        ${copyHtml ? `<div class="story-value-copy">${copyHtml}</div>` : ''}
+      </div>
+      ${controlsHtml ? `<div class="widget-controls">${controlsHtml}</div>` : ''}
+    </div>
+  `;
+}
+
+let YEAR_FILTERS = (() => {
+  try { return JSON.parse(localStorage.getItem("pa_year_filters") || "{}"); }
+  catch(e) { return {}; }
+})();
+
+const CHART_YEAR_OPTIONS = {
+  renewalCard: [2025, 2026],
+  retentionCard: [2025, 2026],
+  reactivationsCard: [2025, 2026],
+  ytdReactivationsCard: [2025, 2026]
+};
+
+function availableYearsThroughRef(ref) {
+  return Array.from(new Set(DATA
+    .filter(r => r.year <= ref.year && r.year >= 2022)
+    .map(r => r.year)))
+    .sort();
+}
+
+function yearsForChart(chartId, ref) {
+  const available = availableYearsThroughRef(ref);
+  const preferred = CHART_YEAR_OPTIONS[chartId];
+  if(!preferred) return available;
+  const filtered = preferred.filter(y => available.includes(y));
+  return filtered.length ? filtered : available;
+}
+
+function visibleYearsFor(chartId, ref) {
+  const years = yearsForChart(chartId, ref);
+  const stored = YEAR_FILTERS[chartId] || {};
+  const visible = {};
+  years.forEach(y => visible[y] = stored[y] !== false);
+  if(!years.some(y => visible[y])) years.forEach(y => visible[y] = true);
+  return visible;
+}
+
+function filterRowsByVisibleYears(rows, chartId, ref) {
+  const visible = visibleYearsFor(chartId, ref);
+  return rows.filter(r => visible[r.year]);
+}
+
+function yearToggleControls(chartId, ref) {
+  const years = yearsForChart(chartId, ref);
+  const visible = visibleYearsFor(chartId, ref);
+  return `<div class="year-toggle"><span class="year-toggle-label">Years</span>` +
+    years.map(y => `<button class="${visible[y] ? "active" : ""}" onclick="toggleChartYear('${chartId}', ${y})">${y}</button>`).join("") +
+  `</div>`;
+}
+
+function toggleChartYear(chartId, year) {
+  if(!YEAR_FILTERS[chartId]) YEAR_FILTERS[chartId] = {};
+  const ref = enrich(latestActiveRow());
+  const visible = visibleYearsFor(chartId, ref);
+  const currentlyVisible = visible[year] !== false;
+  const visibleCount = Object.values(visible).filter(Boolean).length;
+
+  // Prevent users from turning every year off.
+  if(currentlyVisible && visibleCount <= 1) return;
+
+  YEAR_FILTERS[chartId][year] = !currentlyVisible;
+  localStorage.setItem("pa_year_filters", JSON.stringify(YEAR_FILTERS));
+  render();
+}
+
+
+// Clear old retention year-filter state from prior builds so only 2025/2026 show.
+["renewalCard","retentionCard"].forEach(id => {
+  if(YEAR_FILTERS[id]) {
+    Object.keys(YEAR_FILTERS[id]).forEach(y => {
+      if(!["2025","2026"].includes(String(y))) delete YEAR_FILTERS[id][y];
+    });
+  }
+});
+localStorage.setItem("pa_year_filters", JSON.stringify(YEAR_FILTERS));
+
+function renderAcquisitionSection() {
+  const ref = enrich(latestActiveRow());
+  const highlightsCard = document.getElementById('acquisitionHighlights');
+  const monthlyCard = document.getElementById('newGolfersCard');
+  const pacingCard = document.getElementById('ytdNewGolfersCard');
+  if(!ref || !highlightsCard || !monthlyCard || !pacingCard) return;
+
+  const monthlyRowsAll = genericRows('newGolfers', 'newGolfersCard');
+  const monthlyRows = filterRowsByVisibleYears(monthlyRowsAll, 'newGolfersCard', ref);
+  const monthlyPref = CHART_PREFS['newGolfersCard'] || 'line';
+  const priorMonth = BY_YEAR_MONTH[(ref.year-1) + '-' + monthNum(ref.month)];
+  const ytdShare = safeShare(ref.ytdNewGolfers, ref.activeGolfers);
+  const priorYtdShare = safeShare(ref.priorYtdNewGolfers, priorMonth?.activeGolfers);
+  const monthlyShare = safeShare(ref.newGolfers, ref.activeGolfers);
+  const priorMonthlyShare = safeShare(priorMonth?.newGolfers, priorMonth?.activeGolfers);
+
+  highlightsCard.className = 'acquisition-highlights';
+  highlightsCard.innerHTML = richKpiBlock([
+    {label:'New golfers', value:ref.newGolfers, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.newGolfers, priorMonth?.newGolfers), `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
+    {label:'New golfers YTD', value:ref.ytdNewGolfers, format:'count', changeHtml:kpiChangeMarkup(ref.ytdNewPct, `Jan–${ref.month} ${ref.year-1}`), sub:`Jan through ${ref.month}`},
+    {label:'YTD as % of active', value:ytdShare, format:'percent', changeHtml:kpiChangeMarkup(relChange(ytdShare, priorYtdShare), `${ref.month} ${ref.year-1}`), sub:'Current active base'},
+    {label:'Monthly as % of active', value:monthlyShare, format:'percent', changeHtml:kpiChangeMarkup(relChange(monthlyShare, priorMonthlyShare), `${ref.month} ${ref.year-1}`), sub:'Selected month share'}
+  ]);
+
+  const monthlyChange = relChange(ref.newGolfers, priorMonth?.newGolfers);
+  const monthlyControls = `<div class="toggle"><button class="${monthlyPref==='bar'?'active':''}" onclick="setChart('newGolfersCard','bar')">Bar chart</button><button class="${monthlyPref==='line'?'active':''}" onclick="setChart('newGolfersCard','line')">Line graph</button></div>${yearToggleControls('newGolfersCard', ref)}`;
+  const monthlyCopy = `${pct(monthlyChange)} vs ${ref.month} ${ref.year-1}.`;
+  const ytdCopy = `${pct(ref.ytdNewPct)} vs Jan–${ref.month} ${ref.year-1}.`;
+
+  monthlyCard.innerHTML = `
+    ${acquisitionStoryHeader('Monthly New Golfers', fmt(ref.newGolfers), `NEW GOLFERS IN ${ref.month.toUpperCase()} ${ref.year}`, monthlyCopy, monthlyControls)}
+    ${genericChart(monthlyRows, 'newGolfers', monthlyPref, 'count')}
+  `;
+
+  pacingCard.innerHTML = `
+    ${acquisitionStoryHeader('New Golfer YTD Cumulative', fmt(ref.ytdNewGolfers), 'NEW GOLFERS YTD', ytdCopy, yearToggleControls('acquisitionPacingCard', ref))}
+    ${acquisitionPacingChart(ref)}
+  `;
+}
+
+function annualData(ref) {
+  const out = [];
+  for(let y=2022;y<=ref.year;y++) {
+    if(y < ref.year) {
+      const dec = BY_YEAR_MONTH[y+"-12"];
+      if(dec?.activeGolfers != null) out.push({year:y,label:String(y),value:dec.activeGolfers,current:false});
+    } else {
+      out.push({year:y,label:`${y} YTD`,value:ref.activeGolfers,current:true});
+    }
+  }
+  out.forEach((d,i)=>d.growth = i ? (d.value - out[i-1].value)/out[i-1].value : null);
+  return out;
+}
+function targetMonthData(ref) {
+  const m = monthNum(ref.month);
+  const out = [];
+  for(let y=2022;y<=ref.year;y++) {
+    const r = BY_YEAR_MONTH[y+"-"+m];
+    if(r?.activeGolfers != null) out.push({year:y,label:`${ref.month.slice(0,3)} '${String(y).slice(2)}`,value:r.activeGolfers,current:y===ref.year});
+  }
+  out.forEach((d,i)=>d.growth = i ? (d.value - out[i-1].value)/out[i-1].value : null);
+  return out;
+}
+function projectionData(ref) {
+  const mRef = monthNum(ref.month);
+  const priorRef = BY_YEAR_MONTH[(ref.year-1)+"-"+mRef];
+  const factor = ref.projectionFactor || (priorRef?.activeGolfers ? ref.activeGolfers / priorRef.activeGolfers : null);
+  const histYears = [2022,2023,2024,2025].filter(y => y < ref.year);
+  const series = histYears.map(y => {
+    const pts = [];
+    for(let m=1;m<=12;m++) {
+      const r = BY_YEAR_MONTH[y+"-"+m];
+      if(r?.activeGolfers != null) pts.push({m,value:r.activeGolfers});
+    }
+    return {year:y,pts};
+  });
+  const actual = [];
+  for(let m=1;m<=mRef;m++) {
+    const r = BY_YEAR_MONTH[ref.year+"-"+m];
+    if(r?.activeGolfers != null) actual.push({m,value:r.activeGolfers});
+  }
+  const projected = [];
+  if(factor) {
+    for(let m=mRef;m<=12;m++) {
+      if(m === mRef) projected.push({m,value:ref.activeGolfers});
+      else {
+        const prior = BY_YEAR_MONTH[(ref.year-1)+"-"+m];
+        if(prior?.activeGolfers != null) projected.push({m,value:prior.activeGolfers * factor});
+      }
+    }
+  }
+  return {ref,factor,series,actual,projected};
+}
+
+function cleanBarChart(data, title, story, compact=false) {
+  if(!data.length) return `<div class="empty-note">No membership data for this selection.</div>`;
+  const w=960,h=compact?560:420,p=58,top=30,bottom=50;
+  const maxVal = Math.max(...data.map(d=>d.value));
+  const yMax = Math.ceil(maxVal/50000)*50000;
+  const plotW = w - p - 20, plotH = h - top - bottom;
+  const slot = plotW / data.length;
+  const bw = Math.min(compact ? 72 : 92, slot * .68);
+  const y = v => h - bottom - (v/yMax)*plotH;
+  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet">`;
+  if(story) {
+    svg += `<rect class="story-band" x="${p}" y="5" width="${w-p-18}" height="24" rx="12"></rect>`;
+    svg += `<text class="story-band-text" x="${p+14}" y="22">${story}</text>`;
+  }
+  for(let t=0;t<=yMax;t+=50000) {
+    const yy = y(t);
+    svg += `<line class="gridline" x1="${p}" x2="${w-10}" y1="${yy}" y2="${yy}"></line>`;
+    svg += `<text class="axis-label" x="${p-10}" y="${yy+4}" text-anchor="end">${t ? Math.round(t/1000)+'K' : '0'}</text>`;
+  }
+  svg += `<line class="axis" x1="${p}" x2="${w-10}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+  data.forEach((d,i)=> {
+    const x = p + i*slot + (slot-bw)/2;
+    const yy = y(d.value);
+    const cls = d.current ? "bar-current" : "bar-muted";
+    const tip = tooltip([title, `<strong>${fmt(d.value)}</strong>`, d.label, d.growth != null ? `Growth vs prior: ${pct(d.growth)}` : null]);
+    svg += `<rect class="${cls} tiptarget" data-tip="${tip}" x="${x}" y="${yy}" width="${bw}" height="${h-bottom-yy}" rx="8"></rect>`;
+    svg += `<text class="bar-label" x="${x+bw/2}" y="${Math.max(yy-10,42)}" text-anchor="middle">${fmtShort(d.value)}</text>`;
+    svg += `<text class="bar-year" x="${x+bw/2}" y="${h-18}" text-anchor="middle">${d.label}</text>`;
+    if(d.growth != null) {
+      const gt = pct(d.growth);
+      const pillW = 62, pillH = 22;
+      const px = x+bw/2-pillW/2;
+      const py = Math.max(Math.max(yy-10,42)+8,62);
+      svg += `<rect class="growth-pill" x="${px}" y="${py}" width="${pillW}" height="${pillH}" rx="11"></rect>`;
+      svg += `<text class="growth-pill-text" x="${x+bw/2}" y="${py+15}" text-anchor="middle">${gt}</text>`;
+    }
+  });
+  svg += `</svg>`;
+  return `<div class="chart ${compact?'short':''}">${svg}</div>`;
+}
+
+
+function executiveMiniBarChart(data, title) {
+  if(!data.length) return `<div class="empty-note">No membership data for this selection.</div>`;
+  const w = 560, h = 300, p = 34, top = 16, bottom = 42;
+  const maxVal = Math.max(...data.map(d => d.value));
+  const yMax = title === "Total Membership Growth" ? 525000 : Math.ceil(maxVal / 50000) * 50000;
+  const plotW = w - p - 8;
+  const plotH = h - top - bottom;
+  const slot = plotW / data.length;
+  const bw = Math.min(66, slot * 0.58);
+  const y = v => h - bottom - (v / yMax) * plotH;
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMin meet">`;
+  for(let t = 0; t <= yMax; t += 100000) {
+    const yy = y(t);
+    svg += `<line class="mini-gridline" x1="${p}" x2="${w-6}" y1="${yy}" y2="${yy}"></line>`;
+    svg += `<text class="mini-axis-label" x="${p-6}" y="${yy+4}" text-anchor="end">${t ? Math.round(t/1000)+'K' : '0'}</text>`;
+  }
+  data.forEach((d, i) => {
+    const x = p + i * slot + (slot - bw) / 2;
+    const yy = y(d.value);
+    const cls = d.current ? "mini-bar-current" : "mini-bar-muted";
+    const tip = tooltip([title, `<strong>${fmt(d.value)}</strong>`, d.label, d.growth != null ? `Growth vs prior: ${pct(d.growth)}` : null]);
+    svg += `<rect class="${cls} tiptarget" data-tip="${tip}" x="${x}" y="${yy}" width="${bw}" height="${h-bottom-yy}" rx="8"></rect>`;
+    svg += `<text class="mini-bar-label" x="${x+bw/2}" y="${Math.max(yy-9,14)}" text-anchor="middle">${fmtShort(d.value)}</text>`;
+    svg += `<text class="mini-bar-year" x="${x+bw/2}" y="${h-14}" text-anchor="middle">${d.label}</text>`;
+    if(d.growth != null) {
+      const gt = pct(d.growth);
+      const pillW = 56, pillH = 20;
+      const px = x + bw/2 - pillW/2;
+      const py = yy + 8;
+      svg += `<rect class="mini-chip" x="${px}" y="${py}" width="${pillW}" height="${pillH}" rx="10"></rect>`;
+      svg += `<text class="mini-chip-text" x="${x+bw/2}" y="${py+13.5}" text-anchor="middle">${gt}</text>`;
+    }
+  });
+  svg += `</svg>`;
+  return `<div class="square-mini-chart">${svg}</div>`;
+}
+
+function projectionChart(data) {
+  const w=1220,h=560,p=74,top=16,right=150,bottom=42;
+  const vals = [];
+  data.series.forEach(s => s.pts.forEach(pt => vals.push(pt.value)));
+  data.actual.forEach(pt => vals.push(pt.value));
+  data.projected.forEach(pt => vals.push(pt.value));
+  const yMax = 575000;
+  const plotW=w-p-right, plotH=h-bottom-top;
+  const x = m => p + (m-1)*plotW/11;
+  const y = v => h-bottom-(v/yMax)*plotH;
+  const colors = {2022:"#a86d74",2023:"#55b85a",2024:"#6b9ac4",2025:"#111827",2026:"#d85a32"};
+  const refM = monthNum(data.ref.month);
+  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMin meet">`;
+  if(refM < 12) svg += `<rect class="proj-shade" x="${x(refM)}" y="${top}" width="${x(12)-x(refM)}" height="${h-bottom-top}"></rect>`;
+  for(let t=0;t<=yMax;t+=50000) {
+    svg += `<line class="gridline" x1="${p}" x2="${w-right}" y1="${y(t)}" y2="${y(t)}"></line>`;
+    svg += `<text class="axis-label" x="${p-10}" y="${y(t)+4}" text-anchor="end">${t ? Math.round(t/1000)+'K' : '0'}</text>`;
+  }
+  for(let m=1;m<=12;m++) {
+    svg += `<line class="gridline" x1="${x(m)}" x2="${x(m)}" y1="${top}" y2="${h-bottom}"></line>`;
+    svg += `<text class="axis-label" x="${x(m)}" y="${h-bottom+22}" text-anchor="middle">${monthName(m).slice(0,3)}</text>`;
+  }
+  svg += `<line class="axis" x1="${p}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+  const endValueX = w - right + 24;
+  data.series.forEach(s => {
+    const path = s.pts.map((pt,i)=>`${i?'L':'M'} ${x(pt.m)} ${y(pt.value)}`).join(" ");
+    svg += `<path class="line-${s.year}" d="${path}"></path>`;
+    s.pts.forEach(pt => svg += `<circle class="dot tiptarget" data-tip="${tooltip(['Active GC golfers','<strong>'+fmt(pt.value)+'</strong>',monthName(pt.m)+' '+s.year])}" cx="${x(pt.m)}" cy="${y(pt.value)}" r="4" style="stroke:${colors[s.year]}"></circle>`);
+    const last = s.pts[s.pts.length-1];
+    if(last) {
+      const labelY = y(last.value) + 5;
+      svg += `<text class="value-label" x="${endValueX}" y="${labelY}" style="font-size:15px;font-weight:950">${fmtShort(last.value)}</text>`;
+    }
+  });
+
+  const midLabelMonth = 4.55;
+  const midYearLabels = {
+    2025: { month: 4.15, value: 402000, dy: -12 },
+    2024: { month: 4.15, value: 312000, dy: -10 },
+    2023: { month: 4.15, value: 212000, dy: -10 },
+    2022: { month: 4.15, value: 58000,  dy: -8 }
+  };
+  Object.entries(midYearLabels).forEach(([year, cfg]) => {
+    svg += `<text x="${x(cfg.month)}" y="${y(cfg.value) + cfg.dy}" fill="#3f3f46" style="font-size:16px;font-weight:900;letter-spacing:0.01em;paint-order:stroke;stroke:#ffffff;stroke-width:4px;stroke-linejoin:round">${year}</text>`;
+  });
+  const actualPath = data.actual.map((pt,i)=>`${i?'L':'M'} ${x(pt.m)} ${y(pt.value)}`).join(" ");
+  svg += `<path class="line-2026" d="${actualPath}"></path>`;
+  data.actual.forEach(pt => {
+    svg += `<circle class="dot tiptarget" data-tip="${tooltip(['Active GC golfers','<strong>'+fmt(pt.value)+'</strong>',monthName(pt.m)+' '+data.ref.year])}" cx="${x(pt.m)}" cy="${y(pt.value)}" r="4.5" style="stroke:#d85a32"></circle>`;
+    svg += `<text class="value-label" x="${x(pt.m)}" y="${y(pt.value)-9}" text-anchor="middle">${fmtShort(pt.value)}</text>`;
+  });
+  if(data.projected.length) {
+    const path = data.projected.map((pt,i)=>`${i?'L':'M'} ${x(pt.m)} ${y(pt.value)}`).join(" ");
+    svg += `<path class="line-proj" d="${path}"></path>`;
+    data.projected.forEach(pt => svg += `<rect class="square tiptarget" data-tip="${tooltip(['Projected active GC golfers','<strong>'+fmt(pt.value)+'</strong>',monthName(pt.m)+' '+data.ref.year,'Projection factor: '+pct((data.factor||1)-1)])}" x="${x(pt.m)-5.5}" y="${y(pt.value)-5.5}" width="11" height="11"></rect>`);
+    const dec = data.projected[data.projected.length-1];
+    const endValueX = w - right + 24;
+    svg += `<circle cx="${x(dec.m)}" cy="${y(dec.value)}" r="22" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="6 6"></circle>`;
+    svg += `<text class="value-label" x="${endValueX}" y="${y(dec.value)+5}" style="font-size:15px;font-weight:950">${fmtShort(dec.value)}</text>`;
+    const projLabelX = x(5.2);
+    const projLabelY = y(data.projected[Math.min(2, data.projected.length-1)].value) - 18;
+    svg += `<text x="${projLabelX}" y="${projLabelY}" fill="#d85a32" style="font-size:16px;font-weight:950;letter-spacing:0.02em;paint-order:stroke;stroke:#ffffff;stroke-width:5px;stroke-linejoin:round">2026 (PROJECTED)</text>`;
+  }
+
+  svg += `</svg>`;
+  return `<div class="chart tall projection-chart"><div class="projection-chart-inner">${svg}</div></div>`;
+}
+
+function genericRows(field, widgetId = null) {
+  const baseRows = widgetId ? rowsThroughReportMonth(widgetId, field) : allRowsSorted().filter(r => r[field] != null);
+  return baseRows.map(enrich).filter(r => r && r[field] != null && !Number.isNaN(Number(r[field])));
+}
+function genericChart(rows, field, type, format) {
+  if(!rows.length) return "";
+  const percentMode = format === "percent";
+  const w = 1120, h = 455, left = 64, right = 120, top = 18, bottom = 52;
+  const vals = rows.map(r => r[field]);
+  const sc = scale(vals, format !== "percent");
+  const plotW = w - left - right;
+  const plotH = h - top - bottom;
+  const xMonth = m => left + (m - 1) * plotW / 11;
+  const yVal = v => h - bottom - ((Number(v) - sc.min) / sc.span) * plotH;
+  const years = Array.from(new Set(rows.map(r => r.year))).sort();
+  const colorMap = {2022:"#a86d74",2023:"#55b85a",2024:"#6b9ac4",2025:"#eab308",2026:"#dc2626"};
+  const highlight = rows[rows.length - 1];
+  const axisFont = 12.5;
+
+  function axisFmt(v) {
+    if(format === "percent") return (Number(v) * 100).toFixed(0) + "%";
+    if(Math.abs(v) >= 1000) return Math.round(Number(v)/1000) + "K";
+    return Math.round(Number(v)).toString();
+  }
+
+  if(type === "bar") {
+    const bw = plotW / rows.length;
+    const zero = Math.max(sc.min, Math.min(sc.max, 0));
+    const base = yVal(zero);
+    let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMin meet">`;
+
+    const ticks = 5;
+    for(let i = 0; i <= ticks; i++) {
+      const val = sc.min + (sc.span * i / ticks);
+      const yy = yVal(val);
+      svg += `<line class="gridline" x1="${left}" x2="${w-right}" y1="${yy}" y2="${yy}"></line>`;
+      svg += `<text class="axis-label" x="${left-12}" y="${yy+6}" text-anchor="end" style="font-size:${axisFont}px">${axisFmt(val)}</text>`;
+    }
+    svg += `<line class="axis" x1="${left}" x2="${left}" y1="${top}" y2="${h-bottom}"></line>`;
+    svg += `<line class="axis" x1="${left}" x2="${w-right}" y1="${base}" y2="${base}"></line>`;
+
+    rows.forEach((r, i) => {
+      const x = left + i * bw, y = yVal(r[field]), bh = Math.abs(base - y);
+      svg += `<rect class="bar-muted tiptarget" data-tip="${tooltip(['Value','<strong>'+fmt(r[field],format)+'</strong>',r.label])}" x="${x+4}" y="${Math.min(y,base)}" width="${Math.max(4,bw-8)}" height="${Math.max(1,bh)}"></rect>`;
+      if(i % Math.ceil(rows.length/10) === 0 || i === rows.length - 1) {
+        svg += `<text class="axis-label" x="${x+bw/2}" y="${h-12}" text-anchor="middle" style="font-size:${axisFont}px">${r.month.slice(0,3)} '${String(r.year).slice(2)}</text>`;
+      }
+    });
+    svg += `</svg>`;
+    return `<div class="chart short">${svg}</div>`;
+  }
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMin meet">`;
+
+  const ticks = 5;
+  for(let i = 0; i <= ticks; i++) {
+    const val = sc.min + (sc.span * i / ticks);
+    const yy = yVal(val);
+    svg += `<line class="gridline" x1="${left}" x2="${w-right}" y1="${yy}" y2="${yy}"></line>`;
+    svg += `<text class="axis-label" x="${left-12}" y="${yy+6}" text-anchor="end" style="font-size:${axisFont}px">${axisFmt(val)}</text>`;
+  }
+  svg += `<line class="axis" x1="${left}" x2="${left}" y1="${top}" y2="${h-bottom}"></line>`;
+  svg += `<line class="axis" x1="${left}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+
+  for(let m = 1; m <= 12; m++) {
+    svg += `<text class="axis-label" x="${xMonth(m)}" y="${h-20}" text-anchor="middle" style="font-size:${axisFont}px">${monthName(m).slice(0,3)}</text>`;
+  }
+
+  years.forEach((year, yi) => {
+    const pts = rows.filter(r => r.year === year).map(r => [xMonth(monthNum(r.month)), yVal(r[field]), r]);
+    const path = pts.map((pt, i) => `${i ? 'L' : 'M'} ${pt[0]} ${pt[1]}`).join(" ");
+    const color = colorMap[year] || "#64748b";
+    svg += `<path d="${path}" fill="none" stroke="${color}" stroke-width="3.25"></path>`;
+    pts.forEach(pt => {
+      const isHighlight = highlight && pt[2].year === highlight.year && pt[2].month === highlight.month;
+      if(isHighlight){
+        svg += `<circle cx="${pt[0]}" cy="${pt[1]}" r="14" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="6 5"></circle>`;
+      }
+      svg += `<circle class="dot tiptarget" data-tip="${tooltip(['Value','<strong>'+fmt(pt[2][field],format)+'</strong>',pt[2].label, 'Year: '+pt[2].year, isHighlight ? 'Current point' : null])}" cx="${pt[0]}" cy="${pt[1]}" r="4.25" style="stroke:${color}"></circle>`;
+    });
+  });
+
+  years.forEach((year, yi) => {
+    const color = colorMap[year] || "#64748b";
+    const ly = top + 18 + yi * (percentMode ? 30 : 19);
+    svg += `<line x1="${w-right+2}" x2="${w-right+28}" y1="${ly}" y2="${ly}" stroke="${color}" stroke-width="3.25"></line>`;
+    svg += `<circle cx="${w-right+15}" cy="${ly}" r="4" fill="#fff" stroke="${color}" stroke-width="2"></circle>`;
+    svg += `<text class="legend" x="${w-right+38}" y="${ly+7}" style="font-size:18px;font-weight:900">${year}</text>`;
+  });
+
+  svg += `</svg>`;
+  return `<div class="chart short">${svg}</div>`;
+}
+
+
+function widgetMonthYearControl(widgetId) {
+  const sel = WIDGET_REFS[widgetId] || DEFAULT_REF;
+  const monthOptions = MONTHS.map(([name,num]) => `<option value="${num}" ${Number(sel.month)===num ? "selected" : ""}>${name}</option>`).join("");
+  const years = Array.from(new Set(DATA.map(r=>r.year))).sort();
+  const yearOptions = years.map(y => `<option value="${y}" ${Number(sel.year)===Number(y) ? "selected" : ""}>${y}</option>`).join("");
+  return `<div class="widget-control">
+    <label>Month</label>
+    <select onchange="setWidgetRef('${widgetId}', 'month', this.value)">${monthOptions}</select>
+    <select onchange="setWidgetRef('${widgetId}', 'year', this.value)">${yearOptions}</select>
+  </div>`;
+}
+
+function setWidgetRef(widgetId, key, value) {
+  if(!WIDGET_REFS[widgetId]) WIDGET_REFS[widgetId] = {...DEFAULT_REF};
+  WIDGET_REFS[widgetId][key] = Number(value);
+  localStorage.setItem("pa_widget_refs", JSON.stringify(WIDGET_REFS));
+  render();
+}
+
+function renderGenericCard(cardId, title, sub, field, format, kpisFn) {
+  const card = document.getElementById(cardId);
+  const rows = genericRows(field, cardId);
+  if(!rows.length) { card.classList.add("hidden"); return false; }
+  card.classList.remove("hidden");
+  const current = rows[rows.length-1];
+  const pref = CHART_PREFS[cardId] || "line";
+  card.innerHTML = `
+    <div class="card-head">
+      <div><h3>${escapeHtml(title)}</h3><div class="card-sub">${escapeHtml(sub)}</div></div>
+      <div class="widget-controls">
+        <div class="toggle"><button class="${pref==='bar'?'active':''}" onclick="setChart('${cardId}','bar')">Bar chart</button><button class="${pref==='line'?'active':''}" onclick="setChart('${cardId}','line')">Line graph</button></div>
+      </div>
+    </div>
+    ${kpiBlock(kpisFn(current, rows))}
+    <div class="context">Summary cards reference <strong>${current.month} ${current.year}</strong>, based on the reporting month.</div>
+    ${genericChart(rows, field, pref, format)}
+  `;
+  return true;
+}
+function setChart(cardId, type) {
+  CHART_PREFS[cardId] = type;
+  localStorage.setItem("pa_presentation_chart_prefs", JSON.stringify(CHART_PREFS));
+  render();
+}
+
+
+let PROJECTION_SCENARIO = localStorage.getItem("pa_projection_scenario") || "current";
+
+function projectionScenarioRate(ref) {
+  if(PROJECTION_SCENARIO === "20") return 0.20;
+  if(PROJECTION_SCENARIO === "25") return 0.25;
+  if(PROJECTION_SCENARIO === "30") return 0.30;
+  return ref?.yoyActivePct ?? 0;
+}
+
+function projectionScenarioLabel(ref) {
+  if(PROJECTION_SCENARIO === "20") return "20%";
+  if(PROJECTION_SCENARIO === "25") return "25%";
+  if(PROJECTION_SCENARIO === "30") return "30%";
+  return `Current ${ref.month} YOY`;
+}
+
+function projectionScenarioControls(ref) {
+  const options = [
+    ["current", `Current (${pct(ref.yoyActivePct,1)})`],
+    ["20", "20%"],
+    ["25", "25%"],
+    ["30", "30%"]
+  ];
+  return `<div class="projection-scenario-toggle" aria-label="Projection growth scenario">` +
+    options.map(([value,label]) => `<button class="${PROJECTION_SCENARIO===value ? "active" : ""}" onclick="setProjectionScenario('${value}')">${label}</button>`).join("") +
+  `</div>`;
+}
+
+function setProjectionScenario(value) {
+  PROJECTION_SCENARIO = value;
+  localStorage.setItem("pa_projection_scenario", value);
+  renderMembership();
+}
+
+function renderMembership() {
+  const ref = enrich(latestActiveRow());
+  if(!ref) { document.getElementById("membershipSection").classList.add("hidden"); return; }
+  document.getElementById("membershipSection").classList.remove("hidden");
+  const annual = annualData(ref);
+  const target = targetMonthData(ref);
+  const scenarioRate = projectionScenarioRate(ref);
+  const scenarioLabel = projectionScenarioLabel(ref);
+  const proj = projectionData({...ref, projectionFactor: 1 + scenarioRate});
+  const prevDec = BY_YEAR_MONTH[(ref.year-1)+"-12"];
+  const annualGrowth = prevDec?.activeGolfers ? (ref.activeGolfers-prevDec.activeGolfers)/prevDec.activeGolfers : null;
+  const targetLast = target[target.length-1];
+  const decProj = proj?.projected?.length ? proj.projected[proj.projected.length-1].value : null;
+
+  const sameMonthPrior = BY_YEAR_MONTH[(ref.year-1) + "-" + monthNum(ref.month)];
+  const prevMonthNum = monthNum(ref.month) === 1 ? 12 : monthNum(ref.month) - 1;
+  const prevMonthYear = monthNum(ref.month) === 1 ? ref.year - 1 : ref.year;
+  const prevMonthRow = BY_YEAR_MONTH[prevMonthYear + "-" + prevMonthNum];
+
+  const relChange = (curr, prior) => (curr != null && prior != null && Number(prior) !== 0) ? (curr - prior) / prior : null;
+  const share = (num, denom) => (num != null && denom != null && Number(denom) !== 0) ? num / denom : null;
+  const changeMarkup = (change, basisLabel) => {
+    if(change == null || !basisLabel) return "";
+    const cls = change > 0 ? "positive" : change < 0 ? "negative" : "neutral";
+    const arrow = change > 0 ? "▲" : change < 0 ? "▼" : "•";
+    return `<div class="dashboard-summary-change ${cls}">${arrow} ${pct(change)} vs ${basisLabel}</div>`;
+  };
+  const summaryMetric = (label, value, changeHtml, sub) => `
+    <div>
+      <div class="dashboard-summary-label">${label}</div>
+      <div class="dashboard-summary-value">${value}</div>
+      ${changeHtml || ""}
+      <div class="dashboard-summary-sub">${sub}</div>
+    </div>
+  `;
+
+  const activeChange = ref.yoyActivePct;
+  const newGolfersChange = relChange(ref.newGolfers, sameMonthPrior?.newGolfers);
+  const ytdNewGolfersChange = ref.ytdNewPct;
+  const onTimeRenewalChange = relChange(ref.onTimeRenewalRate, sameMonthPrior?.onTimeRenewalRate);
+  const rollingRetentionChange = relChange(ref.retentionRate, prevMonthRow?.retentionRate);
+  const reactivationsChange = relChange(ref.reactivations, sameMonthPrior?.reactivations);
+  const ytdReactivationsChange = ref.ytdReactivationsPct;
+
+  document.getElementById("membershipHero").innerHTML = `
+    <div>
+      <div class="summary-strip-top">
+        <div class="summary-strip-copy">
+          <div class="dashboard-summary-title">Membership Summary – Through ${ref.month} 1, ${ref.year}</div>
+          
+        </div>
+      </div>
+
+      <div class="dashboard-summary-grid">
+        <div class="dashboard-summary-group membership">
+          <div class="dashboard-summary-group-title">Membership</div>
+          <div class="dashboard-summary-metrics">
+            ${summaryMetric("Active GC golfers", fmt(ref.activeGolfers), changeMarkup(activeChange, `${ref.month} ${ref.year-1}`), "Current total")}
+            ${summaryMetric("Growth so far", fmt(annualGrowth,'percent'), "", `Vs Dec ${ref.year-1}`)}
+          </div>
+        </div>
+
+        <div class="dashboard-summary-group acquisition">
+          <div class="dashboard-summary-group-title">Acquisition</div>
+          <div class="dashboard-summary-metrics">
+            ${summaryMetric("New golfers", fmt(ref.newGolfers), changeMarkup(newGolfersChange, `${ref.month} ${ref.year-1}`), `${ref.month} ${ref.year}`)}
+            ${summaryMetric("YTD new golfers", fmt(ref.ytdNewGolfers), changeMarkup(ytdNewGolfersChange, `Jan–${ref.month} ${ref.year-1}`), `Jan through ${ref.month}`)}
+          </div>
+          <a class="dashboard-summary-link" onclick="setTab('acquisition')">Open Acquisition →</a>
+        </div>
+
+        <div class="dashboard-summary-group retention">
+          <div class="dashboard-summary-group-title">Retention</div>
+          <div class="dashboard-summary-metrics">
+            ${summaryMetric("On-time renewal", fmt(ref.onTimeRenewalRate,'percent'), changeMarkup(onTimeRenewalChange, `${ref.month} ${ref.year-1}`), "Current month")}
+            ${summaryMetric("12M retention", fmt(ref.retentionRate,'percent'), changeMarkup(rollingRetentionChange, `${prevMonthRow?.month} ${prevMonthRow?.year}`), "Rolling rate")}
+          </div>
+          <a class="dashboard-summary-link" onclick="setTab('retention')">Open Retention →</a>
+        </div>
+
+        <div class="dashboard-summary-group recovery">
+          <div class="dashboard-summary-group-title">Recovery</div>
+          <div class="dashboard-summary-metrics">
+            ${summaryMetric("Reactivations", fmt(ref.reactivations), changeMarkup(reactivationsChange, `${ref.month} ${ref.year-1}`), `${ref.month} ${ref.year}`)}
+            ${summaryMetric("Reactivations YTD", fmt(ref.ytdReactivations), changeMarkup(ytdReactivationsChange, `Jan–${ref.month} ${ref.year-1}`), `Jan through ${ref.month}`)}
+          </div>
+          <a class="dashboard-summary-link" onclick="setTab('recovery')">Open Recovery →</a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("annualCard").innerHTML = `
+    <div class="card-head">
+      <div>
+        <h3>Total Membership Growth</h3>
+      </div>
+    </div>
+    <div class="square-exec-top">
+      <div class="square-exec-story inline">
+        <div class="square-exec-hero">${pct(annualGrowth)}</div>
+        <div class="square-exec-chip-label">Growth so far this year</div>
+      </div>
+    </div>
+    <div class="square-exec-copy">
+      <strong>${fmt(ref.activeGolfers)}</strong> active GC golfers through <strong>${ref.month} ${ref.year}</strong>, compared with <strong>${fmt(prevDec?.activeGolfers)}</strong> at year-end ${ref.year-1}.
+    </div>
+    ${executiveMiniBarChart(annual, "Total Membership Growth")}
+`;
+
+  normalizeYoyRef();
+  const yoyBase = BY_YEAR_MONTH[YOY_REF.year + "-" + YOY_REF.month];
+  const yoyRef = enrich(yoyBase);
+  const yoyTarget = targetMonthData(yoyRef);
+  const isYoyCurrent = rowIdx(yoyRef) === rowIdx(ref);
+  const yoyVerb = isYoyCurrent ? "is" : "was";
+  const totalVerb = isYoyCurrent ? "is" : "was";
+  const totalLabel = isYoyCurrent ? "Current total" : `${yoyRef.month}'s total`;
+
+  document.getElementById("targetMonthCard").innerHTML = `
+    <div class="card-head">
+      <div>
+        <h3>Year Over Year Growth</h3>
+        <div class="card-sub">Same month across years, back to 2022.</div>
+      </div>
+      ${yoyControls()}
+    </div>
+    <div class="square-exec-top">
+      <div class="square-exec-story inline">
+        <div class="square-exec-hero">${pct(yoyRef.yoyActivePct)}</div>
+        <div class="square-exec-chip-label">Year-over-year growth</div>
+      </div>
+    </div>
+    <div class="square-exec-copy">
+      <strong>${yoyRef.month} ${yoyRef.year}</strong> ${yoyVerb} up <strong>${fmt(yoyRef.yoyActiveChange)}</strong> golfers from <strong>${yoyRef.month} ${yoyRef.year-1}</strong>. ${totalLabel} ${totalVerb} <strong>${fmt(yoyRef.activeGolfers)}</strong>.
+    </div>
+    ${executiveMiniBarChart(yoyTarget, yoyRef.month + " Membership by Year")}
+`;
+
+  document.getElementById("projectionCard").innerHTML = `
+    <div class="card-head">
+      <div>
+        <h3>${ref.year} Year-End Projection</h3>
+      </div>
+      ${projectionScenarioControls(ref)}
+    </div>
+    <div class="square-exec-top">
+      <div class="square-exec-story inline">
+        <div class="square-exec-hero" style="color:#1f2937">${fmt(decProj)}</div>
+        <div class="square-exec-chip-label">(${pct(scenarioRate,1)} growth) projected by EOY</div>
+      </div>
+    </div>
+    <div class="square-exec-copy">
+      Actuals through <strong>${ref.month}</strong>. Projection uses the <strong>${scenarioLabel}</strong> growth scenario versus prior-year remaining months.
+    </div>
+    ${projectionChart(proj)}
+`;
+}
+
+function updateSections() {
+  [["acquisitionSection",["newGolfersCard","ytdNewGolfersCard"]],["retentionSection",["renewalCard","retentionCard"]],["recoverySection",["reactivationsCard","ytdReactivationsCard"]]].forEach(([sectionId,cards]) => {
+    const visible = cards.some(id => !document.getElementById(id).classList.contains("hidden"));
+    document.getElementById(sectionId).classList.toggle("hidden", !visible);
+  });
+}
+function renderRetentionSection() {
+  const ref = enrich(latestActiveRow());
+  const highlightsCard = document.getElementById('retentionHighlights');
+  const renewalCard = document.getElementById('renewalCard');
+  const retentionCard = document.getElementById('retentionCard');
+  if(!ref || !highlightsCard || !renewalCard || !retentionCard) return;
+
+  const month = monthNum(ref.month);
+  const priorYearRow = enrich(BY_YEAR_MONTH[(ref.year - 1) + '-' + month]);
+  const prevMonthRow = month > 1 ? enrich(BY_YEAR_MONTH[ref.year + '-' + (month - 1)]) : null;
+  const priorRetentionNotRenewed = priorYearRow?.priorYearActiveGolfers != null && priorYearRow?.retainedGolfers != null ? (priorYearRow.priorYearActiveGolfers - priorYearRow.retainedGolfers) : null;
+  const retentionNotRenewed = ref.priorYearActiveGolfers != null && ref.retainedGolfers != null ? (ref.priorYearActiveGolfers - ref.retainedGolfers) : null;
+
+  const renewalRowsAll = genericRows('onTimeRenewalRate', 'renewalCard');
+  const renewalRows = filterRowsByVisibleYears(renewalRowsAll, 'renewalCard', ref);
+  const renewalPref = CHART_PREFS['renewalCard'] || 'line';
+
+  const retentionRowsAll = genericRows('retentionRate', 'retentionCard');
+  const retentionRows = filterRowsByVisibleYears(retentionRowsAll, 'retentionCard', ref);
+  const retentionPref = CHART_PREFS['retentionCard'] || 'line';
+
+  const retainedChange = relChange(ref.retainedGolfers, priorYearRow?.retainedGolfers);
+  const onTimeChange = relChange(ref.onTimeRenewalRate, priorYearRow?.onTimeRenewalRate);
+  const rollingChange = relChange(ref.retentionRate, prevMonthRow?.retentionRate);
+
+  highlightsCard.className = 'retention-highlights';
+  highlightsCard.innerHTML = '';
+
+  const renewalControls = `<div class="toggle"><button class="${renewalPref==='bar'?'active':''}" onclick="setChart('renewalCard','bar')">Bar chart</button><button class="${renewalPref==='line'?'active':''}" onclick="setChart('renewalCard','line')">Line graph</button></div>${yearToggleControls('renewalCard', ref)}`;
+  const renewalCopyBits = [];
+  if(onTimeChange != null) renewalCopyBits.push(`${pct(onTimeChange)} vs ${ref.month} ${ref.year-1}.`);
+  if(ref.renewed != null && ref.upForRenewal != null) renewalCopyBits.push(`${fmt(ref.renewed)} of ${fmt(ref.upForRenewal)} golfers renewed on time.`);
+  const renewalCopy = renewalCopyBits.join(' ');
+  const renewalKpis = richKpiBlock([
+    {label:'On time renewal rate', value:ref.onTimeRenewalRate, format:'percent', changeHtml:kpiChangeMarkup(onTimeChange, `${ref.month} ${ref.year-1}`), sub:'Current month'},
+    {label:'Up for renewal', value:ref.upForRenewal, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.upForRenewal, priorYearRow?.upForRenewal), `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
+    {label:'Renewed', value:ref.renewed, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.renewed, priorYearRow?.renewed), `${ref.month} ${ref.year-1}`), sub:'On time renewals'},
+    {label:'Not renewed', value:ref.notRenewed, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.notRenewed, priorYearRow?.notRenewed), `${ref.month} ${ref.year-1}`), sub:'Not renewed on time'}
+  ]);
+
+  renewalCard.innerHTML = `
+    ${acquisitionStoryHeader('On-Time Renewal Rate', fmt(ref.onTimeRenewalRate, 'percent'), `ON-TIME RENEWAL RATE IN ${ref.month.toUpperCase()} ${ref.year}`, renewalCopy, renewalControls)}
+    ${renewalKpis}
+    ${genericChart(renewalRows, 'onTimeRenewalRate', renewalPref, 'percent')}
+  `;
+
+  const retentionControls = `<div class="toggle"><button class="${retentionPref==='bar'?'active':''}" onclick="setChart('retentionCard','bar')">Bar chart</button><button class="${retentionPref==='line'?'active':''}" onclick="setChart('retentionCard','line')">Line graph</button></div>${yearToggleControls('retentionCard', ref)}`;
+  const retentionCopyBits = [];
+  if(rollingChange != null) retentionCopyBits.push(`${pct(rollingChange)} vs ${prevMonthRow.month} ${prevMonthRow.year}.`);
+  if(ref.retainedGolfers != null && ref.priorYearActiveGolfers != null) retentionCopyBits.push(`Equivalent to ${fmt(ref.retainedGolfers)} retained golfers from the prior-year active base of ${fmt(ref.priorYearActiveGolfers)}.`);
+  const retentionCopy = retentionCopyBits.join(' ');
+  const retentionKpis = richKpiBlock([
+    {label:'12M retention', value:ref.retentionRate, format:'percent', changeHtml:kpiChangeMarkup(rollingChange, prevMonthRow ? `${prevMonthRow.month} ${prevMonthRow.year}` : `${ref.month} ${ref.year}`), sub:'Rolling rate'},
+    {label:'Up for renewal during the last 12 months', value:ref.priorYearActiveGolfers, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.priorYearActiveGolfers, priorYearRow?.priorYearActiveGolfers), `${ref.month} ${ref.year-1}`), sub:'Prior-year active base'},
+    {label:'Retained golfers', value:ref.retainedGolfers, format:'count', changeHtml:kpiChangeMarkup(retainedChange, `${ref.month} ${ref.year-1}`), sub:'Still active now'},
+    {label:'Not renewed', value:retentionNotRenewed, format:'count', changeHtml:kpiChangeMarkup(relChange(retentionNotRenewed, priorRetentionNotRenewed), `${ref.month} ${ref.year-1}`), sub:'No longer active'}
+  ]);
+
+  retentionCard.innerHTML = `
+    ${acquisitionStoryHeader('12-Month Rolling Retention', fmt(ref.retentionRate, 'percent'), '12-MONTH ROLLING RETENTION', retentionCopy, retentionControls)}
+    ${retentionKpis}
+    ${genericChart(retentionRows, 'retentionRate', retentionPref, 'percent')}
+  `;
+}
+
+function recoveryPacingSeries(ref) {
+  const refYear = ref.year;
+  const years = [2025, 2026].filter(y => y <= refYear);
+  return years.map(year => {
+    let running = 0;
+    const pts = [];
+    for(let m = 1; m <= 12; m++) {
+      const row = BY_YEAR_MONTH[year + '-' + m];
+      if(row?.reactivations != null) {
+        running += Number(row.reactivations);
+        pts.push({m, value: running});
+      }
+    }
+    return {year, pts, current: year === refYear};
+  }).filter(s => s.pts.length);
+}
+
+function recoveryPacingChart(ref) {
+  const series = recoveryPacingSeries(ref);
+  if(!series.length) return `<div class="empty-note">No reactivation pacing data for this selection.</div>`;
+  const visible = visibleYearsFor('ytdReactivationsCard', ref);
+  const filtered = series.filter(s => visible[s.year]);
+  if(!filtered.length) return `<div class="empty-note">Select at least one year.</div>`;
+  const w = 1220, h = 560, left = 78, right = 136, top = 16, bottom = 42;
+  const vals = [];
+  filtered.forEach(s => s.pts.forEach(pt => vals.push(pt.value)));
+  const maxVal = Math.max(...vals);
+  const step = maxVal <= 40000 ? 5000 : 10000;
+  const yMax = Math.ceil((maxVal * 1.12) / step) * step;
+  const plotW = w - left - right, plotH = h - top - bottom;
+  const x = m => left + (m - 1) * plotW / 11;
+  const y = v => h - bottom - (v / yMax) * plotH;
+  const colors = {2025:'#e0a81b',2026:'#e12d2d'};
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMin meet">`;
+  for(let t = 0; t <= yMax; t += step) {
+    svg += `<line class="gridline" x1="${left}" x2="${w-right}" y1="${y(t)}" y2="${y(t)}"></line>`;
+    svg += `<text class="axis-label" x="${left-12}" y="${y(t)+4}" text-anchor="end">${t ? Math.round(t).toLocaleString() : '0'}</text>`;
+  }
+  for(let m = 1; m <= 12; m++) {
+    svg += `<line class="gridline" x1="${x(m)}" x2="${x(m)}" y1="${top}" y2="${h-bottom}"></line>`;
+    svg += `<text class="axis-label" x="${x(m)}" y="${h-bottom+22}" text-anchor="middle">${monthName(m).slice(0,3)}</text>`;
+  }
+  svg += `<line class="axis" x1="${left}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+
+  filtered.forEach(s => {
+    const color = colors[s.year] || '#64748b';
+    const path = s.pts.map((pt,i)=>`${i?'L':'M'} ${x(pt.m)} ${y(pt.value)}`).join(' ');
+    svg += `<path d="${path}" fill="none" stroke="${color}" stroke-width="${s.current ? 4 : 3.25}"></path>`;
+    s.pts.forEach((pt, idx) => {
+      const r = (s.current && idx === s.pts.length - 1) ? 6 : 4.5;
+      const fill = s.current ? color : '#ffffff';
+      svg += `<circle class="tiptarget" data-tip="${tooltip(['Cumulative reactivations','<strong>'+fmt(pt.value)+'</strong>', monthName(pt.m) + ' ' + s.year, 'Year: ' + s.year])}" cx="${x(pt.m)}" cy="${y(pt.value)}" r="${r}" fill="${fill}" stroke="${color}" stroke-width="2.5"></circle>`;
+    });
+    const last = s.pts[s.pts.length - 1];
+    if(!last) return;
+    if(s.current) {
+      const cx = x(last.m), cy = y(last.value);
+      const calloutX = Math.max(left + 22, cx - 126);
+      const calloutY = cy - 84;
+      const leaderStartX = calloutX + 86;
+      const leaderStartY = calloutY + 10;
+      const labelText = `${s.year} YTD - ${fmtShort(last.value).toLowerCase()}`;
+      svg += `<circle cx="${cx}" cy="${cy}" r="14" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="6 5"></circle>`;
+      svg += `<path d="M ${leaderStartX} ${leaderStartY} L ${cx-8} ${cy-10}" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"></path>`;
+      svg += `<text class="legend" x="${calloutX}" y="${calloutY}" text-anchor="start" style="font-size:15px;font-weight:950;fill:#ef4444">${labelText}</text>`;
+    } else {
+      const ly = y(last.value);
+      svg += `<text class="legend" x="${w-right-42}" y="${ly-8}" style="font-size:13px;font-weight:900;fill:${color}">${s.year}</text>`;
+      svg += `<text class="value-label" x="${w-right+8}" y="${ly+4}" style="font-size:14px;font-weight:950">${fmtShort(last.value)}</text>`;
+    }
+  });
+
+  svg += `</svg>`;
+  return `<div class="chart short">${svg}</div>`;
+}
+
+function renderRecoverySection() {
+  const ref = enrich(latestActiveRow());
+  const highlightsCard = document.getElementById('recoveryHighlights');
+  const monthlyCard = document.getElementById('reactivationsCard');
+  const pacingCard = document.getElementById('ytdReactivationsCard');
+  if(!ref || !highlightsCard || !monthlyCard || !pacingCard) return;
+
+  const priorMonth = BY_YEAR_MONTH[(ref.year-1) + '-' + monthNum(ref.month)];
+  const monthlyRowsAll = genericRows('reactivations', 'reactivationsCard');
+  const monthlyRows = filterRowsByVisibleYears(monthlyRowsAll, 'reactivationsCard', ref);
+  const monthlyPref = CHART_PREFS['reactivationsCard'] || 'line';
+
+  const monthlyShare = safeShare(ref.reactivations, ref.activeGolfers);
+  const priorMonthlyShare = safeShare(priorMonth?.reactivations, priorMonth?.activeGolfers);
+  const ytdShare = safeShare(ref.ytdReactivations, ref.activeGolfers);
+  const priorYtdShare = safeShare(ref.priorYtdReactivations, priorMonth?.activeGolfers);
+
+  highlightsCard.className = 'acquisition-highlights';
+  highlightsCard.innerHTML = richKpiBlock([
+    {label:'Reactivations', value:ref.reactivations, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.reactivations, priorMonth?.reactivations), `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
+    {label:'Reactivations YTD', value:ref.ytdReactivations, format:'count', changeHtml:kpiChangeMarkup(ref.ytdReactivationsPct, `Jan–${ref.month} ${ref.year-1}`), sub:`Jan through ${ref.month}`},
+    {label:'YTD as % of active', value:ytdShare, format:'percent', changeHtml:kpiChangeMarkup(relChange(ytdShare, priorYtdShare), `${ref.month} ${ref.year-1}`), sub:'Current active base'},
+    {label:'Monthly as % of active', value:monthlyShare, format:'percent', changeHtml:kpiChangeMarkup(relChange(monthlyShare, priorMonthlyShare), `${ref.month} ${ref.year-1}`), sub:'Selected month share'}
+  ]);
+
+  const monthlyCopy = `${pct(relChange(ref.reactivations, priorMonth?.reactivations))} vs ${ref.month} ${ref.year-1}.`;
+  const ytdCopy = `${pct(ref.ytdReactivationsPct)} vs Jan–${ref.month} ${ref.year-1}.`;
+  const monthlyControls = `<div class="toggle"><button class="${monthlyPref==='bar'?'active':''}" onclick="setChart('reactivationsCard','bar')">Bar chart</button><button class="${monthlyPref==='line'?'active':''}" onclick="setChart('reactivationsCard','line')">Line graph</button></div>${yearToggleControls('reactivationsCard', ref)}`;
+
+  monthlyCard.innerHTML = `
+    ${acquisitionStoryHeader('Monthly Reactivations', fmt(ref.reactivations), `REACTIVATIONS IN ${ref.month.toUpperCase()} ${ref.year}`, monthlyCopy, monthlyControls)}
+    ${genericChart(monthlyRows, 'reactivations', monthlyPref, 'count')}
+  `;
+
+  pacingCard.innerHTML = `
+    ${acquisitionStoryHeader('Reactivations YTD Cumulative', fmt(ref.ytdReactivations), 'REACTIVATIONS YTD', ytdCopy, yearToggleControls('ytdReactivationsCard', ref))}
+    ${recoveryPacingChart(ref)}
+  `;
+}
+
+function renderOtherSections() {
+  renderAcquisitionSection();
+  renderRetentionSection();
+  renderRecoverySection();
+  updateSections();
+}
+
+function renderNote() {
+  const ref = latestActiveRow();
+
+}
+function render() {
+  renderMembership();
+  renderOtherSections();
+  renderNote();
+}
+function initControls() {
+  // Global date controls removed. Widgets own their reporting-month controls.
+}
+
+function setTab(tabName) {
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tab === tabName);
+  });
+  document.querySelectorAll(".tab-panel").forEach(panel => {
+    panel.classList.toggle("active", panel.id === "tab-" + tabName);
+  });
+  localStorage.setItem("pa_active_tab", tabName);
+}
+
+function initTabs() {
+  const saved = localStorage.getItem("pa_active_tab") || "summary";
+  setTab(saved);
+}
+
+document.addEventListener("mouseover", e => {
+  const t = e.target.closest(".tiptarget");
+  if(!t) return;
+  const tt = document.getElementById("tooltip");
+  tt.innerHTML = t.dataset.tip || "";
+  tt.style.display = "block";
+});
+document.addEventListener("mousemove", e => {
+  const tt = document.getElementById("tooltip");
+  if(tt.style.display === "block") {
+    tt.style.left = (e.clientX + 14) + "px";
+    tt.style.top = (e.clientY + 14) + "px";
+  }
+});
+document.addEventListener("mouseout", e => {
+  if(e.target.closest(".tiptarget")) document.getElementById("tooltip").style.display = "none";
+});
+initControls();
+render();
+initTabs();
+
+</script>
 </body>
 </html>
