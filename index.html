@@ -1332,6 +1332,109 @@ svg{height:100%;width:100%;overflow:visible}
   }
 }
 
+.acquisition-yoy-card .chart{
+  flex:1;
+  min-height:0;
+  width:100%;
+}
+.yoy-chart-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:18px;
+  flex-wrap:wrap;
+  margin-bottom:6px;
+}
+.yoy-chart-title{
+  font-size:24px;
+  font-weight:950;
+  color:#1f2937;
+  margin:0 0 4px;
+}
+.yoy-chart-sub{
+  font-size:13px;
+  color:#435a78;
+  margin:0;
+}
+.yoy-story{
+  margin:16px 0 14px;
+}
+.yoy-story-main{
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.yoy-story-value{
+  font-size:46px;
+  line-height:1;
+  font-weight:950;
+  color:#14395f;
+  letter-spacing:-1.2px;
+}
+.yoy-story-label{
+  font-size:13px;
+  color:#5b6f8b;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.yoy-story-copy{
+  margin-top:8px;
+  font-size:13px;
+  color:#334155;
+}
+.yoy-compare-pill{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid #d7dee9;
+  background:#f8fafc;
+  border-radius:13px;
+  padding:8px 10px;
+  color:#435a78;
+  font-size:12px;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.yoy-compare-pill span{
+  color:#0f172a;
+  background:#ffffff;
+  border:1px solid #d7dee9;
+  border-radius:9px;
+  padding:8px 14px;
+  text-transform:none;
+  letter-spacing:0;
+  font-size:13px;
+}
+.yoy-bar-label{
+  fill:#334155;
+  font-size:22px;
+  font-weight:950;
+}
+.yoy-axis-label{
+  fill:#5b6f8b;
+  font-size:18px;
+  font-weight:800;
+}
+.yoy-growth-pill{
+  fill:#ffffff;
+  stroke:#d8e1ec;
+  stroke-width:2;
+  filter:drop-shadow(0 2px 3px rgba(15,23,42,.12));
+}
+.yoy-growth-text{
+  fill:#40516b;
+  font-size:18px;
+  font-weight:950;
+}
+.yoy-year-label{
+  fill:#5b6f8b;
+  font-size:20px;
+  font-weight:950;
+}
+
 </style>
 </head>
 <body>
@@ -1371,6 +1474,8 @@ svg{height:100%;width:100%;overflow:visible}
     <h2 class="section-title">Acquisition</h2>
     <div id="acquisitionHighlights"></div>
     <div class="grid">
+      <div class="card full acquisition-card" id="newGolfersMonthlyYoyBarCard"></div>
+      <div class="card full acquisition-card" id="newGolfersYoyBarCard"></div>
       <div class="card full acquisition-card" id="newGolfersCard"></div>
       <div class="card full acquisition-card" id="ytdNewGolfersCard"></div>
     </div>
@@ -1417,7 +1522,7 @@ svg{height:100%;width:100%;overflow:visible}
         <div class="card-head">
           <div>
             <h3>Status Segmentation</h3>
-            <div class="card-sub">Active, inactive, and archived golfer snapshot for the selected club segment.</div>
+            <div class="card-sub">Active, inactive, and archived GC golfer snapshot for the selected club segment.</div>
           </div>
         </div>
         <div id="segmentationHighlights"></div>
@@ -1425,7 +1530,7 @@ svg{height:100%;width:100%;overflow:visible}
       <div class="card half retention-card" id="activeSegmentationCard">
         <div class="card-head">
           <div>
-            <h3>Active Golfers</h3>
+            <h3>Active GC Golfers</h3>
             <div class="card-sub">Monthly active golfer trend for the selected club segment.</div>
           </div>
         </div>
@@ -1434,7 +1539,7 @@ svg{height:100%;width:100%;overflow:visible}
       <div class="card half retention-card" id="inactiveSegmentationCard">
         <div class="card-head">
           <div>
-            <h3>Inactive Golfers</h3>
+            <h3>Inactive GC Golfers</h3>
             <div class="card-sub">Monthly inactive golfer trend for the selected club segment.</div>
           </div>
         </div>
@@ -1820,6 +1925,8 @@ function renderAcquisitionSection() {
   const highlightsCard = document.getElementById('acquisitionHighlights');
   const monthlyCard = document.getElementById('newGolfersCard');
   const pacingCard = document.getElementById('ytdNewGolfersCard');
+  const monthlyYoyBarCard = document.getElementById('newGolfersMonthlyYoyBarCard');
+  const yoyBarCard = document.getElementById('newGolfersYoyBarCard');
   if(!ref || !highlightsCard || !monthlyCard || !pacingCard) return;
 
   const monthlyRowsAll = genericRows('newGolfers', 'newGolfersCard');
@@ -1845,14 +1952,158 @@ function renderAcquisitionSection() {
   const ytdCopy = `${pct(ref.ytdNewPct)} vs Jan–${ref.month} ${ref.year-1}.`;
 
   monthlyCard.innerHTML = `
-    ${acquisitionStoryHeader('Monthly New Golfers', fmt(ref.newGolfers), `NEW GOLFERS IN ${ref.month.toUpperCase()} ${ref.year}`, monthlyCopy, monthlyControls)}
+    ${acquisitionStoryHeader('New Golfers by Month', fmt(ref.newGolfers), `NEW GOLFERS IN ${ref.month.toUpperCase()} ${ref.year}`, monthlyCopy, monthlyControls)}
     ${genericChart(monthlyRows, 'newGolfers', monthlyPref, 'count')}
   `;
 
+  if(monthlyYoyBarCard) {
+    monthlyYoyBarCard.className = 'card full acquisition-card acquisition-yoy-card';
+    monthlyYoyBarCard.innerHTML = acquisitionMonthlyYoyBarCard(ref);
+  }
+
   pacingCard.innerHTML = `
-    ${acquisitionStoryHeader('New Golfer YTD Cumulative', fmt(ref.ytdNewGolfers), 'NEW GOLFERS YTD', ytdCopy, yearToggleControls('acquisitionPacingCard', ref))}
+    ${acquisitionStoryHeader('New Golfers YTD Pacing YoY', fmt(ref.ytdNewGolfers), 'NEW GOLFERS YTD', ytdCopy, yearToggleControls('acquisitionPacingCard', ref))}
     ${acquisitionPacingChart(ref)}
   `;
+
+  if(yoyBarCard) {
+    yoyBarCard.className = 'card full acquisition-card acquisition-yoy-card';
+    yoyBarCard.innerHTML = acquisitionYoyBarCard(ref);
+  }
+}
+
+
+function acquisitionYoyMonthlyData(ref) {
+  const m = monthNum(ref.month);
+  const out = [];
+  for(let y=2022; y<=ref.year; y++) {
+    const r = BY_YEAR_MONTH[y + '-' + m];
+    if(r && r.newGolfers != null) {
+      out.push({year:y,label:`${ref.month.slice(0,3)} '${String(y).slice(2)}`,value:r.newGolfers,current:y===ref.year});
+    }
+  }
+  out.forEach((d,i) => d.growth = i ? (d.value - out[i-1].value) / out[i-1].value : null);
+  return out;
+}
+
+function acquisitionMonthlyYoyBarCard(ref) {
+  const rows = acquisitionYoyMonthlyData(ref);
+  const prior = rows.length > 1 ? rows[rows.length - 2] : null;
+  const current = rows[rows.length - 1];
+  const growth = current && prior ? (current.value - prior.value) / prior.value : null;
+  const delta = current && prior ? current.value - prior.value : null;
+  const monthLabel = ref.month;
+  const yearLabel = String(ref.year);
+  const trendWord = growth == null ? '' : (growth >= 0 ? 'up' : 'down');
+  const copy = current && prior
+    ? `${monthLabel} ${yearLabel} is ${trendWord} ${fmt(Math.abs(delta))} new golfers from ${monthLabel} ${prior.year}. Current monthly total is ${fmt(current.value)}.`
+    : `Current monthly total is ${fmt(current?.value || 0)}.`;
+  return `
+    <div class="yoy-chart-head">
+      <div>
+        <h3 class="yoy-chart-title">New Golfers — ${monthLabel} YoY</h3>
+        <p class="yoy-chart-sub">Same month across years, back to 2022.</p>
+      </div>
+      <div class="yoy-compare-pill">Compare <span>${monthLabel}</span><span>${yearLabel}</span></div>
+    </div>
+    <div class="yoy-story">
+      <div class="yoy-story-main">
+        <div class="yoy-story-value">${pct(growth)}</div>
+        <div class="yoy-story-label">Year-over-year monthly growth</div>
+      </div>
+      <div class="yoy-story-copy">${copy}</div>
+    </div>
+    ${acquisitionYoyBarChart(rows, `New Golfers — ${monthLabel} YoY`)}
+  `;
+}
+
+function acquisitionYoyYtdData(ref) {
+  const m = monthNum(ref.month);
+  const out = [];
+  for(let y=2022; y<=ref.year; y++) {
+    let value = 0;
+    let hasData = false;
+    for(let mm=1; mm<=m; mm++) {
+      const r = BY_YEAR_MONTH[y + '-' + mm];
+      if(r && r.newGolfers != null) {
+        value += r.newGolfers;
+        hasData = true;
+      }
+    }
+    if(hasData) out.push({year:y,label:`Jan–${ref.month.slice(0,3)} '${String(y).slice(2)}`,value:value,current:y===ref.year});
+  }
+  out.forEach((d,i) => d.growth = i ? (d.value - out[i-1].value) / out[i-1].value : null);
+  return out;
+}
+
+function acquisitionYoyBarCard(ref) {
+  const rows = acquisitionYoyYtdData(ref);
+  const prior = rows.length > 1 ? rows[rows.length - 2] : null;
+  const current = rows[rows.length - 1];
+  const growth = current && prior ? (current.value - prior.value) / prior.value : null;
+  const delta = current && prior ? current.value - prior.value : null;
+  const monthLabel = ref.month;
+  const yearLabel = String(ref.year);
+  const copy = current && prior
+    ? `${monthLabel} ${yearLabel} YTD is up ${fmt(delta)} new golfers from Jan–${monthLabel} ${prior.year}. Current YTD total is ${fmt(current.value)}.`
+    : `Current YTD total is ${fmt(current?.value || 0)}.`;
+  return `
+    <div class="yoy-chart-head">
+      <div>
+        <h3 class="yoy-chart-title">New Golfers Cumulative YoY (Jan–${monthLabel})</h3>
+        <p class="yoy-chart-sub">Year-over-year cumulative acquisition through ${monthLabel}.</p>
+      </div>
+      <div class="yoy-compare-pill">Compare <span>${monthLabel}</span><span>${yearLabel}</span></div>
+    </div>
+    <div class="yoy-story">
+      <div class="yoy-story-main">
+        <div class="yoy-story-value">${pct(growth)}</div>
+        <div class="yoy-story-label">Year-over-year YTD growth</div>
+      </div>
+      <div class="yoy-story-copy">${copy}</div>
+    </div>
+    ${acquisitionYoyBarChart(rows, `New Golfers Cumulative YoY (Jan–${monthLabel})`)}
+  `;
+}
+
+function acquisitionYoyBarChart(data, title) {
+  if(!data.length) return `<div class="empty-note">No acquisition data for this selection.</div>`;
+  const w = 1100, h = 500, left = 90, right = 34, top = 36, bottom = 70;
+  const maxVal = Math.max(...data.map(d => d.value));
+  const tick = maxVal > 100000 ? 20000 : 10000;
+  const yMax = Math.ceil(maxVal / tick) * tick;
+  const plotW = w - left - right;
+  const plotH = h - top - bottom;
+  const slot = plotW / data.length;
+  const bw = Math.min(116, slot * 0.58);
+  const y = v => h - bottom - (v / yMax) * plotH;
+  const axisFmt = v => v ? (v / 1000).toFixed(0) + 'K' : '0';
+  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMin meet">`;
+  for(let t=0; t<=yMax; t+=tick) {
+    const yy = y(t);
+    svg += `<line class="gridline" x1="${left}" x2="${w-right}" y1="${yy}" y2="${yy}"></line>`;
+    svg += `<text class="yoy-axis-label" x="${left-14}" y="${yy+6}" text-anchor="end">${axisFmt(t)}</text>`;
+  }
+  svg += `<line class="axis" x1="${left}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+  data.forEach((d,i) => {
+    const x = left + i * slot + (slot - bw) / 2;
+    const yy = y(d.value);
+    const barH = h - bottom - yy;
+    const cls = d.current ? 'bar-current' : 'bar-muted';
+    const tip = tooltip([title, `<strong>${fmt(d.value)}</strong>`, d.label, d.growth != null ? `Growth vs prior: ${pct(d.growth)}` : null]);
+    svg += `<rect class="${cls} tiptarget" data-tip="${tip}" x="${x}" y="${yy}" width="${bw}" height="${barH}" rx="14"></rect>`;
+    svg += `<text class="yoy-bar-label" x="${x+bw/2}" y="${Math.max(yy-14, top+22)}" text-anchor="middle">${fmtShort(d.value)}</text>`;
+    svg += `<text class="yoy-year-label" x="${x+bw/2}" y="${h-18}" text-anchor="middle">${d.label}</text>`;
+    if(d.growth != null) {
+      const pillW = 104, pillH = 36;
+      const px = x + bw/2 - pillW/2;
+      const py = Math.max(yy + 20, top + 8);
+      svg += `<rect class="yoy-growth-pill" x="${px}" y="${py}" width="${pillW}" height="${pillH}" rx="18"></rect>`;
+      svg += `<text class="yoy-growth-text" x="${x+bw/2}" y="${py+24}" text-anchor="middle">${pct(d.growth)}</text>`;
+    }
+  });
+  svg += `</svg>`;
+  return `<div class="chart tall">${svg}</div>`;
 }
 
 function annualData(ref) {
@@ -3028,14 +3279,14 @@ function renderSegmentationSection() {
   if(highlights) {
     highlights.className = 'segmentation-card-kpis';
     highlights.innerHTML = richKpiBlock([
-      {label:'Active golfers', value:latest.activeGolfers, format:'count', sub:latest.label},
-      {label:'Inactive golfers', value:latest.inactiveGolfers, format:'count', sub:'Inactive status'},
+      {label:'Active GC golfers', value:latest.activeGolfers, format:'count', sub:latest.label},
+      {label:'Inactive GC golfers', value:latest.inactiveGolfers, format:'count', sub:'Inactive status'},
       {label:'Inactive share', value:latest.inactiveShare, format:'percent', sub:'Of total golfers'},
-      {label:'Archived golfers', value:latest.archivedGolfers, format:'count', sub:'Tracked separately'}
+      {label:'Archived GC golfers', value:latest.archivedGolfers, format:'count', sub:'Tracked separately'}
     ]);
   }
-  if(activeChart) activeChart.innerHTML = renderSegmentationChartWithInsight(rows, 'activeGolfers', 'Active golfers');
-  if(inactiveChart) inactiveChart.innerHTML = renderSegmentationChartWithInsight(rows, 'inactiveGolfers', 'Inactive golfers');
+  if(activeChart) activeChart.innerHTML = renderSegmentationChartWithInsight(rows, 'activeGolfers', 'Active GC golfers');
+  if(inactiveChart) inactiveChart.innerHTML = renderSegmentationChartWithInsight(rows, 'inactiveGolfers', 'Inactive GC golfers');
   if(genderBreakdown) genderBreakdown.innerHTML = renderSegmentationBreakdown(selected, 'Gender');
   if(ageBreakdown) ageBreakdown.innerHTML = renderSegmentationAgeHighlight(selected) + renderSegmentationBreakdown(selected, 'Age');
 }
