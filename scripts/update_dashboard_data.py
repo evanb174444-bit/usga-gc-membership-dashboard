@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Phase 2 preview for the monthly dashboard data updater.
+"""Dry-run preview for the monthly dashboard data updater.
 
 This phase validates the monthly input package, loads the existing cumulative
-JSON state, calculates one membership-month record, plans a backup location,
-and prints a QA summary. JSON writes are intentionally disabled.
+JSON state, calculates membership and segmentation outputs, plans a backup
+location, and prints a QA summary. JSON writes are intentionally disabled.
 
 Reporting convention
 --------------------
@@ -19,12 +19,14 @@ snapshot and calculates the June 2026 dashboard record.
 from __future__ import annotations
 
 import argparse
+import calendar
 import csv
 import json
 import math
 import re
 import sys
 import zipfile
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -39,8 +41,6 @@ REQUIRED_INPUT_FILENAMES = {
     "three-months-prior GC golfer clubs": "Three-Months-Prior_GC Golfer Clubs.csv",
     "marketing workbook": "marketing_workbook.xlsx",
 }
-
-OPTIONAL_MEMBERSHIP_INPUT_LABEL = "current GC golfer clubs"
 
 EXISTING_JSON_FILENAMES = (
     "membership_monthly.json",
@@ -101,6 +101,35 @@ RENEWAL_ELIGIBILITY_REQUIRED_HEADERS = {
     "golfer_id",
     "status",
     "inactive_date",
+}
+
+SEGMENTATION_BREAKDOWN_REQUIRED_HEADERS = {
+    "club_name",
+    "status",
+    "gender",
+    "date_of_birth",
+}
+
+SEGMENTATION_STATUSES = ("Active", "Archived", "Inactive")
+AGE_SEGMENTS = (
+    "18–24",
+    "25–34",
+    "35–44",
+    "45–54",
+    "55–64",
+    "65+",
+    "Under 18",
+    "Unknown",
+)
+GENDER_SEGMENTS = ("Female", "Male", "Unknown")
+MAX_PLAUSIBLE_AGE = 120
+
+RETENTION_COHORT_YEARS = (2022, 2023, 2024)
+RETENTION_MILESTONE_MONTHS = (13, 25, 37)
+RETENTION_COHORT_COLORS = {
+    2022: "#14395f",
+    2023: "#d85a32",
+    2024: "#188552",
 }
 
 MEMBERSHIP_PARITY_METRICS = (
@@ -174,6 +203,45 @@ class MetricGrainCount:
     distinct_golfers: int
 
 
+@dataclass(frozen=True)
+class SegmentationDiagnostics:
+    output_filename: str
+    source_label: str
+    source_rows: int
+    target_records: int
+    existing_target_records: int
+    merged_records: int
+    preserved_historical_records: int
+    clubs: int
+    status_counts: dict[str, int]
+    missing_gender_rows: int = 0
+    unknown_gender_rows: int = 0
+    missing_birth_date_rows: int = 0
+    implausible_birth_date_rows: int = 0
+
+
+@dataclass(frozen=True)
+class RetentionDiagnostics:
+    source_rows: int
+    status_counts: dict[str, int]
+    missing_creation_dates: int
+    missing_inactive_status_dates: int
+    invalid_status_dates_by_status: dict[str, int]
+    cohort_created: dict[int, int]
+    cohort_active_today: dict[int, int]
+    cohort_milestones: dict[tuple[int, int], int | None]
+    baseline_created: dict[int, int]
+    baseline_active_today: dict[int, int]
+    baseline_milestones: dict[tuple[int, int], int | None]
+    club_count: int
+    club_created_total: int
+    baseline_club_created_total: int
+    exact_club_total_matches: int
+    maximum_club_total_difference: int
+    identical_rank_positions: int
+    maximum_rank_shift: int
+
+
 @dataclass
 class QAReport:
     report_month: str
@@ -191,6 +259,10 @@ class QAReport:
     parity_baseline_label: str | None = None
     parity_baseline_is_fallback: bool = False
     calculation_notes: list[str] = field(default_factory=list)
+    segmentation_diagnostics: list[SegmentationDiagnostics] = field(
+        default_factory=list
+    )
+    retention_diagnostics: RetentionDiagnostics | None = None
 
     def add_check(self, name: str, status: str, detail: str) -> None:
         self.checks.append((name, status, detail))
@@ -217,7 +289,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         description=(
             "Validate a monthly dashboard input package and plan a cumulative "
             "JSON update. --month is the report month; the dashboard output month "
-            "is the prior calendar month. Phase 2 does not write JSON."
+            "is the prior calendar month. This preview does not write JSON."
         ),
         epilog=(
             "Example: --month 2026-07 reads data/raw/2026-07/ as the July 1, 2026 "
@@ -653,7 +725,6 @@ def discover_inputs(
         label: raw_directory / filename
         for label, filename in REQUIRED_INPUT_FILENAMES.items()
         if not (skip_marketing and label == "marketing workbook")
-        and label != OPTIONAL_MEMBERSHIP_INPUT_LABEL
     }
     missing = [path.name for path in required_paths.values() if not path.is_file()]
     if missing:
@@ -703,17 +774,6 @@ def discover_inputs(
                     sheet_count=sheet_count,
                 )
             )
-    optional_current_gc = (
-        raw_directory / REQUIRED_INPUT_FILENAMES[OPTIONAL_MEMBERSHIP_INPUT_LABEL]
-    )
-    if optional_current_gc.is_file():
-        summaries.append(
-            InputFileSummary(
-                label=OPTIONAL_MEMBERSHIP_INPUT_LABEL,
-                path=optional_current_gc,
-                size_bytes=optional_current_gc.stat().st_size,
-            )
-        )
     return summaries
 
 
@@ -824,6 +884,903 @@ def display_month(month: str) -> str:
 def display_report_date(report_month: str) -> str:
     year, month_number = target_year_month(report_month)
     return datetime(year, month_number, 1).strftime("%B 1, %Y")
+
+
+def normalize_segmentation_status(value: str, context: str) -> str:
+    """Map source status text to the three dashboard status labels."""
+    normalized = value.strip().lower()
+    mapping = {status.lower(): status for status in SEGMENTATION_STATUSES}
+    if normalized not in mapping:
+        raise ValidationError(
+            f"unsupported golfer status {value!r} in {context}; expected "
+            + ", ".join(SEGMENTATION_STATUSES)
+        )
+    return mapping[normalized]
+
+
+def normalize_gender_segment(value: str) -> tuple[str, bool, bool]:
+    """Return dashboard gender label plus missing/unrecognized diagnostics."""
+    normalized = value.strip().lower()
+    if normalized in {"f", "female"}:
+        return "Female", False, False
+    if normalized in {"m", "male"}:
+        return "Male", False, False
+    if not normalized:
+        return "Unknown", True, False
+    return "Unknown", False, True
+
+
+def age_segment(
+    birth_date_value: str,
+    report_date: date,
+    context: str,
+) -> tuple[str, bool, bool]:
+    """Bucket age as of the report date and flag missing/implausible dates."""
+    birth_date = parse_source_date(birth_date_value, context)
+    if birth_date is None:
+        return "Unknown", True, False
+    age = report_date.year - birth_date.year - (
+        (report_date.month, report_date.day)
+        < (birth_date.month, birth_date.day)
+    )
+    if age < 0 or age > MAX_PLAUSIBLE_AGE:
+        return "Unknown", False, True
+    if age < 18:
+        return "Under 18", False, False
+    if age <= 24:
+        return "18–24", False, False
+    if age <= 34:
+        return "25–34", False, False
+    if age <= 44:
+        return "35–44", False, False
+    if age <= 54:
+        return "45–54", False, False
+    if age <= 64:
+        return "55–64", False, False
+    return "65+", False, False
+
+
+def segmentation_club_names(snapshot: CsvSnapshot) -> list[str]:
+    """Return sorted source club names after rejecting blank club values."""
+    club_names: set[str] = set()
+    for row_number, row in enumerate(snapshot.rows, start=2):
+        club_name = row["club_name"].strip()
+        if not club_name:
+            raise ValidationError(
+                f"{snapshot.label} has a blank club_name at CSV row {row_number}"
+            )
+        club_names.add(club_name)
+    return sorted(club_names)
+
+
+def generate_segmentation_status_records(
+    report_month: str,
+    activity_month: str,
+    current_detail: CsvSnapshot,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """Generate All and club status records directly from Golfer Detail rows."""
+    require_headers(current_detail, {"club_name", "golfer_status"})
+    year, month_number = target_year_month(activity_month)
+    month_name = datetime(year, month_number, 1).strftime("%B")
+    report_date_label = display_report_date(report_month)
+    club_names = segmentation_club_names(current_detail)
+    counts: dict[str, Counter[str]] = defaultdict(Counter)
+
+    for row_number, row in enumerate(current_detail.rows, start=2):
+        club_name = row["club_name"].strip()
+        status = normalize_segmentation_status(
+            row["golfer_status"],
+            f"{current_detail.label} golfer_status at CSV row {row_number}",
+        )
+        counts["All"][status] += 1
+        counts[club_name][status] += 1
+
+    records: list[dict[str, Any]] = []
+    for club_name in ["All", *club_names]:
+        active = counts[club_name]["Active"]
+        inactive = counts[club_name]["Inactive"]
+        archived = counts[club_name]["Archived"]
+        total = active + inactive + archived
+        records.append(
+            {
+                "year": year,
+                "month": month_name,
+                "monthNum": month_number,
+                "label": report_date_label,
+                "reportDate": report_date_label,
+                "clubName": club_name,
+                "inactiveGolfers": inactive,
+                "activeGolfers": active,
+                "archivedGolfers": archived,
+                "totalGolfers": total,
+                "inactiveShare": inactive / total if total else 0.0,
+                "activeShare": active / total if total else 0.0,
+                "archivedShare": archived / total if total else 0.0,
+            }
+        )
+
+    validate_segmentation_status_records(records, len(club_names) + 1)
+    return records, {
+        status: counts["All"][status] for status in SEGMENTATION_STATUSES
+    }
+
+
+def validate_segmentation_status_records(
+    records: Sequence[dict[str, Any]],
+    expected_clubs: int,
+) -> None:
+    if len(records) != expected_clubs:
+        raise ValidationError(
+            f"segmentation_status.json generated {len(records)} records; "
+            f"expected {expected_clubs}"
+        )
+    keys: set[tuple[int, int, str]] = set()
+    for record in records:
+        key = (record["year"], record["monthNum"], record["clubName"])
+        if key in keys:
+            raise ValidationError(
+                f"segmentation_status.json generated duplicate key {key}"
+            )
+        keys.add(key)
+        component_total = sum(
+            record[field]
+            for field in (
+                "activeGolfers",
+                "inactiveGolfers",
+                "archivedGolfers",
+            )
+        )
+        if component_total != record["totalGolfers"]:
+            raise ValidationError(
+                f"segmentation status counts do not total for {record['clubName']}"
+            )
+        share_total = sum(
+            record[field]
+            for field in ("activeShare", "inactiveShare", "archivedShare")
+        )
+        expected_share = 1.0 if component_total else 0.0
+        if not math.isclose(share_total, expected_share, abs_tol=1e-12):
+            raise ValidationError(
+                f"segmentation status shares do not total for {record['clubName']}"
+            )
+
+
+def generate_segmentation_breakdown_records(
+    report_month: str,
+    activity_month: str,
+    current_gc_golfer_clubs: CsvSnapshot,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """Generate age/gender breakdowns directly from GC Golfer Clubs rows."""
+    require_headers(
+        current_gc_golfer_clubs,
+        SEGMENTATION_BREAKDOWN_REQUIRED_HEADERS,
+    )
+    year, month_number = target_year_month(activity_month)
+    month_name = datetime(year, month_number, 1).strftime("%B")
+    report_date_value = date(*target_year_month(report_month), 1)
+    report_date_label = display_report_date(report_month)
+    club_names = segmentation_club_names(current_gc_golfer_clubs)
+    counts: Counter[tuple[str, str, str, str]] = Counter()
+    status_totals: Counter[tuple[str, str]] = Counter()
+    source_status_counts: Counter[str] = Counter()
+    missing_gender_rows = 0
+    unknown_gender_rows = 0
+    missing_birth_date_rows = 0
+    implausible_birth_date_rows = 0
+
+    for row_number, row in enumerate(current_gc_golfer_clubs.rows, start=2):
+        club_name = row["club_name"].strip()
+        status = normalize_segmentation_status(
+            row["status"],
+            f"{current_gc_golfer_clubs.label} status at CSV row {row_number}",
+        )
+        gender, gender_missing, gender_unknown = normalize_gender_segment(
+            row["gender"]
+        )
+        age, birth_date_missing, birth_date_implausible = age_segment(
+            row["date_of_birth"],
+            report_date_value,
+            (
+                f"{current_gc_golfer_clubs.label} date_of_birth "
+                f"at CSV row {row_number}"
+            ),
+        )
+        missing_gender_rows += int(gender_missing)
+        unknown_gender_rows += int(gender_unknown)
+        missing_birth_date_rows += int(birth_date_missing)
+        implausible_birth_date_rows += int(birth_date_implausible)
+        source_status_counts[status] += 1
+
+        for output_club in ("All", club_name):
+            status_totals[(output_club, status)] += 1
+            counts[(output_club, status, "Age", age)] += 1
+            counts[(output_club, status, "Gender", gender)] += 1
+
+    records: list[dict[str, Any]] = []
+    segment_groups = (("Age", AGE_SEGMENTS), ("Gender", GENDER_SEGMENTS))
+    for club_name in ["All", *club_names]:
+        for status in SEGMENTATION_STATUSES:
+            status_total = status_totals[(club_name, status)]
+            for segment_type, segments in segment_groups:
+                for segment in segments:
+                    golfer_count = counts[
+                        (club_name, status, segment_type, segment)
+                    ]
+                    records.append(
+                        {
+                            "year": year,
+                            "month": month_name,
+                            "monthNum": month_number,
+                            "reportDate": report_date_label,
+                            "clubName": club_name,
+                            "status": status,
+                            "segmentType": segment_type,
+                            "segment": segment,
+                            "golferCount": golfer_count,
+                            "shareWithinStatus": (
+                                golfer_count / status_total
+                                if status_total
+                                else 0.0
+                            ),
+                        }
+                    )
+
+    validate_segmentation_breakdown_records(records, len(club_names) + 1)
+    return records, {
+        **{status: source_status_counts[status] for status in SEGMENTATION_STATUSES},
+        "missingGender": missing_gender_rows,
+        "unknownGender": unknown_gender_rows,
+        "missingBirthDate": missing_birth_date_rows,
+        "implausibleBirthDate": implausible_birth_date_rows,
+    }
+
+
+def validate_segmentation_breakdown_records(
+    records: Sequence[dict[str, Any]],
+    expected_clubs: int,
+) -> None:
+    expected_records = expected_clubs * len(SEGMENTATION_STATUSES) * (
+        len(AGE_SEGMENTS) + len(GENDER_SEGMENTS)
+    )
+    if len(records) != expected_records:
+        raise ValidationError(
+            f"segmentation_breakdown.json generated {len(records)} records; "
+            f"expected {expected_records}"
+        )
+    keys: set[tuple[Any, ...]] = set()
+    grouped_counts: Counter[tuple[str, str, str]] = Counter()
+    grouped_shares: defaultdict[tuple[str, str, str], float] = defaultdict(float)
+    for record in records:
+        key = (
+            record["year"],
+            record["monthNum"],
+            record["clubName"],
+            record["status"],
+            record["segmentType"],
+            record["segment"],
+        )
+        if key in keys:
+            raise ValidationError(
+                f"segmentation_breakdown.json generated duplicate key {key}"
+            )
+        keys.add(key)
+        group = (
+            record["clubName"],
+            record["status"],
+            record["segmentType"],
+        )
+        grouped_counts[group] += record["golferCount"]
+        grouped_shares[group] += record["shareWithinStatus"]
+
+    all_totals = {
+        status: grouped_counts[("All", status, "Age")]
+        for status in SEGMENTATION_STATUSES
+    }
+    for group, share_total in grouped_shares.items():
+        expected_share = 1.0 if grouped_counts[group] else 0.0
+        if not math.isclose(share_total, expected_share, abs_tol=1e-12):
+            raise ValidationError(
+                "segmentation breakdown shares do not total for "
+                + "/".join(group)
+            )
+        club_name, status, segment_type = group
+        if segment_type == "Gender":
+            age_total = grouped_counts[(club_name, status, "Age")]
+            if grouped_counts[group] != age_total:
+                raise ValidationError(
+                    f"Age/Gender totals differ for {club_name}/{status}"
+                )
+    if sum(all_totals.values()) <= 0:
+        raise ValidationError("segmentation breakdown contains no source rows")
+
+
+def merge_target_month_records(
+    existing_records: Any,
+    generated_records: Sequence[dict[str, Any]],
+    activity_month: str,
+    output_filename: str,
+) -> tuple[list[dict[str, Any]], int, int]:
+    """Replace one target month in memory while preserving all other records."""
+    if not isinstance(existing_records, list) or not all(
+        isinstance(record, dict) for record in existing_records
+    ):
+        raise ValidationError(f"{output_filename} must contain a top-level array")
+    year, month_number = target_year_month(activity_month)
+    historical_records: list[dict[str, Any]] = []
+    existing_target_records = 0
+    insertion_index: int | None = None
+    for record in existing_records:
+        is_target = (
+            record.get("year") == year
+            and record.get("monthNum") == month_number
+        )
+        if is_target:
+            existing_target_records += 1
+            if insertion_index is None:
+                insertion_index = len(historical_records)
+        else:
+            historical_records.append(record)
+    if insertion_index is None:
+        insertion_index = len(historical_records)
+    merged = historical_records.copy()
+    merged[insertion_index:insertion_index] = list(generated_records)
+    if len(merged) != (
+        len(existing_records) - existing_target_records + len(generated_records)
+    ):
+        raise ValidationError(f"{output_filename} cumulative row-count check failed")
+    return merged, existing_target_records, len(historical_records)
+
+
+def add_calendar_months(value: date, months: int) -> date:
+    """Add whole calendar months while keeping month-end dates valid."""
+    absolute_month = value.year * 12 + value.month - 1 + months
+    year, zero_based_month = divmod(absolute_month, 12)
+    month = zero_based_month + 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def retention_cohort_fully_eligible(
+    cohort_year: int,
+    milestone_months: int,
+    report_date: date,
+) -> bool:
+    """A cohort is publishable only after its final creation date matures."""
+    return report_date > add_calendar_months(
+        date(cohort_year, 12, 31), milestone_months
+    )
+
+
+def display_integer(value: int) -> str:
+    return f"{value:,}"
+
+
+def display_percent(value: float) -> str:
+    return f"{value:.1%}"
+
+
+def display_compact_thousands(value: int) -> str:
+    return f"{math.floor(value / 1000 + 0.5):,}K"
+
+
+def retention_delta_display(
+    current_rate: float | None,
+    prior_rate: float | None,
+) -> tuple[str, str]:
+    if current_rate is None or prior_rate is None:
+        return "TBD", "neutral"
+    points = (current_rate - prior_rate) * 100
+    if math.isclose(points, 0.0, abs_tol=0.05):
+        return "0.0 pts", "neutral"
+    return (
+        f"{points:+.1f} pts",
+        "positive" if points > 0 else "negative",
+    )
+
+
+def coordinate_display(value: float) -> str:
+    rounded = round(value, 1)
+    return str(int(rounded)) if rounded.is_integer() else f"{rounded:.1f}"
+
+
+def retention_survival_curve(
+    milestone_rates: Sequence[float | None],
+) -> dict[str, Any]:
+    """Create the existing dashboard's SVG coordinates from survival rates."""
+    x_positions = (70.0, 366.7, 663.3, 960.0)
+    available_rates: list[tuple[int, float]] = [(0, 1.0)]
+    for index, rate in enumerate(milestone_rates, start=1):
+        if rate is None:
+            break
+        available_rates.append((index, rate))
+    y_scale = (260.0 - 30.0) / (1.0 - 0.25)
+    dots: list[dict[str, str]] = []
+    value_labels: list[dict[str, Any]] = []
+    point_values: list[str] = []
+    for milestone_index, rate in available_rates:
+        x = x_positions[milestone_index]
+        y = 30.0 + (1.0 - rate) * y_scale
+        x_display = coordinate_display(x)
+        y_display = coordinate_display(y)
+        point_values.append(f"{x_display},{y_display}")
+        dots.append({"cx": x_display, "cy": y_display})
+        if milestone_index:
+            value_labels.append(
+                {
+                    "x": x_display,
+                    "y": coordinate_display(y - 14.0),
+                    "milestoneIndex": milestone_index,
+                }
+            )
+    return {
+        "points": " ".join(point_values),
+        "dots": dots,
+        "valueLabels": value_labels,
+    }
+
+
+def eligible_cohort_display(years: Sequence[int]) -> str:
+    if not years:
+        return "No eligible cohorts"
+    if len(years) == 1:
+        return f"{years[0]} eligible cohort"
+    return f"{min(years)}–{max(years)} eligible cohorts"
+
+
+def generate_retention_outputs(
+    report_month: str,
+    current_detail: CsvSnapshot,
+) -> tuple[dict[str, Any], list[dict[str, str]], dict[str, Any]]:
+    """Generate retention cohort and club-ranking JSON-compatible values."""
+    require_headers(
+        current_detail,
+        {
+            "club_name",
+            "golfer_status",
+            "membership_creation_date",
+            "golfer_status_date",
+        },
+    )
+    report_year, report_month_number = target_year_month(report_month)
+    report_date = date(report_year, report_month_number, 1)
+    report_date_label = display_report_date(report_month)
+    display_years = tuple(range(report_year, report_year - 5, -1))
+
+    status_counts: Counter[str] = Counter()
+    created_by_year: Counter[int] = Counter()
+    active_by_year: Counter[int] = Counter()
+    milestone_survivors: Counter[tuple[int, int]] = Counter()
+    club_created: Counter[tuple[str, int]] = Counter()
+    club_active: Counter[tuple[str, int]] = Counter()
+    missing_creation_dates = 0
+    missing_inactive_status_dates = 0
+    invalid_status_dates: Counter[str] = Counter()
+
+    for row_number, row in enumerate(current_detail.rows, start=2):
+        status = normalize_segmentation_status(
+            row["golfer_status"],
+            f"{current_detail.label} golfer_status at CSV row {row_number}",
+        )
+        status_counts[status] += 1
+        creation_date = parse_source_date(
+            row["membership_creation_date"],
+            f"{current_detail.label} membership_creation_date at CSV row {row_number}",
+        )
+        status_date = parse_source_date(
+            row["golfer_status_date"],
+            f"{current_detail.label} golfer_status_date at CSV row {row_number}",
+        )
+        if creation_date is None:
+            missing_creation_dates += 1
+            continue
+        if status != "Active" and status_date is None:
+            missing_inactive_status_dates += 1
+        invalid_timeline = (
+            status_date is not None and status_date < creation_date
+        )
+        if invalid_timeline:
+            invalid_status_dates[status] += 1
+
+        cohort_year = creation_date.year
+        created_by_year[cohort_year] += 1
+        if status == "Active":
+            active_by_year[cohort_year] += 1
+
+        if cohort_year not in RETENTION_COHORT_YEARS:
+            continue
+        club_name = row["club_name"].strip()
+        if not club_name:
+            raise ValidationError(
+                f"{current_detail.label} has a blank club_name at CSV row {row_number}"
+            )
+        club_created[(club_name, cohort_year)] += 1
+        if status == "Active":
+            club_active[(club_name, cohort_year)] += 1
+
+        if invalid_timeline:
+            continue
+        for milestone_months in RETENTION_MILESTONE_MONTHS:
+            milestone_date = add_calendar_months(
+                creation_date, milestone_months
+            )
+            if report_date <= milestone_date:
+                continue
+            survived = status == "Active" or (
+                status != "Active"
+                and status_date is not None
+                and status_date > milestone_date
+            )
+            if survived:
+                milestone_survivors[(cohort_year, milestone_months)] += 1
+
+    milestone_counts: dict[tuple[int, int], int | None] = {}
+    milestone_rates: dict[tuple[int, int], float | None] = {}
+    for cohort_year in RETENTION_COHORT_YEARS:
+        created = created_by_year[cohort_year]
+        for milestone_months in RETENTION_MILESTONE_MONTHS:
+            eligible = retention_cohort_fully_eligible(
+                cohort_year, milestone_months, report_date
+            )
+            count = (
+                milestone_survivors[(cohort_year, milestone_months)]
+                if eligible
+                else None
+            )
+            milestone_counts[(cohort_year, milestone_months)] = count
+            milestone_rates[(cohort_year, milestone_months)] = (
+                count / created
+                if count is not None and created
+                else None
+            )
+
+    analyzed = sum(created_by_year[year] for year in display_years)
+    active_today = sum(active_by_year[year] for year in display_years)
+    inactive_today = analyzed - active_today
+    summary: list[dict[str, str]] = [
+        {
+            "label": "Golfers Analyzed",
+            "valueDisplay": display_integer(analyzed),
+            "subDisplay": report_date_label,
+        },
+        {
+            "label": "Active Today",
+            "valueDisplay": display_integer(active_today),
+            "subDisplay": report_date_label,
+        },
+        {
+            "label": "Inactive Today",
+            "valueDisplay": display_integer(inactive_today),
+            "subDisplay": report_date_label,
+        },
+    ]
+    for milestone_months in RETENTION_MILESTONE_MONTHS:
+        eligible_years = [
+            year
+            for year in RETENTION_COHORT_YEARS
+            if milestone_counts[(year, milestone_months)] is not None
+        ]
+        numerator = sum(
+            int(milestone_counts[(year, milestone_months)] or 0)
+            for year in eligible_years
+        )
+        denominator = sum(created_by_year[year] for year in eligible_years)
+        rate = numerator / denominator if denominator else None
+        summary.append(
+            {
+                "label": f"Active Beyond {milestone_months} Months",
+                "valueDisplay": display_percent(rate) if rate is not None else "TBD",
+                "subDisplay": eligible_cohort_display(eligible_years),
+            }
+        )
+
+    creation_year_status: list[dict[str, str]] = []
+    for cohort_year in display_years:
+        created = created_by_year[cohort_year]
+        active = active_by_year[cohort_year]
+        active_rate = active / created if created else 0.0
+        creation_year_status.append(
+            {
+                "yearDisplay": str(cohort_year),
+                "activeDisplay": display_percent(active_rate),
+                "inactiveDisplay": display_percent(1.0 - active_rate),
+                "totalDisplay": display_compact_thousands(created),
+            }
+        )
+
+    cohorts: list[dict[str, Any]] = []
+    for cohort_year in RETENTION_COHORT_YEARS:
+        created = created_by_year[cohort_year]
+        active = active_by_year[cohort_year]
+        milestones: list[dict[str, str]] = [
+            {
+                "label": "Created",
+                "golfersDisplay": display_integer(created),
+                "percentDisplay": "100.0%",
+                "deltaDisplay": "—",
+                "deltaClass": "neutral",
+            }
+        ]
+        curve_rates: list[float | None] = []
+        for milestone_months in RETENTION_MILESTONE_MONTHS:
+            count = milestone_counts[(cohort_year, milestone_months)]
+            rate = milestone_rates[(cohort_year, milestone_months)]
+            curve_rates.append(rate)
+            if count is None or rate is None:
+                delta_display, delta_class = "TBD", "neutral"
+                golfers_display = percent_display = "TBD"
+            else:
+                golfers_display = display_integer(count)
+                percent_display = display_percent(rate)
+                if cohort_year == RETENTION_COHORT_YEARS[0]:
+                    delta_display, delta_class = "—", "neutral"
+                else:
+                    delta_display, delta_class = retention_delta_display(
+                        rate,
+                        milestone_rates[
+                            (cohort_year - 1, milestone_months)
+                        ],
+                    )
+            milestones.append(
+                {
+                    "label": f"Active Beyond {milestone_months} Months",
+                    "golfersDisplay": golfers_display,
+                    "percentDisplay": percent_display,
+                    "deltaDisplay": delta_display,
+                    "deltaClass": delta_class,
+                }
+            )
+        cohorts.append(
+            {
+                "yearDisplay": str(cohort_year),
+                "createdDisplay": display_integer(created),
+                "activeTodayDisplay": display_integer(active),
+                "activeRateDisplay": display_percent(
+                    active / created if created else 0.0
+                ),
+                "comparisonHeader": (
+                    "vs Prior"
+                    if cohort_year == RETENTION_COHORT_YEARS[0]
+                    else f"vs {cohort_year - 1}"
+                ),
+                "color": RETENTION_COHORT_COLORS[cohort_year],
+                "milestones": milestones,
+                "survivalCurve": retention_survival_curve(curve_rates),
+            }
+        )
+
+    club_names = sorted(
+        {
+            club_name
+            for club_name, cohort_year in club_created
+            if cohort_year in RETENTION_COHORT_YEARS
+        }
+    )
+    ranking_values: list[dict[str, Any]] = []
+    for club_name in club_names:
+        rates = {
+            year: (
+                club_active[(club_name, year)]
+                / club_created[(club_name, year)]
+                if club_created[(club_name, year)]
+                else 0.0
+            )
+            for year in RETENTION_COHORT_YEARS
+        }
+        total = sum(
+            club_created[(club_name, year)]
+            for year in RETENTION_COHORT_YEARS
+        )
+        ranking_values.append(
+            {"club": club_name, "total": total, "rates": rates}
+        )
+    ranking_values.sort(
+        key=lambda item: (-item["rates"][2022], item["club"])
+    )
+    rankings: list[dict[str, str]] = []
+    for rank, item in enumerate(ranking_values, start=1):
+        rankings.append(
+            {
+                "club": item["club"],
+                "total": str(item["total"]),
+                "ret2022": str(item["rates"][2022]),
+                "ret2023": str(item["rates"][2023]),
+                "ret2024": str(item["rates"][2024]),
+                "rankDisplay": str(rank),
+                "clubDisplay": item["club"],
+                "totalDisplay": display_integer(item["total"]),
+                "ret2022Display": display_percent(item["rates"][2022]),
+                "ret2023Display": display_percent(item["rates"][2023]),
+                "ret2024Display": display_percent(item["rates"][2024]),
+            }
+        )
+
+    retention_cohorts = {
+        "summary": summary,
+        "creationYearStatus": creation_year_status,
+        "cohorts": cohorts,
+    }
+    validate_retention_outputs(
+        retention_cohorts,
+        rankings,
+        created_by_year,
+        active_by_year,
+        milestone_counts,
+    )
+    stats: dict[str, Any] = {
+        "statusCounts": dict(status_counts),
+        "missingCreationDates": missing_creation_dates,
+        "missingInactiveStatusDates": missing_inactive_status_dates,
+        "invalidStatusDates": dict(invalid_status_dates),
+        "cohortCreated": {
+            year: created_by_year[year] for year in RETENTION_COHORT_YEARS
+        },
+        "cohortActiveToday": {
+            year: active_by_year[year] for year in RETENTION_COHORT_YEARS
+        },
+        "cohortMilestones": milestone_counts,
+    }
+    return retention_cohorts, rankings, stats
+
+
+def validate_retention_outputs(
+    retention_cohorts: dict[str, Any],
+    rankings: Sequence[dict[str, str]],
+    created_by_year: Counter[int],
+    active_by_year: Counter[int],
+    milestone_counts: dict[tuple[int, int], int | None],
+) -> None:
+    if len(retention_cohorts.get("summary", [])) != 6:
+        raise ValidationError("retention_cohorts.json must contain 6 summary records")
+    if len(retention_cohorts.get("creationYearStatus", [])) != 5:
+        raise ValidationError(
+            "retention_cohorts.json must contain 5 creation-year status records"
+        )
+    cohorts = retention_cohorts.get("cohorts", [])
+    if len(cohorts) != len(RETENTION_COHORT_YEARS):
+        raise ValidationError("retention_cohorts.json must contain 3 cohorts")
+    for cohort_year in RETENTION_COHORT_YEARS:
+        created = created_by_year[cohort_year]
+        if created <= 0:
+            raise ValidationError(f"retention cohort {cohort_year} is empty")
+        if active_by_year[cohort_year] > created:
+            raise ValidationError(
+                f"retention cohort {cohort_year} Active Today exceeds Created"
+            )
+        available_counts = [
+            milestone_counts[(cohort_year, months)]
+            for months in RETENTION_MILESTONE_MONTHS
+            if milestone_counts[(cohort_year, months)] is not None
+        ]
+        if any(count > created for count in available_counts):
+            raise ValidationError(
+                f"retention cohort {cohort_year} milestone exceeds Created"
+            )
+        if any(
+            later > earlier
+            for earlier, later in zip(available_counts, available_counts[1:])
+        ):
+            raise ValidationError(
+                f"retention cohort {cohort_year} survival is not nonincreasing"
+            )
+    if len(rankings) != 57:
+        raise ValidationError(
+            f"retention_club_rankings.json generated {len(rankings)} clubs; expected 57"
+        )
+    if len({record["club"] for record in rankings}) != len(rankings):
+        raise ValidationError("retention club rankings contain duplicate clubs")
+    ranking_total = sum(int(record["total"]) for record in rankings)
+    cohort_total = sum(created_by_year[year] for year in RETENTION_COHORT_YEARS)
+    if ranking_total != cohort_total:
+        raise ValidationError(
+            "retention club ranking totals do not equal cohort Created totals"
+        )
+
+
+def parse_display_integer(value: Any) -> int | None:
+    if not isinstance(value, str) or value == "TBD":
+        return None
+    try:
+        return int(value.replace(",", ""))
+    except ValueError:
+        return None
+
+
+def retention_baseline_values(
+    retention_cohorts: Any,
+) -> tuple[
+    dict[int, int],
+    dict[int, int],
+    dict[tuple[int, int], int | None],
+]:
+    if not isinstance(retention_cohorts, dict):
+        raise ValidationError("retention_cohorts.json must contain an object")
+    created: dict[int, int] = {}
+    active: dict[int, int] = {}
+    milestones: dict[tuple[int, int], int | None] = {}
+    for cohort in retention_cohorts.get("cohorts", []):
+        year = int(cohort["yearDisplay"])
+        created_value = parse_display_integer(cohort.get("createdDisplay"))
+        active_value = parse_display_integer(cohort.get("activeTodayDisplay"))
+        if created_value is None or active_value is None:
+            raise ValidationError(
+                f"retention_cohorts.json has invalid cohort counts for {year}"
+            )
+        created[year] = created_value
+        active[year] = active_value
+        for milestone in cohort.get("milestones", []):
+            match = re.fullmatch(
+                r"Active Beyond (13|25|37) Months",
+                str(milestone.get("label", "")),
+            )
+            if match:
+                milestones[(year, int(match.group(1)))] = parse_display_integer(
+                    milestone.get("golfersDisplay")
+                )
+    return created, active, milestones
+
+
+def build_retention_diagnostics(
+    source_rows: int,
+    stats: dict[str, Any],
+    generated_rankings: Sequence[dict[str, str]],
+    existing_cohorts: Any,
+    existing_rankings: Any,
+) -> RetentionDiagnostics:
+    baseline_created, baseline_active, baseline_milestones = (
+        retention_baseline_values(existing_cohorts)
+    )
+    if not isinstance(existing_rankings, list):
+        raise ValidationError("retention_club_rankings.json must contain an array")
+    baseline_by_club = {
+        str(record.get("club")): record
+        for record in existing_rankings
+        if isinstance(record, dict)
+    }
+    generated_by_club = {record["club"]: record for record in generated_rankings}
+    if set(baseline_by_club) != set(generated_by_club):
+        raise ValidationError(
+            "generated retention club set differs from retention_club_rankings.json"
+        )
+    total_differences = [
+        abs(
+            int(generated_by_club[club]["total"])
+            - int(baseline_by_club[club]["total"])
+        )
+        for club in generated_by_club
+    ]
+    rank_shifts = [
+        abs(
+            int(generated_by_club[club]["rankDisplay"])
+            - int(baseline_by_club[club]["rankDisplay"])
+        )
+        for club in generated_by_club
+    ]
+    return RetentionDiagnostics(
+        source_rows=source_rows,
+        status_counts=dict(stats["statusCounts"]),
+        missing_creation_dates=int(stats["missingCreationDates"]),
+        missing_inactive_status_dates=int(
+            stats["missingInactiveStatusDates"]
+        ),
+        invalid_status_dates_by_status=dict(stats["invalidStatusDates"]),
+        cohort_created=dict(stats["cohortCreated"]),
+        cohort_active_today=dict(stats["cohortActiveToday"]),
+        cohort_milestones=dict(stats["cohortMilestones"]),
+        baseline_created=baseline_created,
+        baseline_active_today=baseline_active,
+        baseline_milestones=baseline_milestones,
+        club_count=len(generated_rankings),
+        club_created_total=sum(
+            int(record["total"]) for record in generated_rankings
+        ),
+        baseline_club_created_total=sum(
+            int(record["total"]) for record in existing_rankings
+        ),
+        exact_club_total_matches=sum(diff == 0 for diff in total_differences),
+        maximum_club_total_difference=max(total_differences, default=0),
+        identical_rank_positions=sum(shift == 0 for shift in rank_shifts),
+        maximum_rank_shift=max(rank_shifts, default=0),
+    )
 
 
 def membership_parity_baseline(
@@ -1255,6 +2212,133 @@ def print_qa_summary(report: QAReport, status: str, message: str) -> None:
         )
         print()
 
+    if report.segmentation_diagnostics:
+        print("Segmentation JSON dry-run diagnostics")
+        for item in report.segmentation_diagnostics:
+            print(f"  {item.output_filename}")
+            print(
+                f"    source: {item.source_label} "
+                f"({item.source_rows:,} rows)"
+            )
+            print(
+                f"    output clubs: {item.clubs:,}; "
+                f"target records: {item.target_records:,}"
+            )
+            print(
+                f"    target records replaced in memory: "
+                f"{item.existing_target_records:,}"
+            )
+            print(
+                f"    historical records preserved: "
+                f"{item.preserved_historical_records:,}; "
+                f"merged records: {item.merged_records:,}"
+            )
+            print(
+                "    All status counts: "
+                + ", ".join(
+                    f"{status}={item.status_counts.get(status, 0):,}"
+                    for status in SEGMENTATION_STATUSES
+                )
+            )
+            if item.output_filename == "segmentation_breakdown.json":
+                print(
+                    f"    gender diagnostics: missing="
+                    f"{item.missing_gender_rows:,}, unrecognized="
+                    f"{item.unknown_gender_rows:,}"
+                )
+                print(
+                    f"    birth-date diagnostics: missing="
+                    f"{item.missing_birth_date_rows:,}, implausible="
+                    f"{item.implausible_birth_date_rows:,}"
+                )
+        print()
+
+    if report.retention_diagnostics:
+        item = report.retention_diagnostics
+        print("Retention Analysis dry-run diagnostics")
+        print(
+            f"  source: Current Month_Golfer Detail.csv "
+            f"({item.source_rows:,} membership rows)"
+        )
+        print(
+            "  status counts: "
+            + ", ".join(
+                f"{status}={item.status_counts.get(status, 0):,}"
+                for status in SEGMENTATION_STATUSES
+            )
+        )
+        print(
+            f"  missing creation dates: {item.missing_creation_dates:,}; "
+            f"missing inactive status dates: "
+            f"{item.missing_inactive_status_dates:,}"
+        )
+        print(
+            "  invalid status dates before creation excluded from milestones: "
+            + ", ".join(
+                f"{status}={item.invalid_status_dates_by_status.get(status, 0):,}"
+                for status in SEGMENTATION_STATUSES
+            )
+        )
+        print("  Cohort comparison")
+        print(
+            "    Year | Created | Baseline | Diff | Active Today | "
+            "Baseline | Diff"
+        )
+        print(
+            "    -----+---------+----------+------+--------------+"
+            "----------+-----"
+        )
+        for year in RETENTION_COHORT_YEARS:
+            created = item.cohort_created[year]
+            created_baseline = item.baseline_created[year]
+            active = item.cohort_active_today[year]
+            active_baseline = item.baseline_active_today[year]
+            print(
+                f"    {year} | {created:>7,} | {created_baseline:>8,} | "
+                f"{created-created_baseline:>+4,} | {active:>12,} | "
+                f"{active_baseline:>8,} | {active-active_baseline:>+4,}"
+            )
+        print("  Milestone comparison")
+        print("    Cohort | Months | Calculated | Baseline | Difference")
+        print("    -------+--------+------------+----------+-----------")
+        for year in RETENTION_COHORT_YEARS:
+            for months in RETENTION_MILESTONE_MONTHS:
+                calculated = item.cohort_milestones[(year, months)]
+                baseline = item.baseline_milestones.get((year, months))
+                calculated_display = (
+                    "TBD" if calculated is None else f"{calculated:,}"
+                )
+                baseline_display = (
+                    "TBD" if baseline is None else f"{baseline:,}"
+                )
+                difference_display = (
+                    "n/a"
+                    if calculated is None or baseline is None
+                    else f"{calculated-baseline:+,}"
+                )
+                print(
+                    f"    {year:>6} | {months:>6} | "
+                    f"{calculated_display:>10} | {baseline_display:>8} | "
+                    f"{difference_display:>10}"
+                )
+        print(
+            f"  club rankings: {item.club_count} clubs; Created total "
+            f"{item.club_created_total:,} vs baseline "
+            f"{item.baseline_club_created_total:,}"
+        )
+        print(
+            f"  club totals matching exactly: "
+            f"{item.exact_club_total_matches}/{item.club_count}; "
+            f"maximum total difference: "
+            f"{item.maximum_club_total_difference:,}"
+        )
+        print(
+            f"  identical default rank positions: "
+            f"{item.identical_rank_positions}/{item.club_count}; "
+            f"maximum rank shift: {item.maximum_rank_shift}"
+        )
+        print()
+
     if report.calculation_notes:
         print("Calculation methods")
         for note in report.calculation_notes:
@@ -1275,13 +2359,13 @@ def print_qa_summary(report: QAReport, status: str, message: str) -> None:
 
     print("Backup plan")
     print(f"  {report.backup_directory}")
-    print("  Backup directory not created in Phase 2 preview.")
+    print("  Backup directory not created during dry-run preview.")
     print()
     print("Writes")
     if report.dry_run:
         print("  Disabled by --dry-run; no JSON files were modified.")
     else:
-        print("  Disabled for Phase 2 preview, even without --dry-run.")
+        print("  Disabled for this preview, even without --dry-run.")
         print("  No JSON files were modified; the calculated record is QA-only.")
     print()
     print(message)
@@ -1319,9 +2403,9 @@ def run(args: argparse.Namespace) -> int:
             "Required source files",
             "PASS",
             (
-                "three core membership CSVs are present; Current GC Golfer Clubs is optional and marketing was skipped"
+                "four CSV sources are present and marketing was skipped"
                 if args.skip_marketing
-                else "three core membership CSVs and the marketing workbook are present; Current GC Golfer Clubs is optional"
+                else "four CSV sources and the marketing workbook are present"
             ),
         )
         report.add_check(
@@ -1354,11 +2438,6 @@ def run(args: argparse.Namespace) -> int:
             f"all 10 corrected source headers are present; {detail_golfers:,} distinct GHIN Numbers across membership rows",
         )
         report.add_check(
-            "Current GC Golfer Clubs",
-            "IGNORED",
-            "not loaded or used for core membership metrics",
-        )
-        report.add_check(
             "Three-Months-Prior GC Golfer Clubs schema",
             "PASS",
             f"golfer_id, status, and inactive_date are present; {prior_gc_golfers:,} unique golfers available for renewal eligibility",
@@ -1381,6 +2460,182 @@ def run(args: argparse.Namespace) -> int:
                 f"and produces the {display_month(activity_month)} dashboard record"
             ),
         )
+
+        input_paths = membership_input_paths(report.inputs)
+        current_gc_golfer_clubs = read_csv_snapshot(
+            input_paths["current GC golfer clubs"],
+            "current GC golfer clubs",
+        )
+        require_headers(
+            current_gc_golfer_clubs,
+            SEGMENTATION_BREAKDOWN_REQUIRED_HEADERS,
+        )
+        report.add_check(
+            "Current GC Golfer Clubs segmentation schema",
+            "PASS",
+            "club_name, status, gender, and date_of_birth are present",
+        )
+
+        status_records, status_counts = generate_segmentation_status_records(
+            report_month,
+            activity_month,
+            current_detail,
+        )
+        (
+            merged_status_records,
+            existing_status_target_records,
+            preserved_status_records,
+        ) = merge_target_month_records(
+            existing_state["segmentation_status.json"],
+            status_records,
+            activity_month,
+            "segmentation_status.json",
+        )
+        status_clubs = len({record["clubName"] for record in status_records})
+        report.segmentation_diagnostics.append(
+            SegmentationDiagnostics(
+                output_filename="segmentation_status.json",
+                source_label="Current Month_Golfer Detail.csv",
+                source_rows=len(current_detail.rows),
+                target_records=len(status_records),
+                existing_target_records=existing_status_target_records,
+                merged_records=len(merged_status_records),
+                preserved_historical_records=preserved_status_records,
+                clubs=status_clubs,
+                status_counts=status_counts,
+            )
+        )
+        report.add_check(
+            "Segmentation status generation",
+            "PASS",
+            (
+                f"generated {len(status_records):,} {display_month(activity_month)} "
+                "All/club records from Golfer Detail"
+            ),
+        )
+
+        breakdown_records, breakdown_stats = (
+            generate_segmentation_breakdown_records(
+                report_month,
+                activity_month,
+                current_gc_golfer_clubs,
+            )
+        )
+        (
+            merged_breakdown_records,
+            existing_breakdown_target_records,
+            preserved_breakdown_records,
+        ) = merge_target_month_records(
+            existing_state["segmentation_breakdown.json"],
+            breakdown_records,
+            activity_month,
+            "segmentation_breakdown.json",
+        )
+        breakdown_clubs = len(
+            {record["clubName"] for record in breakdown_records}
+        )
+        report.segmentation_diagnostics.append(
+            SegmentationDiagnostics(
+                output_filename="segmentation_breakdown.json",
+                source_label="Current Month_GC Golfer Clubs.csv",
+                source_rows=len(current_gc_golfer_clubs.rows),
+                target_records=len(breakdown_records),
+                existing_target_records=existing_breakdown_target_records,
+                merged_records=len(merged_breakdown_records),
+                preserved_historical_records=preserved_breakdown_records,
+                clubs=breakdown_clubs,
+                status_counts={
+                    status: breakdown_stats[status]
+                    for status in SEGMENTATION_STATUSES
+                },
+                missing_gender_rows=breakdown_stats["missingGender"],
+                unknown_gender_rows=breakdown_stats["unknownGender"],
+                missing_birth_date_rows=breakdown_stats["missingBirthDate"],
+                implausible_birth_date_rows=breakdown_stats[
+                    "implausibleBirthDate"
+                ],
+            )
+        )
+        report.add_check(
+            "Segmentation breakdown generation",
+            "PASS",
+            (
+                f"generated {len(breakdown_records):,} {display_month(activity_month)} "
+                "All/club age and gender records from GC Golfer Clubs"
+            ),
+        )
+        report.add_check(
+            "Segmentation historical preservation",
+            "PASS",
+            (
+                f"preserved {preserved_status_records:,} status and "
+                f"{preserved_breakdown_records:,} breakdown records outside "
+                f"{activity_month}"
+            ),
+        )
+        report.calculation_notes.extend(
+            (
+                "segmentation_status.json counted Golfer Detail membership rows by Club Name and Golfer Status; no join or GHIN deduplication",
+                "segmentation_breakdown.json counted GC Golfer Clubs rows directly by club/status, Gender, and age as of the report date; no join or golfer deduplication",
+                "segmentation target-month records were replaced only in memory; records outside the activity month were preserved",
+            )
+        )
+
+        (
+            retention_cohorts_output,
+            retention_rankings_output,
+            retention_stats,
+        ) = generate_retention_outputs(report_month, current_detail)
+        report.retention_diagnostics = build_retention_diagnostics(
+            len(current_detail.rows),
+            retention_stats,
+            retention_rankings_output,
+            existing_state["retention_cohorts.json"],
+            existing_state["retention_club_rankings.json"],
+        )
+        report.add_check(
+            "Retention cohort generation",
+            "PASS",
+            (
+                f"generated {len(retention_cohorts_output['cohorts'])} cohort cards, "
+                "6 summary metrics, 5 creation-year status rows, and survival-curve geometry"
+            ),
+        )
+        report.add_check(
+            "Retention club ranking generation",
+            "PASS",
+            (
+                f"generated {len(retention_rankings_output)} club rows from "
+                "2022–2024 Created and Active Today membership rows"
+            ),
+        )
+        invalid_retention_rows = sum(
+            report.retention_diagnostics.invalid_status_dates_by_status.values()
+        )
+        report.add_check(
+            "Retention milestone validation",
+            "PASS",
+            (
+                "milestone survival is nonincreasing and does not exceed Created; "
+                f"{invalid_retention_rows:,} rows with Golfer Status Date before "
+                "Membership Creation Date were excluded from milestone numerators"
+            ),
+        )
+        report.calculation_notes.extend(
+            (
+                "retention Created and Active Today counts use Current Month_Golfer Detail membership rows without GHIN deduplication",
+                "retention milestones add 13, 25, or 37 calendar months to Membership Creation Date; Active rows survive through the report date and non-Active rows survive when Golfer Status Date is later than the milestone",
+                "retention milestone rows with Golfer Status Date before Membership Creation Date are excluded from survival numerators and retained in Created denominators",
+                "retention club rankings divide Active Today by Created within each Club Name and creation year; Total is 2022–2024 Created",
+                "retention survival-curve SVG points are regenerated from milestone percentages",
+            )
+        )
+        if invalid_retention_rows:
+            report.warnings.append(
+                f"Retention QA excluded {invalid_retention_rows:,} membership rows "
+                "from milestone survival because Golfer Status Date precedes "
+                "Membership Creation Date."
+            )
         dashboard_record, baseline_label, baseline_is_fallback = membership_parity_baseline(
             existing_state["membership_monthly.json"], activity_month
         )
@@ -1452,10 +2707,7 @@ def run(args: argparse.Namespace) -> int:
         for warning in validate_output_row_counts_stub(existing_state):
             report.warnings.append(warning)
         report.warnings.append(
-            "Current Month_GC Golfer Clubs is retained for future club-level analysis but is not used by core membership metrics."
-        )
-        report.warnings.append(
-            "Future segmentation and cohort calculations should use Golfer Detail where its fields permit."
+            "Current Month_GC Golfer Clubs is used only for segmentation_breakdown.json; core membership metrics remain sourced from Golfer Detail and the previously agreed renewal/retention inputs."
         )
         report.warnings.append(
             "Marketing workbook processing was skipped."
@@ -1465,10 +2717,10 @@ def run(args: argparse.Namespace) -> int:
         report.add_check(
             "JSON overwrite",
             "SKIPPED",
-            "Phase 2 is report-only; target record was not merged or written",
+            "dry-run outputs were merged in memory for validation only; no JSON was written",
         )
     except ValidationError as exc:
-        report.add_check("Phase 2 validation", "FAIL", str(exc))
+        report.add_check("Update validation", "FAIL", str(exc))
         print_qa_summary(
             report,
             status="FAIL",
