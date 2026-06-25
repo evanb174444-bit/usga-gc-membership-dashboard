@@ -179,6 +179,106 @@ The current Phase 1 monthly source contract uses four files:
 - `Three-Months-Prior_GC Golfer Clubs.csv` — up-for-renewal eligibility only.
 - `marketing_workbook.xlsx` — marketing outputs when implemented.
 
+### GHIN Trials source contract
+
+When GHIN Trials automation is implemented, the monthly delivery should include a dedicated trial-level export:
+
+`data/raw/YYYY-MM/ghin_trials_export.csv`
+
+This file is the authoritative source for `data/ghin_trials.json`. It should not be inferred from `Current Month_Golfer Detail.csv`, because the golfer detail export does not identify trial lifecycle events, trial campaign attribution, or days from trial creation to conversion.
+
+Required columns:
+
+- `trial_id`
+- `ghin_number`
+- `golfer_id`
+- `trial_created_date`
+- `trial_status`
+- `converted_date`
+- `converted_flag`
+- `golf_association_id`
+- `golf_association_name`
+- `campaign_name`
+- `activation_date`
+- `activated_flag`
+- `engagement_date`
+- `engaged_flag`
+
+Optional columns:
+
+- `club_id`
+- `club_name`
+- `source_channel`
+- `utm_source`
+- `utm_medium`
+- `utm_campaign`
+- `trial_expiration_date`
+- `current_membership_status`
+- `converted_membership_created_date`
+
+Expected grain:
+
+- One row per GHIN trial enrollment.
+- `trial_id` is the unique primary key.
+- A golfer may appear more than once only if they legitimately have multiple trial enrollments represented by different `trial_id` values.
+
+Output mapping to `ghin_trials.json`:
+
+- `summary`
+  - `totalTrialsCreated`: count of trial rows with `trial_created_date` in the reporting/YTD period.
+  - `trialConversions`: count of converted trial rows in the reporting/YTD period, using `converted_flag` and/or `converted_date`.
+  - `conversionRate`: `trialConversions / totalTrialsCreated`; use `null` when `totalTrialsCreated` is zero.
+  - `activeTrialGolfers`: count of rows where `trial_status` represents active/current trial status as of the report snapshot.
+  - `inactiveTrialGolfers`: count of rows where `trial_status` represents inactive/expired/ended trial status as of the report snapshot.
+
+- `monthly`
+  - One record per completed activity month in the reporting year.
+  - `label`: display month abbreviation derived from the month number.
+  - `trials`: count of rows grouped by `trial_created_date` month.
+  - `conversions`: count of converted rows grouped by `converted_date` month.
+  - Conversion-rate trend remains calculated as `conversions / trials`; use `null` when monthly `trials` is zero.
+
+- `conversionBuckets`
+  - Use only converted records with both `trial_created_date` and `converted_date`.
+  - Calculate elapsed time from trial creation to conversion and bucket into the dashboard-defined timing bands.
+  - `count`: bucket count.
+  - `pct`: `count / total_bucketed_conversions`; use `null` when the denominator is zero.
+
+- `agaConversions`
+  - Use converted records with a populated `golf_association_name`.
+  - Group by `golf_association_name`; retain `golf_association_id` in the pipeline for QA and stable joins even if the current dashboard JSON displays only the name.
+  - `count`: converted-trial count by association.
+  - Sort descending by `count`, then by association name for stable output.
+
+- `overview`
+  - `signups`: count of trial rows in the reporting/YTD period.
+  - `activeTrials`: count where `trial_status` is active/current.
+  - `conversions`: count of converted trial rows.
+  - `conversionRate`: `conversions / signups`; use `null` when `signups` is zero.
+  - `campaigns`: group rows by `campaign_name`; `value` is trial count or conversion count depending on the final dashboard definition, and `sub` should be generated from the campaign conversion rate.
+  - `funnel`: generate standard lifecycle counts:
+    - Trial signups: count of trial rows.
+    - Activated trials: count where `activated_flag` is true or `activation_date` is populated.
+    - Engaged trials: count where `engaged_flag` is true or `engagement_date` is populated.
+    - Converted golfers: count where `converted_flag` is true or `converted_date` is populated.
+
+Validation rules:
+
+- `trial_id` must be present and unique.
+- Required headers must exist exactly once after header normalization.
+- Date fields must be blank or parse as valid dates.
+- `converted_flag` must normalize to a boolean-like value when populated.
+- Converted records must have either `converted_flag = true` or a populated `converted_date`.
+- Records with `converted_flag = true` should have `converted_date`; if missing, report a QA warning unless the source explicitly defines flag-only conversion as valid.
+- Records with `converted_date` should be treated as converted even if `converted_flag` is blank; if `converted_flag = false` and `converted_date` is populated, fail validation or quarantine the row.
+- `conversionBuckets` require both `trial_created_date` and `converted_date`; converted records missing either date should be excluded from bucket counts and reported in QA.
+- AGA rankings require `golf_association_name`; converted records missing it should be excluded from AGA rankings and reported in QA.
+- Campaign sections require `campaign_name`; rows missing campaign should roll into an explicit `Unknown` campaign bucket or fail, depending on release policy.
+- Funnel activation requires `activation_date` or `activated_flag`.
+- Funnel engagement requires `engagement_date` or `engaged_flag`.
+- Calculated rates must use `null` when the denominator is zero; do not emit `0`, `Infinity`, or `NaN` for undefined rates.
+- The generated `summary.trialConversions`, total `monthly.conversions`, total `conversionBuckets.count`, and total `agaConversions.count` should reconcile or explain any valid grain/date-window differences in QA.
+
 The pipeline records for every file:
 
 - Expected source type
