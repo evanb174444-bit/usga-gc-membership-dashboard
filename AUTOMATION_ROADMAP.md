@@ -172,6 +172,13 @@ Large generated databases, processed files, and `dist/` outputs should be exclud
 
 Each reporting cycle receives a defined set of CSV exports. Files are copied without alteration into a month-specific directory such as `data/raw/2026-07/`.
 
+The current Phase 1 monthly source contract uses four files:
+
+- `Current Month_Golfer Detail.csv` — master current-month export for `membership_monthly.json`, `segmentation_status.json`, `segmentation_breakdown.json`, `retention_cohorts.json`, `retention_club_rankings.json`, and `recovery_analysis.json`.
+- `same_month_prior_year_report.csv` — prior-year active cohort for the 12-month retention comparison.
+- `Three-Months-Prior_GC Golfer Clubs.csv` — up-for-renewal eligibility only.
+- `marketing_workbook.xlsx` — marketing outputs when implemented.
+
 The pipeline records for every file:
 
 - Expected source type

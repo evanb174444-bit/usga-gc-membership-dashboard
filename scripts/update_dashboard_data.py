@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Dry-run preview for the monthly dashboard data updater.
 
-This phase validates the monthly input package, loads the existing cumulative
-JSON state, calculates membership and segmentation outputs, plans a backup
-location, and prints a QA summary. JSON writes are intentionally disabled.
+This phase validates the monthly four-file input package, loads the existing
+cumulative JSON state, calculates dashboard outputs, plans a backup location,
+and prints a QA summary. JSON writes are intentionally disabled during dry runs.
 
 Reporting convention
 --------------------
@@ -14,6 +14,16 @@ the immediately preceding calendar month.
 
 Example: ``--month 2026-07`` reads ``data/raw/2026-07/`` as the July 1, 2026
 snapshot and calculates the June 2026 dashboard record.
+
+Monthly source responsibilities
+-------------------------------
+* ``Current Month_Golfer Detail.csv`` is the master current-month export for
+  membership, segmentation, retention, and recovery JSON generation.
+* ``same_month_prior_year_report.csv`` supplies the prior-year active cohort
+  for the 12-month retention comparison.
+* ``Three-Months-Prior_GC Golfer Clubs.csv`` supplies up-for-renewal
+  eligibility only.
+* ``marketing_workbook.xlsx`` supplies marketing outputs when implemented.
 """
 
 from __future__ import annotations
@@ -24,11 +34,13 @@ import csv
 import json
 import math
 import re
+import shutil
+import statistics
 import sys
 import zipfile
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Sequence
 from xml.etree import ElementTree
@@ -36,7 +48,6 @@ from xml.etree import ElementTree
 
 REQUIRED_INPUT_FILENAMES = {
     "current golfer detail": "Current Month_Golfer Detail.csv",
-    "current GC golfer clubs": "Current Month_GC Golfer Clubs.csv",
     "same-month prior-year report": "same_month_prior_year_report.csv",
     "three-months-prior GC golfer clubs": "Three-Months-Prior_GC Golfer Clubs.csv",
     "marketing workbook": "marketing_workbook.xlsx",
@@ -77,24 +88,8 @@ GOLFER_DETAIL_REQUIRED_HEADERS = {
     "golfer_status_date",
     "usga_membership_type",
     "handicap_index",
-}
-
-GC_GOLFER_CLUBS_REQUIRED_HEADERS = {
-    "golfer_id",
-    "club_id",
-    "golf_association",
-    "status",
-    "inactive_date",
-    "inactive_flag",
-    "email",
     "gender",
     "date_of_birth",
-    "first_name",
-    "last_name",
-    "primary_club",
-    "name",
-    "club_name",
-    "membership_code",
 }
 
 RENEWAL_ELIGIBILITY_REQUIRED_HEADERS = {
@@ -105,7 +100,7 @@ RENEWAL_ELIGIBILITY_REQUIRED_HEADERS = {
 
 SEGMENTATION_BREAKDOWN_REQUIRED_HEADERS = {
     "club_name",
-    "status",
+    "golfer_status",
     "gender",
     "date_of_birth",
 }
@@ -131,6 +126,13 @@ RETENTION_COHORT_COLORS = {
     2023: "#d85a32",
     2024: "#188552",
 }
+
+RECOVERY_AGE_BUCKETS = (
+    ("Under 13 months", 0, 12),
+    ("13–24 months", 13, 24),
+    ("25–36 months", 25, 36),
+    ("37–60 months", 37, 60),
+)
 
 MEMBERSHIP_PARITY_METRICS = (
     "activeGolfers",
@@ -242,6 +244,22 @@ class RetentionDiagnostics:
     maximum_rank_shift: int
 
 
+@dataclass(frozen=True)
+class RecoveryDiagnostics:
+    source_rows: int
+    active_rows: int
+    qualifying_recovery_rows: int
+    distinct_recovery_ghins: int
+    latest_month_recoveries: int
+    clubs_with_recoveries: int
+    missing_creation_dates: int
+    missing_status_dates: int
+    creation_not_before_status_rows: int
+    club_breakdown_reconciles: bool
+    creation_year_breakdown_reconciles: bool
+    membership_age_breakdown_reconciles: bool
+
+
 @dataclass
 class QAReport:
     report_month: str
@@ -263,6 +281,9 @@ class QAReport:
         default_factory=list
     )
     retention_diagnostics: RetentionDiagnostics | None = None
+    recovery_diagnostics: RecoveryDiagnostics | None = None
+    recovery_output: dict[str, Any] | None = None
+    written_outputs: list[Path] = field(default_factory=list)
 
     def add_check(self, name: str, status: str, detail: str) -> None:
         self.checks.append((name, status, detail))
@@ -287,13 +308,16 @@ def parse_month(value: str) -> str:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Validate a monthly dashboard input package and plan a cumulative "
+            "Validate the monthly four-file dashboard input package and plan a cumulative "
             "JSON update. --month is the report month; the dashboard output month "
             "is the prior calendar month. This preview does not write JSON."
         ),
         epilog=(
             "Example: --month 2026-07 reads data/raw/2026-07/ as the July 1, 2026 "
-            "report snapshot and calculates the June 2026 dashboard record."
+            "report snapshot and calculates the June 2026 dashboard record. Required "
+            "monthly files are Current Month_Golfer Detail.csv, "
+            "same_month_prior_year_report.csv, Three-Months-Prior_GC Golfer Clubs.csv, "
+            "and marketing_workbook.xlsx."
         ),
     )
     parser.add_argument(
@@ -314,7 +338,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--skip-marketing",
         action="store_true",
-        help="allow membership processing without marketing_workbook.xlsx",
+        help=(
+            "development-only escape hatch: validate/generate non-marketing outputs "
+            "without marketing_workbook.xlsx"
+        ),
     )
     return parser.parse_args(argv)
 
@@ -717,7 +744,7 @@ def discover_inputs(
     *,
     skip_marketing: bool = False,
 ) -> list[InputFileSummary]:
-    """Locate and minimally validate the required physical source files."""
+    """Locate and minimally validate the required monthly source files."""
     if not raw_directory.is_dir():
         raise ValidationError(f"raw input directory does not exist: {raw_directory}")
 
@@ -730,19 +757,6 @@ def discover_inputs(
     if missing:
         raise ValidationError(
             "missing required input files: " + ", ".join(sorted(missing))
-        )
-
-    discovered_sources = {
-        path.name
-        for path in raw_directory.iterdir()
-        if path.is_file() and path.suffix.lower() in RAW_SOURCE_SUFFIXES
-    }
-    expected_sources = set(REQUIRED_INPUT_FILENAMES.values())
-    unexpected = sorted(discovered_sources - expected_sources)
-    if unexpected:
-        raise ValidationError(
-            "unexpected source files found: "
-            + ", ".join(unexpected)
         )
 
     summaries: list[InputFileSummary] = []
@@ -1048,18 +1062,18 @@ def validate_segmentation_status_records(
 def generate_segmentation_breakdown_records(
     report_month: str,
     activity_month: str,
-    current_gc_golfer_clubs: CsvSnapshot,
+    current_detail: CsvSnapshot,
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
-    """Generate age/gender breakdowns directly from GC Golfer Clubs rows."""
+    """Generate age/gender breakdowns directly from Golfer Detail rows."""
     require_headers(
-        current_gc_golfer_clubs,
+        current_detail,
         SEGMENTATION_BREAKDOWN_REQUIRED_HEADERS,
     )
     year, month_number = target_year_month(activity_month)
     month_name = datetime(year, month_number, 1).strftime("%B")
     report_date_value = date(*target_year_month(report_month), 1)
     report_date_label = display_report_date(report_month)
-    club_names = segmentation_club_names(current_gc_golfer_clubs)
+    club_names = segmentation_club_names(current_detail)
     counts: Counter[tuple[str, str, str, str]] = Counter()
     status_totals: Counter[tuple[str, str]] = Counter()
     source_status_counts: Counter[str] = Counter()
@@ -1068,11 +1082,11 @@ def generate_segmentation_breakdown_records(
     missing_birth_date_rows = 0
     implausible_birth_date_rows = 0
 
-    for row_number, row in enumerate(current_gc_golfer_clubs.rows, start=2):
+    for row_number, row in enumerate(current_detail.rows, start=2):
         club_name = row["club_name"].strip()
         status = normalize_segmentation_status(
-            row["status"],
-            f"{current_gc_golfer_clubs.label} status at CSV row {row_number}",
+            row["golfer_status"],
+            f"{current_detail.label} golfer_status at CSV row {row_number}",
         )
         gender, gender_missing, gender_unknown = normalize_gender_segment(
             row["gender"]
@@ -1081,7 +1095,7 @@ def generate_segmentation_breakdown_records(
             row["date_of_birth"],
             report_date_value,
             (
-                f"{current_gc_golfer_clubs.label} date_of_birth "
+                f"{current_detail.label} date_of_birth "
                 f"at CSV row {row_number}"
             ),
         )
@@ -1783,6 +1797,342 @@ def build_retention_diagnostics(
     )
 
 
+def whole_calendar_months(start: date, end: date) -> int:
+    """Return elapsed whole calendar months between two ordered dates."""
+    months = (end.year - start.year) * 12 + end.month - start.month
+    if end.day < start.day:
+        months -= 1
+    return max(0, months)
+
+
+def recovery_age_bucket(age_months: int) -> str:
+    for label, minimum, maximum in RECOVERY_AGE_BUCKETS:
+        if age_months >= minimum and (
+            maximum is None or age_months <= maximum
+        ):
+            return label
+    raise ValidationError(f"unable to bucket recovery age {age_months}")
+
+
+def generate_recovery_analysis(
+    report_month: str,
+    current_detail: CsvSnapshot,
+) -> tuple[dict[str, Any], RecoveryDiagnostics]:
+    """Generate membership-level YTD Recovery Analysis from Golfer Detail."""
+    require_headers(
+        current_detail,
+        {
+            "ghin_number",
+            "club_number",
+            "club_name",
+            "golfer_status",
+            "membership_creation_date",
+            "golfer_status_date",
+        },
+    )
+    report_year, report_month_number = target_year_month(report_month)
+    report_date = date(report_year, report_month_number, 1)
+    period_end = report_date - timedelta(days=1)
+    period_start = date(period_end.year, 1, 1)
+    latest_month = period_end.month
+
+    active_rows = 0
+    active_by_club: Counter[tuple[str, str]] = Counter()
+    recoveries_by_month: Counter[int] = Counter()
+    recovery_ghins_by_month: defaultdict[int, set[str]] = defaultdict(set)
+    recoveries_by_club: Counter[tuple[str, str]] = Counter()
+    latest_recoveries_by_club: Counter[tuple[str, str]] = Counter()
+    recovery_ages_by_club: defaultdict[tuple[str, str], list[int]] = defaultdict(list)
+    recoveries_by_creation_year: Counter[int] = Counter()
+    active_by_creation_year: Counter[int] = Counter()
+    recovery_ages_by_creation_year: defaultdict[int, list[int]] = defaultdict(list)
+    recoveries_by_age: Counter[str] = Counter()
+    all_recovery_ages: list[int] = []
+    distinct_recovery_ghins: set[str] = set()
+    missing_creation_dates = 0
+    missing_status_dates = 0
+    creation_not_before_status_rows = 0
+
+    for row_number, row in enumerate(current_detail.rows, start=2):
+        status = normalize_segmentation_status(
+            row["golfer_status"],
+            f"{current_detail.label} golfer_status at CSV row {row_number}",
+        )
+        if status != "Active":
+            continue
+        active_rows += 1
+        club_number = row["club_number"].strip()
+        club_name = row["club_name"].strip()
+        if not club_number or not club_name:
+            raise ValidationError(
+                f"{current_detail.label} has a blank club identifier at CSV row {row_number}"
+            )
+        active_by_club[(club_number, club_name)] += 1
+
+        creation_date = parse_source_date(
+            row["membership_creation_date"],
+            f"{current_detail.label} membership_creation_date at CSV row {row_number}",
+        )
+        status_date = parse_source_date(
+            row["golfer_status_date"],
+            f"{current_detail.label} golfer_status_date at CSV row {row_number}",
+        )
+        if creation_date is None:
+            missing_creation_dates += 1
+            continue
+        active_by_creation_year[creation_date.year] += 1
+        if status_date is None:
+            missing_status_dates += 1
+            continue
+        if creation_date >= status_date:
+            creation_not_before_status_rows += 1
+            continue
+        if not period_start <= status_date <= period_end:
+            continue
+
+        golfer_id = row["ghin_number"].strip()
+        if not golfer_id:
+            raise ValidationError(
+                f"{current_detail.label} has a blank GHIN Number at CSV row {row_number}"
+            )
+        age_months = whole_calendar_months(creation_date, status_date)
+        age_bucket = recovery_age_bucket(age_months)
+        club_key = (club_number, club_name)
+        recoveries_by_month[status_date.month] += 1
+        recovery_ghins_by_month[status_date.month].add(golfer_id)
+        recoveries_by_club[club_key] += 1
+        if status_date.month == latest_month:
+            latest_recoveries_by_club[club_key] += 1
+        recovery_ages_by_club[club_key].append(age_months)
+        recoveries_by_creation_year[creation_date.year] += 1
+        recovery_ages_by_creation_year[creation_date.year].append(age_months)
+        recoveries_by_age[age_bucket] += 1
+        all_recovery_ages.append(age_months)
+        distinct_recovery_ghins.add(golfer_id)
+
+    recoveries_ytd = sum(recoveries_by_month.values())
+    latest_month_recoveries = recoveries_by_month[latest_month]
+    recovery_rate = recoveries_ytd / active_rows if active_rows else None
+    clubs_with_recoveries = sum(
+        count > 0 for count in recoveries_by_club.values()
+    )
+    median_age = (
+        statistics.median(all_recovery_ages) if all_recovery_ages else None
+    )
+
+    monthly_trend: list[dict[str, Any]] = []
+    cumulative = 0
+    for month_number in range(1, latest_month + 1):
+        recoveries = recoveries_by_month[month_number]
+        cumulative += recoveries
+        monthly_trend.append(
+            {
+                "year": period_end.year,
+                "month": datetime(period_end.year, month_number, 1).strftime("%B"),
+                "monthNum": month_number,
+                "label": datetime(period_end.year, month_number, 1).strftime("%B %Y"),
+                "recoveries": recoveries,
+                "cumulativeRecoveries": cumulative,
+                "distinctGHINs": len(recovery_ghins_by_month[month_number]),
+                "recoveriesAsPctOfActiveBase": (
+                    recoveries / active_rows if active_rows else None
+                ),
+            }
+        )
+
+    by_club: list[dict[str, Any]] = []
+    for club_key in sorted(active_by_club, key=lambda value: value[1]):
+        club_number, club_name = club_key
+        recoveries = recoveries_by_club[club_key]
+        active_base = active_by_club[club_key]
+        ages = recovery_ages_by_club[club_key]
+        by_club.append(
+            {
+                "clubNumber": club_number,
+                "clubName": club_name,
+                "recoveriesYTD": recoveries,
+                "latestMonthRecoveries": latest_recoveries_by_club[club_key],
+                "activeMemberships": active_base,
+                "shareOfYTDRecoveries": (
+                    recoveries / recoveries_ytd if recoveries_ytd else 0.0
+                ),
+                "recoveriesAsPctOfActiveBase": (
+                    recoveries / active_base if active_base else None
+                ),
+                "medianMembershipAgeMonths": (
+                    statistics.median(ages) if ages else None
+                ),
+            }
+        )
+
+    by_creation_year: list[dict[str, Any]] = []
+    for creation_year in sorted(recoveries_by_creation_year):
+        recoveries = recoveries_by_creation_year[creation_year]
+        active_base = active_by_creation_year[creation_year]
+        ages = recovery_ages_by_creation_year[creation_year]
+        by_creation_year.append(
+            {
+                "creationYear": creation_year,
+                "recoveriesYTD": recoveries,
+                "shareOfYTDRecoveries": (
+                    recoveries / recoveries_ytd if recoveries_ytd else 0.0
+                ),
+                "activeMemberships": active_base,
+                "recoveriesAsPctOfActiveBase": (
+                    recoveries / active_base if active_base else None
+                ),
+                "medianMembershipAgeMonths": statistics.median(ages),
+            }
+        )
+
+    by_membership_age: list[dict[str, Any]] = []
+    for label, minimum, maximum in RECOVERY_AGE_BUCKETS:
+        recoveries = recoveries_by_age[label]
+        by_membership_age.append(
+            {
+                "segment": label,
+                "minimumMonths": minimum,
+                "maximumMonths": maximum,
+                "recoveriesYTD": recoveries,
+                "shareOfYTDRecoveries": (
+                    recoveries / recoveries_ytd if recoveries_ytd else 0.0
+                ),
+            }
+        )
+
+    ranking_source = sorted(
+        by_club,
+        key=lambda record: (
+            -record["recoveriesYTD"],
+            -float(record["recoveriesAsPctOfActiveBase"] or 0.0),
+            record["clubName"],
+        ),
+    )
+    rankings = [
+        {
+            "rank": index,
+            **record,
+            "priorYearRecoveriesYTD": None,
+            "yoyChange": None,
+        }
+        for index, record in enumerate(ranking_source, start=1)
+    ]
+
+    club_reconciles = sum(
+        record["recoveriesYTD"] for record in by_club
+    ) == recoveries_ytd
+    creation_year_reconciles = sum(
+        record["recoveriesYTD"] for record in by_creation_year
+    ) == recoveries_ytd
+    age_reconciles = sum(
+        record["recoveriesYTD"] for record in by_membership_age
+    ) == recoveries_ytd
+    qa = {
+        "sourceRows": len(current_detail.rows),
+        "activeRows": active_rows,
+        "qualifyingRecoveryRows": recoveries_ytd,
+        "distinctRecoveryGHINs": len(distinct_recovery_ghins),
+        "missingCreationDateRows": missing_creation_dates,
+        "missingStatusDateRows": missing_status_dates,
+        "creationNotBeforeStatusDateRows": creation_not_before_status_rows,
+        "clubBreakdownReconciles": club_reconciles,
+        "creationYearBreakdownReconciles": creation_year_reconciles,
+        "membershipAgeBreakdownReconciles": age_reconciles,
+    }
+    output = {
+        "metadata": {
+            "schemaVersion": 1,
+            "definitionVersion": "active-status-date-v1",
+            "reportMonth": report_month,
+            "reportDate": report_date.isoformat(),
+            "activityThrough": period_end.isoformat(),
+            "periodStart": period_start.isoformat(),
+            "periodEnd": period_end.isoformat(),
+            "grain": "membership",
+            "source": "Current Month_Golfer Detail.csv",
+        },
+        "summary": {
+            "recoveriesYTD": recoveries_ytd,
+            "latestMonthRecoveries": latest_month_recoveries,
+            "activeMemberships": active_rows,
+            "recoveriesAsPctOfActiveBase": recovery_rate,
+            "clubsWithRecoveries": clubs_with_recoveries,
+            "medianMembershipAgeMonths": median_age,
+            "priorYearRecoveriesYTD": None,
+            "yoyChange": None,
+        },
+        "monthlyTrend": monthly_trend,
+        "byClub": by_club,
+        "byCreationYear": by_creation_year,
+        "byMembershipAge": by_membership_age,
+        "rankings": rankings,
+        "qa": qa,
+    }
+    validate_recovery_analysis(output)
+    diagnostics = RecoveryDiagnostics(
+        source_rows=len(current_detail.rows),
+        active_rows=active_rows,
+        qualifying_recovery_rows=recoveries_ytd,
+        distinct_recovery_ghins=len(distinct_recovery_ghins),
+        latest_month_recoveries=latest_month_recoveries,
+        clubs_with_recoveries=clubs_with_recoveries,
+        missing_creation_dates=missing_creation_dates,
+        missing_status_dates=missing_status_dates,
+        creation_not_before_status_rows=creation_not_before_status_rows,
+        club_breakdown_reconciles=club_reconciles,
+        creation_year_breakdown_reconciles=creation_year_reconciles,
+        membership_age_breakdown_reconciles=age_reconciles,
+    )
+    return output, diagnostics
+
+
+def validate_recovery_analysis(output: dict[str, Any]) -> None:
+    required = {
+        "metadata",
+        "summary",
+        "monthlyTrend",
+        "byClub",
+        "byCreationYear",
+        "byMembershipAge",
+        "rankings",
+        "qa",
+    }
+    if set(output) != required:
+        raise ValidationError("recovery_analysis.json has an invalid top-level schema")
+    if len(output["byClub"]) != 57 or len(output["rankings"]) != 57:
+        raise ValidationError(
+            "recovery_analysis.json must contain 57 club and ranking records"
+        )
+    if len(output["byMembershipAge"]) != len(RECOVERY_AGE_BUCKETS):
+        raise ValidationError("recovery membership-age buckets are incomplete")
+    if not all(
+        output["qa"][field]
+        for field in (
+            "clubBreakdownReconciles",
+            "creationYearBreakdownReconciles",
+            "membershipAgeBreakdownReconciles",
+        )
+    ):
+        raise ValidationError("recovery breakdowns do not reconcile to YTD total")
+
+
+def write_recovery_analysis(
+    data_directory: Path,
+    backup_directory: Path,
+    output: dict[str, Any],
+) -> Path:
+    """Write the validated Recovery Analysis output with backup-on-replace."""
+    output_path = data_directory / "recovery_analysis.json"
+    if output_path.exists():
+        backup_directory.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(output_path, backup_directory / output_path.name)
+    output_path.write_text(
+        json.dumps(output, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return output_path
+
+
 def membership_parity_baseline(
     membership_state: Any,
     target_month: str,
@@ -2339,6 +2689,37 @@ def print_qa_summary(report: QAReport, status: str, message: str) -> None:
         )
         print()
 
+    if report.recovery_diagnostics:
+        item = report.recovery_diagnostics
+        print("Recovery Analysis dry-run diagnostics")
+        print(
+            f"  source rows: {item.source_rows:,}; "
+            f"Active rows: {item.active_rows:,}"
+        )
+        print(
+            f"  qualifying YTD recovery rows: "
+            f"{item.qualifying_recovery_rows:,}; distinct GHINs: "
+            f"{item.distinct_recovery_ghins:,}"
+        )
+        print(
+            f"  latest completed month recoveries: "
+            f"{item.latest_month_recoveries:,}; clubs with recoveries: "
+            f"{item.clubs_with_recoveries:,}"
+        )
+        print(
+            f"  missing creation dates: {item.missing_creation_dates:,}; "
+            f"missing status dates: {item.missing_status_dates:,}; "
+            f"creation date not before status date: "
+            f"{item.creation_not_before_status_rows:,}"
+        )
+        print(
+            "  reconciliations: "
+            f"club={'PASS' if item.club_breakdown_reconciles else 'FAIL'}, "
+            f"creation year={'PASS' if item.creation_year_breakdown_reconciles else 'FAIL'}, "
+            f"membership age={'PASS' if item.membership_age_breakdown_reconciles else 'FAIL'}"
+        )
+        print()
+
     if report.calculation_notes:
         print("Calculation methods")
         for note in report.calculation_notes:
@@ -2364,9 +2745,11 @@ def print_qa_summary(report: QAReport, status: str, message: str) -> None:
     print("Writes")
     if report.dry_run:
         print("  Disabled by --dry-run; no JSON files were modified.")
+    elif report.written_outputs:
+        for output_path in report.written_outputs:
+            print(f"  Wrote {output_path}")
     else:
-        print("  Disabled for this preview, even without --dry-run.")
-        print("  No JSON files were modified; the calculated record is QA-only.")
+        print("  No JSON files were modified.")
     print()
     print(message)
 
@@ -2403,9 +2786,9 @@ def run(args: argparse.Namespace) -> int:
             "Required source files",
             "PASS",
             (
-                "four CSV sources are present and marketing was skipped"
+                "three CSV sources are present and marketing was skipped"
                 if args.skip_marketing
-                else "four CSV sources and the marketing workbook are present"
+                else "three CSV sources and the marketing workbook are present"
             ),
         )
         report.add_check(
@@ -2435,7 +2818,7 @@ def run(args: argparse.Namespace) -> int:
         report.add_check(
             "Current Golfer Detail schema",
             "PASS",
-            f"all 10 corrected source headers are present; {detail_golfers:,} distinct GHIN Numbers across membership rows",
+            f"master current-month headers are present; {detail_golfers:,} distinct GHIN Numbers across membership rows",
         )
         report.add_check(
             "Three-Months-Prior GC Golfer Clubs schema",
@@ -2459,21 +2842,6 @@ def run(args: argparse.Namespace) -> int:
                 f"report month {display_month(report_month)} reads data/raw/{report_month}/ "
                 f"and produces the {display_month(activity_month)} dashboard record"
             ),
-        )
-
-        input_paths = membership_input_paths(report.inputs)
-        current_gc_golfer_clubs = read_csv_snapshot(
-            input_paths["current GC golfer clubs"],
-            "current GC golfer clubs",
-        )
-        require_headers(
-            current_gc_golfer_clubs,
-            SEGMENTATION_BREAKDOWN_REQUIRED_HEADERS,
-        )
-        report.add_check(
-            "Current GC Golfer Clubs segmentation schema",
-            "PASS",
-            "club_name, status, gender, and date_of_birth are present",
         )
 
         status_records, status_counts = generate_segmentation_status_records(
@@ -2518,7 +2886,7 @@ def run(args: argparse.Namespace) -> int:
             generate_segmentation_breakdown_records(
                 report_month,
                 activity_month,
-                current_gc_golfer_clubs,
+                current_detail,
             )
         )
         (
@@ -2537,8 +2905,8 @@ def run(args: argparse.Namespace) -> int:
         report.segmentation_diagnostics.append(
             SegmentationDiagnostics(
                 output_filename="segmentation_breakdown.json",
-                source_label="Current Month_GC Golfer Clubs.csv",
-                source_rows=len(current_gc_golfer_clubs.rows),
+                source_label="Current Month_Golfer Detail.csv",
+                source_rows=len(current_detail.rows),
                 target_records=len(breakdown_records),
                 existing_target_records=existing_breakdown_target_records,
                 merged_records=len(merged_breakdown_records),
@@ -2561,7 +2929,7 @@ def run(args: argparse.Namespace) -> int:
             "PASS",
             (
                 f"generated {len(breakdown_records):,} {display_month(activity_month)} "
-                "All/club age and gender records from GC Golfer Clubs"
+                "All/club age and gender records from Golfer Detail"
             ),
         )
         report.add_check(
@@ -2576,7 +2944,7 @@ def run(args: argparse.Namespace) -> int:
         report.calculation_notes.extend(
             (
                 "segmentation_status.json counted Golfer Detail membership rows by Club Name and Golfer Status; no join or GHIN deduplication",
-                "segmentation_breakdown.json counted GC Golfer Clubs rows directly by club/status, Gender, and age as of the report date; no join or golfer deduplication",
+                "segmentation_breakdown.json counted Golfer Detail membership rows directly by club/status, Gender, and age as of the report date; no join or golfer deduplication",
                 "segmentation target-month records were replaced only in memory; records outside the activity month were preserved",
             )
         )
@@ -2636,6 +3004,33 @@ def run(args: argparse.Namespace) -> int:
                 "from milestone survival because Golfer Status Date precedes "
                 "Membership Creation Date."
             )
+
+        report.recovery_output, report.recovery_diagnostics = (
+            generate_recovery_analysis(report_month, current_detail)
+        )
+        report.add_check(
+            "Recovery Analysis generation",
+            "PASS",
+            (
+                f"generated {len(report.recovery_output['monthlyTrend'])} monthly rows, "
+                f"{len(report.recovery_output['byClub'])} club rows, "
+                f"{len(report.recovery_output['byCreationYear'])} creation-year rows, "
+                f"{len(report.recovery_output['byMembershipAge'])} age buckets, and "
+                f"{len(report.recovery_output['rankings'])} ranking rows"
+            ),
+        )
+        report.add_check(
+            "Recovery Analysis reconciliation",
+            "PASS",
+            "club, creation-year, and membership-age totals reconcile to Recoveries YTD",
+        )
+        report.calculation_notes.extend(
+            (
+                "Recovery Analysis is membership-level and includes Active Golfer Detail rows where Membership Creation Date precedes Golfer Status Date and Golfer Status Date falls inside the YTD activity period",
+                "Recovery Analysis uses Recoveries as % of Active Base for composition metrics; it is not an inactive-population conversion rate",
+                "Recovery Analysis monthly, club, creation-year, membership-age, and ranking datasets reconcile to the same YTD recovery cohort",
+            )
+        )
         dashboard_record, baseline_label, baseline_is_fallback = membership_parity_baseline(
             existing_state["membership_monthly.json"], activity_month
         )
@@ -2707,18 +3102,32 @@ def run(args: argparse.Namespace) -> int:
         for warning in validate_output_row_counts_stub(existing_state):
             report.warnings.append(warning)
         report.warnings.append(
-            "Current Month_GC Golfer Clubs is used only for segmentation_breakdown.json; core membership metrics remain sourced from Golfer Detail and the previously agreed renewal/retention inputs."
+            "Current Month_Golfer Detail is the master current-month source for membership, segmentation, retention, and recovery outputs; Current Month_GC Golfer Clubs is no longer required."
         )
         report.warnings.append(
             "Marketing workbook processing was skipped."
             if args.skip_marketing
             else "Marketing workbook column validation remains deferred."
         )
-        report.add_check(
-            "JSON overwrite",
-            "SKIPPED",
-            "dry-run outputs were merged in memory for validation only; no JSON was written",
-        )
+        if args.dry_run:
+            report.add_check(
+                "Recovery Analysis JSON write",
+                "SKIPPED",
+                "dry-run output was validated in memory; no JSON was written",
+            )
+        else:
+            report.written_outputs.append(
+                write_recovery_analysis(
+                    data_directory,
+                    report.backup_directory,
+                    report.recovery_output,
+                )
+            )
+            report.add_check(
+                "Recovery Analysis JSON write",
+                "PASS",
+                "wrote data/recovery_analysis.json; no other JSON output was modified",
+            )
     except ValidationError as exc:
         report.add_check("Update validation", "FAIL", str(exc))
         print_qa_summary(
@@ -2740,13 +3149,17 @@ def run(args: argparse.Namespace) -> int:
             )
         ),
         message=(
-            f"Activity month {activity_month} has no populated dashboard baseline. No JSON files were written."
+            f"Activity month {activity_month} has no populated dashboard baseline."
             if not parity_evaluated
             else (
-                f"Target membership record matches the {report.parity_baseline_label} dashboard baseline. No JSON files were written."
+                f"Target membership record matches the {report.parity_baseline_label} dashboard baseline."
                 if parity_passed
-                else f"Target membership record differs from the {report.parity_baseline_label} dashboard baseline. No JSON files were written."
+                else f"Target membership record differs from the {report.parity_baseline_label} dashboard baseline."
             )
+        ) + (
+            " Recovery Analysis JSON was written."
+            if report.written_outputs
+            else " No JSON files were written."
         ),
     )
     return 0 if parity_passed else 1
