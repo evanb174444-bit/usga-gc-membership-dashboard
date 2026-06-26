@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Dry-run preview for the monthly dashboard data updater.
 
-This phase validates the monthly four-file input package, loads the existing
-cumulative JSON state, calculates dashboard outputs, plans a backup location,
-and prints a QA summary. JSON writes are intentionally disabled during dry runs.
+This phase validates the monthly input package, loads the existing cumulative
+JSON state, calculates dashboard outputs, plans a backup location, and prints a
+QA summary. JSON writes are intentionally disabled during dry runs.
 
 Reporting convention
 --------------------
@@ -24,8 +24,8 @@ Monthly source responsibilities
 * ``Three-Months-Prior_GC Golfer Clubs.csv`` supplies up-for-renewal
   eligibility only.
 * ``marketing_workbook.xlsx`` supplies marketing outputs when implemented.
-* GHIN Trials can be generated from five aggregate Tableau CSV exports when
-  present: ``Yearly Statistics.csv``, ``Trials Created by Day.csv``,
+* GHIN Trials are generated from five aggregate Tableau CSV exports in the same
+  ``data/raw/YYYY-MM/`` folder: ``Yearly Statistics.csv``, ``Trials Created by Day.csv``,
   ``Trial Conversions by Day.csv``, ``Conversions by Days in Trial.csv``,
   and ``AGA Conversions.csv``.
 """
@@ -341,16 +341,19 @@ def parse_month(value: str) -> str:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Validate the monthly four-file dashboard input package and plan a cumulative "
-            "JSON update. --month is the report month; the dashboard output month "
-            "is the prior calendar month. This preview does not write JSON."
+            "Validate the monthly dashboard input package and plan a cumulative JSON "
+            "update. --month is the report month; the dashboard output month is the "
+            "prior calendar month. This preview does not write JSON."
         ),
         epilog=(
             "Example: --month 2026-07 reads data/raw/2026-07/ as the July 1, 2026 "
-            "report snapshot and calculates the June 2026 dashboard record. Required "
+            "report snapshot and calculates the June 2026 dashboard record. Core "
             "monthly files are Current Month_Golfer Detail.csv, "
             "same_month_prior_year_report.csv, Three-Months-Prior_GC Golfer Clubs.csv, "
-            "and marketing_workbook.xlsx."
+            "and marketing_workbook.xlsx. GHIN Trials additionally uses five Tableau "
+            "exports: Yearly Statistics.csv, Trials Created by Day.csv, Trial "
+            "Conversions by Day.csv, Conversions by Days in Trial.csv, and AGA "
+            "Conversions.csv."
         ),
     )
     parser.add_argument(
@@ -380,8 +383,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--ghin-only",
         action="store_true",
         help=(
-            "validate and generate GHIN Trials JSON from Tableau aggregate CSVs only; "
-            "useful before the full monthly input package is available"
+            "validate and generate GHIN Trials JSON from the five Tableau exports only "
+            "(Yearly Statistics.csv, Trials Created by Day.csv, Trial Conversions by Day.csv, "
+            "Conversions by Days in Trial.csv, and AGA Conversions.csv)"
         ),
     )
     return parser.parse_args(argv)

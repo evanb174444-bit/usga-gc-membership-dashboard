@@ -97,14 +97,15 @@ USGA-GC-Dashboard/
 ├── data/
 │   ├── raw/
 │   │   └── 2026-07/
-│   │       ├── membership.csv
-│   │       ├── segmentation_status.csv
-│   │       ├── segmentation_breakdown.csv
-│   │       ├── retention_cohorts.csv
-│   │       ├── retention_clubs.csv
-│   │       ├── ghin_trials.csv
-│   │       ├── marketing.csv
-│   │       └── affiliates.csv
+│   │       ├── Current Month_Golfer Detail.csv
+│   │       ├── same_month_prior_year_report.csv
+│   │       ├── Three-Months-Prior_GC Golfer Clubs.csv
+│   │       ├── marketing_workbook.xlsx
+│   │       ├── Yearly Statistics.csv
+│   │       ├── Trials Created by Day.csv
+│   │       ├── Trial Conversions by Day.csv
+│   │       ├── Conversions by Days in Trial.csv
+│   │       └── AGA Conversions.csv
 │   ├── reference/
 │   │   ├── clubs.csv                    # Canonical club identifiers and names
 │   │   ├── channels.csv                 # Canonical attribution channels
@@ -172,112 +173,75 @@ Large generated databases, processed files, and `dist/` outputs should be exclud
 
 Each reporting cycle receives a defined set of CSV exports. Files are copied without alteration into a month-specific directory such as `data/raw/2026-07/`.
 
-The current Phase 1 monthly source contract uses four files:
+The current Phase 1 monthly source contract uses four core monthly files plus a five-file GHIN Trials Tableau package:
 
 - `Current Month_Golfer Detail.csv` — master current-month export for `membership_monthly.json`, `segmentation_status.json`, `segmentation_breakdown.json`, `retention_cohorts.json`, `retention_club_rankings.json`, and `recovery_analysis.json`.
 - `same_month_prior_year_report.csv` — prior-year active cohort for the 12-month retention comparison.
 - `Three-Months-Prior_GC Golfer Clubs.csv` — up-for-renewal eligibility only.
 - `marketing_workbook.xlsx` — marketing outputs when implemented.
 
+GHIN Trials package:
+
+- `Yearly Statistics.csv`
+- `Trials Created by Day.csv`
+- `Trial Conversions by Day.csv`
+- `Conversions by Days in Trial.csv`
+- `AGA Conversions.csv`
+
 ### GHIN Trials source contract
 
-When GHIN Trials automation is implemented, the monthly delivery should include a dedicated trial-level export:
+GHIN Trials automation is implemented from five aggregate Tableau CSV exports placed in:
 
-`data/raw/YYYY-MM/ghin_trials_export.csv`
+`data/raw/YYYY-MM/`
 
-This file is the authoritative source for `data/ghin_trials.json`. It should not be inferred from `Current Month_Golfer Detail.csv`, because the golfer detail export does not identify trial lifecycle events, trial campaign attribution, or days from trial creation to conversion.
+These files are the authoritative sources for `data/ghin_trials.json`. They are not inferred from `Current Month_Golfer Detail.csv`, because the golfer detail export does not identify GHIN trial lifecycle events, trial timing, or association-level trial conversion breakdowns.
 
-Required columns:
+Expected Tableau exports:
 
-- `trial_id`
-- `ghin_number`
-- `golfer_id`
-- `trial_created_date`
-- `trial_status`
-- `converted_date`
-- `converted_flag`
-- `golf_association_id`
-- `golf_association_name`
-- `campaign_name`
-- `activation_date`
-- `activated_flag`
-- `engagement_date`
-- `engaged_flag`
+- `Yearly Statistics.csv`
+- `Trials Created by Day.csv`
+- `Trial Conversions by Day.csv`
+- `Conversions by Days in Trial.csv`
+- `AGA Conversions.csv`
 
-Optional columns:
+Implemented output mapping to `ghin_trials.json`:
 
-- `club_id`
-- `club_name`
-- `source_channel`
-- `utm_source`
-- `utm_medium`
-- `utm_campaign`
-- `trial_expiration_date`
-- `current_membership_status`
-- `converted_membership_created_date`
+- `Yearly Statistics.csv` → `summary`
+  - Reads the report-year column.
+  - Generates `totalTrialsCreated`, `trialConversions`, `conversionRate`, `activeTrialGolfers`, and `inactiveTrialGolfers`.
 
-Expected grain:
+- `Trials Created by Day.csv` → `monthly.trials`
+  - Reads the Tableau daily crosstab.
+  - Aggregates dated trial-created counts into one row per completed activity month in the report year.
 
-- One row per GHIN trial enrollment.
-- `trial_id` is the unique primary key.
-- A golfer may appear more than once only if they legitimately have multiple trial enrollments represented by different `trial_id` values.
+- `Trial Conversions by Day.csv` → `monthly.conversions` and the conversion-rate trend
+  - Reads the Tableau daily crosstab.
+  - Aggregates dated conversion counts into the same monthly records.
+  - The dashboard conversion-rate trend remains calculated from monthly `conversions / trials`.
 
-Output mapping to `ghin_trials.json`:
+- `Conversions by Days in Trial.csv` → `conversionBuckets`
+  - Reads the Tableau bucket labels and counts.
+  - Preserves the dashboard bucket structure and validates Tableau percentages against each bucket's share of the exported count total.
 
-- `summary`
-  - `totalTrialsCreated`: count of trial rows with `trial_created_date` in the reporting/YTD period.
-  - `trialConversions`: count of converted trial rows in the reporting/YTD period, using `converted_flag` and/or `converted_date`.
-  - `conversionRate`: `trialConversions / totalTrialsCreated`; use `null` when `totalTrialsCreated` is zero.
-  - `activeTrialGolfers`: count of rows where `trial_status` represents active/current trial status as of the report snapshot.
-  - `inactiveTrialGolfers`: count of rows where `trial_status` represents inactive/expired/ended trial status as of the report snapshot.
-
-- `monthly`
-  - One record per completed activity month in the reporting year.
-  - `label`: display month abbreviation derived from the month number.
-  - `trials`: count of rows grouped by `trial_created_date` month.
-  - `conversions`: count of converted rows grouped by `converted_date` month.
-  - Conversion-rate trend remains calculated as `conversions / trials`; use `null` when monthly `trials` is zero.
-
-- `conversionBuckets`
-  - Use only converted records with both `trial_created_date` and `converted_date`.
-  - Calculate elapsed time from trial creation to conversion and bucket into the dashboard-defined timing bands.
-  - `count`: bucket count.
-  - `pct`: `count / total_bucketed_conversions`; use `null` when the denominator is zero.
-
-- `agaConversions`
-  - Use converted records with a populated `golf_association_name`.
-  - Group by `golf_association_name`; retain `golf_association_id` in the pipeline for QA and stable joins even if the current dashboard JSON displays only the name.
-  - `count`: converted-trial count by association.
-  - Sort descending by `count`, then by association name for stable output.
+- `AGA Conversions.csv` → `agaConversions`
+  - Reads association names and conversion counts.
+  - Sorts descending by `count`, then by association name for stable output.
 
 - `overview`
-  - `signups`: count of trial rows in the reporting/YTD period.
-  - `activeTrials`: count where `trial_status` is active/current.
-  - `conversions`: count of converted trial rows.
-  - `conversionRate`: `conversions / signups`; use `null` when `signups` is zero.
-  - `campaigns`: group rows by `campaign_name`; `value` is trial count or conversion count depending on the final dashboard definition, and `sub` should be generated from the campaign conversion rate.
-  - `funnel`: generate standard lifecycle counts:
-    - Trial signups: count of trial rows.
-    - Activated trials: count where `activated_flag` is true or `activation_date` is populated.
-    - Engaged trials: count where `engaged_flag` is true or `engagement_date` is populated.
-    - Converted golfers: count where `converted_flag` is true or `converted_date` is populated.
+  - Numeric fields are refreshed from `summary`.
+  - `overview.campaigns` and `overview.funnel` remain legacy placeholders preserved from the existing JSON because the five aggregate Tableau exports do not include campaign, activation, or engagement fields.
+  - These sections should be generated later when Marketing Attribution is implemented.
 
 Validation rules:
 
-- `trial_id` must be present and unique.
-- Required headers must exist exactly once after header normalization.
-- Date fields must be blank or parse as valid dates.
-- `converted_flag` must normalize to a boolean-like value when populated.
-- Converted records must have either `converted_flag = true` or a populated `converted_date`.
-- Records with `converted_flag = true` should have `converted_date`; if missing, report a QA warning unless the source explicitly defines flag-only conversion as valid.
-- Records with `converted_date` should be treated as converted even if `converted_flag` is blank; if `converted_flag = false` and `converted_date` is populated, fail validation or quarantine the row.
-- `conversionBuckets` require both `trial_created_date` and `converted_date`; converted records missing either date should be excluded from bucket counts and reported in QA.
-- AGA rankings require `golf_association_name`; converted records missing it should be excluded from AGA rankings and reported in QA.
-- Campaign sections require `campaign_name`; rows missing campaign should roll into an explicit `Unknown` campaign bucket or fail, depending on release policy.
-- Funnel activation requires `activation_date` or `activated_flag`.
-- Funnel engagement requires `engagement_date` or `engaged_flag`.
+- All five Tableau exports must exist in `data/raw/YYYY-MM/` when generating GHIN Trials.
+- UTF-8 comma CSV and UTF-16 tab-delimited Tableau exports are supported.
+- `Yearly Statistics.csv` must include the report-year column and the expected metric rows.
+- Daily crosstab exports must include parseable date headers and a `Trial Golfer Count` or equivalent count row.
+- `Conversions by Days in Trial.csv` must include the expected five conversion timing buckets.
+- `AGA Conversions.csv` must include association names and count values.
 - Calculated rates must use `null` when the denominator is zero; do not emit `0`, `Infinity`, or `NaN` for undefined rates.
-- The generated `summary.trialConversions`, total `monthly.conversions`, total `conversionBuckets.count`, and total `agaConversions.count` should reconcile or explain any valid grain/date-window differences in QA.
+- The generated output is compared with the existing `data/ghin_trials.json` during dry runs where comparable values exist.
 
 The pipeline records for every file:
 
