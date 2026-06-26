@@ -24,6 +24,10 @@ Monthly source responsibilities
 * ``Three-Months-Prior_GC Golfer Clubs.csv`` supplies up-for-renewal
   eligibility only.
 * ``marketing_workbook.xlsx`` supplies marketing outputs when implemented.
+* GHIN Trials can be generated from five aggregate Tableau CSV exports when
+  present: ``Yearly Statistics.csv``, ``Trials Created by Day.csv``,
+  ``Trial Conversions by Day.csv``, ``Conversions by Days in Trial.csv``,
+  and ``AGA Conversions.csv``.
 """
 
 from __future__ import annotations
@@ -55,11 +59,20 @@ REQUIRED_INPUT_FILENAMES = {
 
 EXISTING_JSON_FILENAMES = (
     "membership_monthly.json",
+    "ghin_trials.json",
     "segmentation_status.json",
     "segmentation_breakdown.json",
     "retention_club_rankings.json",
     "retention_cohorts.json",
 )
+
+GHIN_TABLEAU_FILENAMES = {
+    "yearly statistics": "Yearly Statistics.csv",
+    "trials created by day": "Trials Created by Day.csv",
+    "trial conversions by day": "Trial Conversions by Day.csv",
+    "conversions by days in trial": "Conversions by Days in Trial.csv",
+    "aga conversions": "AGA Conversions.csv",
+}
 
 RAW_SOURCE_SUFFIXES = {".csv", ".xlsx", ".xls"}
 
@@ -260,6 +273,24 @@ class RecoveryDiagnostics:
     membership_age_breakdown_reconciles: bool
 
 
+@dataclass(frozen=True)
+class GhinTrialsDiagnostics:
+    source_files: dict[str, Path]
+    source_row_counts: dict[str, int]
+    date_coverage: dict[str, tuple[str | None, str | None]]
+    generated_summary: dict[str, Any]
+    monthly_records: int
+    monthly_trials_total: int
+    monthly_conversions_total: int
+    conversion_bucket_records: int
+    conversion_bucket_total: int
+    aga_records: int
+    aga_total: int
+    overview_campaigns_preserved: int
+    overview_funnel_preserved: int
+    parity_differences: list[str]
+
+
 @dataclass
 class QAReport:
     report_month: str
@@ -283,6 +314,8 @@ class QAReport:
     retention_diagnostics: RetentionDiagnostics | None = None
     recovery_diagnostics: RecoveryDiagnostics | None = None
     recovery_output: dict[str, Any] | None = None
+    ghin_trials_diagnostics: GhinTrialsDiagnostics | None = None
+    ghin_trials_output: dict[str, Any] | None = None
     written_outputs: list[Path] = field(default_factory=list)
 
     def add_check(self, name: str, status: str, detail: str) -> None:
@@ -341,6 +374,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help=(
             "development-only escape hatch: validate/generate non-marketing outputs "
             "without marketing_workbook.xlsx"
+        ),
+    )
+    parser.add_argument(
+        "--ghin-only",
+        action="store_true",
+        help=(
+            "validate and generate GHIN Trials JSON from Tableau aggregate CSVs only; "
+            "useful before the full monthly input package is available"
         ),
     )
     return parser.parse_args(argv)
@@ -449,6 +490,30 @@ def read_csv_snapshot(path: Path, label: str) -> CsvSnapshot:
     if not rows:
         raise ValidationError(f"CSV contains no data rows: {path}")
     return CsvSnapshot(label=label, path=path, headers=headers, rows=rows)
+
+
+def read_tableau_rows(path: Path) -> list[list[str]]:
+    """Read a Tableau CSV export, including UTF-16 tab-delimited crosstabs."""
+    encoding, delimiter = detect_csv_format(path)
+    rows: list[list[str]] = []
+    try:
+        with path.open("r", encoding=encoding, newline="") as handle:
+            reader = csv.reader(handle, delimiter=delimiter)
+            for raw_row in reader:
+                row = trim_trailing_empty_cells([cell.strip() for cell in raw_row])
+                if any(cell for cell in row):
+                    rows.append(row)
+    except UnicodeDecodeError as exc:
+        raise ValidationError(
+            f"Tableau CSV is not a supported UTF-8 comma or UTF-16 tab export: {path}"
+        ) from exc
+    except csv.Error as exc:
+        raise ValidationError(
+            f"Tableau CSV could not be parsed: {path}: {exc}"
+        ) from exc
+    if not rows:
+        raise ValidationError(f"Tableau CSV contains no rows: {path}")
+    return rows
 
 
 def resolve_field(
@@ -2133,6 +2198,394 @@ def write_recovery_analysis(
     return output_path
 
 
+def parse_tableau_int(value: str, context: str) -> int:
+    cleaned = value.strip().replace(",", "")
+    if not cleaned:
+        raise ValidationError(f"{context} is blank")
+    try:
+        return int(float(cleaned))
+    except ValueError as exc:
+        raise ValidationError(f"{context} is not a valid integer: {value!r}") from exc
+
+
+def parse_tableau_percent(value: str, context: str) -> float:
+    cleaned = value.strip().replace("%", "")
+    if not cleaned:
+        raise ValidationError(f"{context} is blank")
+    try:
+        return float(cleaned) / 100
+    except ValueError as exc:
+        raise ValidationError(f"{context} is not a valid percent: {value!r}") from exc
+
+
+def parse_tableau_date(value: str, context: str) -> date:
+    try:
+        return datetime.strptime(value.strip(), "%B %d, %Y").date()
+    except ValueError as exc:
+        raise ValidationError(f"{context} is not a valid Tableau date: {value!r}") from exc
+
+
+def discover_ghin_tableau_inputs(raw_directory: Path) -> dict[str, Path]:
+    """Locate the five Tableau aggregate exports for GHIN Trials."""
+    paths = {
+        label: raw_directory / filename
+        for label, filename in GHIN_TABLEAU_FILENAMES.items()
+    }
+    missing = [path.name for path in paths.values() if not path.is_file()]
+    if missing:
+        raise ValidationError(
+            "missing GHIN Trials Tableau exports: " + ", ".join(sorted(missing))
+        )
+    return paths
+
+
+def parse_ghin_yearly_statistics(path: Path, report_year: int) -> tuple[dict[str, Any], dict[str, int]]:
+    rows = read_tableau_rows(path)
+    if len(rows) < 6:
+        raise ValidationError("Yearly Statistics.csv must contain a header and 5 metric rows")
+    header = rows[0]
+    try:
+        year_index = header.index(str(report_year))
+    except ValueError as exc:
+        raise ValidationError(
+            f"Yearly Statistics.csv is missing report-year column {report_year}"
+        ) from exc
+
+    required_metrics = {
+        "(1) Total Trials Created": "totalTrialsCreated",
+        "(2) Trial Conversions": "trialConversions",
+        "(3) Conversion Rate": "conversionRate",
+        "(4) Active Trial Golfers": "activeTrialGolfers",
+        "(5) Inactive Trial Golfers": "inactiveTrialGolfers",
+    }
+    found: dict[str, Any] = {}
+    for row in rows[1:]:
+        if not row:
+            continue
+        label = row[0].strip()
+        key = required_metrics.get(label)
+        if not key:
+            continue
+        if len(row) <= year_index:
+            raise ValidationError(f"Yearly Statistics.csv row {label!r} is missing {report_year} value")
+        context = f"Yearly Statistics.csv {label} {report_year}"
+        found[key] = (
+            parse_tableau_percent(row[year_index], context)
+            if key == "conversionRate"
+            else parse_tableau_int(row[year_index], context)
+        )
+    missing = sorted(set(required_metrics.values()) - set(found))
+    if missing:
+        raise ValidationError("Yearly Statistics.csv missing metrics: " + ", ".join(missing))
+    expected_rate = (
+        found["trialConversions"] / found["totalTrialsCreated"]
+        if found["totalTrialsCreated"]
+        else None
+    )
+    if expected_rate is not None and not math.isclose(
+        found["conversionRate"], expected_rate, rel_tol=0.0, abs_tol=0.0001
+    ):
+        raise ValidationError(
+            "Yearly Statistics.csv conversion rate does not match conversions / trials"
+        )
+    return found, {"rows": len(rows) - 1}
+
+
+def parse_ghin_daily_crosstab(path: Path, label: str) -> tuple[dict[date, int], tuple[str | None, str | None], int]:
+    rows = read_tableau_rows(path)
+    if len(rows) < 3:
+        raise ValidationError(f"{path.name} must contain Tableau date headers and count rows")
+    date_row = rows[1]
+    value_rows = [row for row in rows[2:] if row and row[0].strip().lower() == "trial golfer count"]
+    if not value_rows:
+        value_rows = [row for row in rows[2:] if row and row[0].strip().lower() == "count of trial_golfers"]
+    if not value_rows:
+        raise ValidationError(f"{path.name} is missing Trial Golfer Count row")
+    value_row = value_rows[0]
+    values: dict[date, int] = {}
+    for index in range(1, min(len(date_row), len(value_row))):
+        date_label = date_row[index].strip()
+        count_label = value_row[index].strip()
+        if not date_label:
+            continue
+        parsed_date = parse_tableau_date(
+            date_label, f"{path.name} date header column {index + 1}"
+        )
+        values[parsed_date] = parse_tableau_int(
+            count_label or "0", f"{path.name} {label} for {date_label}"
+        )
+    if not values:
+        raise ValidationError(f"{path.name} contains no dated daily values")
+    dates = sorted(values)
+    return (
+        values,
+        (dates[0].isoformat(), dates[-1].isoformat()),
+        len(dates),
+    )
+
+
+def month_abbreviation(month_number: int) -> str:
+    return calendar.month_abbr[month_number]
+
+
+def monthly_ghin_records(
+    report_month: str,
+    created_by_day: dict[date, int],
+    conversions_by_day: dict[date, int],
+) -> list[dict[str, Any]]:
+    activity_month = activity_month_for_report(report_month)
+    year, through_month = target_year_month(activity_month)
+    records: list[dict[str, Any]] = []
+    for month_number in range(1, through_month + 1):
+        trials = sum(
+            value
+            for day, value in created_by_day.items()
+            if day.year == year and day.month == month_number
+        )
+        conversions = sum(
+            value
+            for day, value in conversions_by_day.items()
+            if day.year == year and day.month == month_number
+        )
+        records.append(
+            {
+                "label": month_abbreviation(month_number),
+                "trials": trials,
+                "conversions": conversions,
+            }
+        )
+    return records
+
+
+GHIN_CONVERSION_BUCKET_LABELS = {
+    "0 (first day)": "First day",
+    "1 (next day)": "Next day",
+    "2-7 (first week)": "First week",
+    "7-30 (first month)": "First month",
+    "30+ (beyond 1 month)": "Beyond 1 month",
+}
+
+
+def parse_ghin_conversion_buckets(path: Path) -> tuple[list[dict[str, Any]], int]:
+    rows = read_tableau_rows(path)
+    if not rows or len(rows[0]) < 2 or rows[0][0] != "Group" or rows[0][1] != "Count":
+        raise ValidationError("Conversions by Days in Trial.csv must have Group and Count columns")
+    records: list[dict[str, Any]] = []
+    for row_number, row in enumerate(rows[1:], start=2):
+        if len(row) < 2 or not row[0].strip():
+            continue
+        label = GHIN_CONVERSION_BUCKET_LABELS.get(row[0].strip())
+        if not label:
+            raise ValidationError(
+                f"Conversions by Days in Trial.csv row {row_number} has unknown bucket {row[0]!r}"
+            )
+        count = parse_tableau_int(row[1], f"Conversions by Days in Trial.csv row {row_number} count")
+        pct_value = (
+            parse_tableau_percent(row[2], f"Conversions by Days in Trial.csv row {row_number} percent")
+            if len(row) > 2 and row[2].strip()
+            else None
+        )
+        records.append({"label": label, "count": count, "pct": pct_value})
+    if len(records) != len(GHIN_CONVERSION_BUCKET_LABELS):
+        raise ValidationError(
+            f"Conversions by Days in Trial.csv generated {len(records)} buckets; expected {len(GHIN_CONVERSION_BUCKET_LABELS)}"
+        )
+    total = sum(record["count"] for record in records)
+    for record in records:
+        calculated = record["count"] / total if total else None
+        if record["pct"] is None:
+            record["pct"] = calculated
+        elif calculated is not None and not math.isclose(
+            record["pct"], calculated, rel_tol=0.0, abs_tol=0.0001
+        ):
+            raise ValidationError(
+                f"Conversions by Days in Trial.csv percent mismatch for {record['label']}"
+            )
+    return records, len(rows) - 1
+
+
+def parse_ghin_aga_conversions(path: Path) -> tuple[list[dict[str, Any]], int]:
+    rows = read_tableau_rows(path)
+    if not rows or len(rows[0]) < 2 or rows[0][1] != "Count":
+        raise ValidationError("AGA Conversions.csv must have association and Count columns")
+    records: list[dict[str, Any]] = []
+    for row_number, row in enumerate(rows[1:], start=2):
+        if len(row) < 2 or not row[0].strip():
+            continue
+        records.append(
+            {
+                "name": row[0].strip(),
+                "count": parse_tableau_int(
+                    row[1], f"AGA Conversions.csv row {row_number} count"
+                ),
+            }
+        )
+    if not records:
+        raise ValidationError("AGA Conversions.csv contains no association rows")
+    records.sort(key=lambda record: (-record["count"], record["name"]))
+    return records, len(rows) - 1
+
+
+def ghin_parity_differences(generated: dict[str, Any], existing: Any) -> list[str]:
+    if not isinstance(existing, dict):
+        return ["existing ghin_trials.json is not an object; parity skipped"]
+    differences: list[str] = []
+    comparisons = [
+        ("summary.totalTrialsCreated", generated["summary"].get("totalTrialsCreated"), existing.get("summary", {}).get("totalTrialsCreated")),
+        ("summary.trialConversions", generated["summary"].get("trialConversions"), existing.get("summary", {}).get("trialConversions")),
+        ("summary.conversionRate", generated["summary"].get("conversionRate"), existing.get("summary", {}).get("conversionRate")),
+        ("summary.activeTrialGolfers", generated["summary"].get("activeTrialGolfers"), existing.get("summary", {}).get("activeTrialGolfers")),
+        ("summary.inactiveTrialGolfers", generated["summary"].get("inactiveTrialGolfers"), existing.get("summary", {}).get("inactiveTrialGolfers")),
+        ("monthly record count", len(generated.get("monthly", [])), len(existing.get("monthly", []))),
+        ("monthly trials total", sum(r.get("trials", 0) for r in generated.get("monthly", [])), sum(r.get("trials", 0) for r in existing.get("monthly", []))),
+        ("monthly conversions total", sum(r.get("conversions", 0) for r in generated.get("monthly", [])), sum(r.get("conversions", 0) for r in existing.get("monthly", []))),
+        ("conversionBuckets total", sum(r.get("count", 0) for r in generated.get("conversionBuckets", [])), sum(r.get("count", 0) for r in existing.get("conversionBuckets", []))),
+        ("agaConversions record count", len(generated.get("agaConversions", [])), len(existing.get("agaConversions", []))),
+        ("agaConversions total", sum(r.get("count", 0) for r in generated.get("agaConversions", [])), sum(r.get("count", 0) for r in existing.get("agaConversions", []))),
+    ]
+    for label, calculated, current in comparisons:
+        if isinstance(calculated, float) or isinstance(current, float):
+            same = (
+                isinstance(calculated, (int, float))
+                and isinstance(current, (int, float))
+                and math.isclose(float(calculated), float(current), rel_tol=0.0, abs_tol=1e-12)
+            )
+        else:
+            same = calculated == current
+        if not same:
+            differences.append(f"{label}: generated={calculated!r}, existing={current!r}")
+    return differences
+
+
+def generate_ghin_trials_output(
+    report_month: str,
+    raw_directory: Path,
+    existing_ghin: Any,
+) -> tuple[dict[str, Any], GhinTrialsDiagnostics]:
+    """Generate ghin_trials.json from five aggregate Tableau CSV exports."""
+    report_year, _ = target_year_month(report_month)
+    paths = discover_ghin_tableau_inputs(raw_directory)
+    source_row_counts: dict[str, int] = {}
+    date_coverage: dict[str, tuple[str | None, str | None]] = {}
+
+    summary, yearly_counts = parse_ghin_yearly_statistics(
+        paths["yearly statistics"], report_year
+    )
+    source_row_counts["Yearly Statistics.csv"] = yearly_counts["rows"]
+    date_coverage["Yearly Statistics.csv"] = (str(report_year), str(report_year))
+
+    created_by_day, created_coverage, created_rows = parse_ghin_daily_crosstab(
+        paths["trials created by day"], "trials"
+    )
+    source_row_counts["Trials Created by Day.csv"] = created_rows
+    date_coverage["Trials Created by Day.csv"] = created_coverage
+
+    conversions_by_day, conversion_coverage, conversion_rows = parse_ghin_daily_crosstab(
+        paths["trial conversions by day"], "conversions"
+    )
+    source_row_counts["Trial Conversions by Day.csv"] = conversion_rows
+    date_coverage["Trial Conversions by Day.csv"] = conversion_coverage
+
+    conversion_buckets, bucket_rows = parse_ghin_conversion_buckets(
+        paths["conversions by days in trial"]
+    )
+    source_row_counts["Conversions by Days in Trial.csv"] = bucket_rows
+    date_coverage["Conversions by Days in Trial.csv"] = (None, None)
+
+    aga_conversions, aga_rows = parse_ghin_aga_conversions(paths["aga conversions"])
+    source_row_counts["AGA Conversions.csv"] = aga_rows
+    date_coverage["AGA Conversions.csv"] = (None, None)
+
+    monthly = monthly_ghin_records(report_month, created_by_day, conversions_by_day)
+    existing_overview = (
+        existing_ghin.get("overview", {}) if isinstance(existing_ghin, dict) else {}
+    )
+    overview = {
+        "signups": summary["totalTrialsCreated"],
+        "activeTrials": summary["activeTrialGolfers"],
+        "conversions": summary["trialConversions"],
+        "conversionRate": summary["conversionRate"],
+        "campaigns": existing_overview.get("campaigns", []),
+        "funnel": existing_overview.get("funnel", []),
+    }
+    output = {
+        "metadata": {
+            "schemaVersion": 1,
+            "status": "draft",
+            "source": "Tableau aggregate CSV exports",
+        },
+        "overview": overview,
+        "summary": summary,
+        "monthly": monthly,
+        "conversionBuckets": conversion_buckets,
+        "agaConversions": aga_conversions,
+    }
+    validate_ghin_trials_output(output)
+    parity = ghin_parity_differences(output, existing_ghin)
+    diagnostics = GhinTrialsDiagnostics(
+        source_files={filename: path for filename, path in paths.items()},
+        source_row_counts=source_row_counts,
+        date_coverage=date_coverage,
+        generated_summary=summary,
+        monthly_records=len(monthly),
+        monthly_trials_total=sum(row["trials"] for row in monthly),
+        monthly_conversions_total=sum(row["conversions"] for row in monthly),
+        conversion_bucket_records=len(conversion_buckets),
+        conversion_bucket_total=sum(row["count"] for row in conversion_buckets),
+        aga_records=len(aga_conversions),
+        aga_total=sum(row["count"] for row in aga_conversions),
+        overview_campaigns_preserved=len(overview["campaigns"]),
+        overview_funnel_preserved=len(overview["funnel"]),
+        parity_differences=parity,
+    )
+    return output, diagnostics
+
+
+def validate_ghin_trials_output(output: dict[str, Any]) -> None:
+    required = {"metadata", "overview", "summary", "monthly", "conversionBuckets", "agaConversions"}
+    if set(output) != required:
+        raise ValidationError("ghin_trials.json has an invalid top-level schema")
+    if output["metadata"].get("schemaVersion") != 1:
+        raise ValidationError("ghin_trials.json metadata.schemaVersion must be 1")
+    summary = output["summary"]
+    for key in ("totalTrialsCreated", "trialConversions", "activeTrialGolfers", "inactiveTrialGolfers"):
+        if not isinstance(summary.get(key), int):
+            raise ValidationError(f"ghin_trials.json summary.{key} must be an integer")
+    expected_rate = (
+        summary["trialConversions"] / summary["totalTrialsCreated"]
+        if summary["totalTrialsCreated"]
+        else None
+    )
+    if expected_rate is None:
+        if summary.get("conversionRate") is not None:
+            raise ValidationError("ghin_trials.json summary.conversionRate must be null when denominator is zero")
+    elif not math.isclose(summary.get("conversionRate"), expected_rate, rel_tol=0.0, abs_tol=0.0001):
+        raise ValidationError("ghin_trials.json summary.conversionRate does not match conversions / trials")
+    if not isinstance(output["monthly"], list) or not output["monthly"]:
+        raise ValidationError("ghin_trials.json monthly must be a non-empty array")
+    if len(output["conversionBuckets"]) != len(GHIN_CONVERSION_BUCKET_LABELS):
+        raise ValidationError("ghin_trials.json conversionBuckets has an unexpected record count")
+    if not output["agaConversions"]:
+        raise ValidationError("ghin_trials.json agaConversions must be non-empty")
+
+
+def write_ghin_trials_json(
+    data_directory: Path,
+    backup_directory: Path,
+    output: dict[str, Any],
+) -> Path:
+    """Write the validated GHIN Trials output with backup-on-replace."""
+    output_path = data_directory / "ghin_trials.json"
+    if output_path.exists():
+        backup_directory.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(output_path, backup_directory / output_path.name)
+    output_path.write_text(
+        json.dumps(output, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return output_path
+
+
 def membership_parity_baseline(
     membership_state: Any,
     target_month: str,
@@ -2720,6 +3173,54 @@ def print_qa_summary(report: QAReport, status: str, message: str) -> None:
         )
         print()
 
+    if report.ghin_trials_diagnostics:
+        item = report.ghin_trials_diagnostics
+        print("GHIN Trials dry-run diagnostics")
+        print("  Source files")
+        for source_label, path in item.source_files.items():
+            filename = path.name
+            coverage = item.date_coverage.get(filename, (None, None))
+            coverage_label = (
+                f"{coverage[0]} to {coverage[1]}"
+                if coverage[0] and coverage[1]
+                else "not date-grained"
+            )
+            print(
+                f"    {filename}: {item.source_row_counts.get(filename, 0):,} rows; "
+                f"coverage {coverage_label}"
+            )
+        print("  Generated summary")
+        print(
+            f"    totalTrialsCreated={item.generated_summary['totalTrialsCreated']:,}; "
+            f"trialConversions={item.generated_summary['trialConversions']:,}; "
+            f"conversionRate={item.generated_summary['conversionRate']:.2%}; "
+            f"activeTrialGolfers={item.generated_summary['activeTrialGolfers']:,}; "
+            f"inactiveTrialGolfers={item.generated_summary['inactiveTrialGolfers']:,}"
+        )
+        print(
+            f"  Monthly: {item.monthly_records:,} records; "
+            f"trials={item.monthly_trials_total:,}; "
+            f"conversions={item.monthly_conversions_total:,}"
+        )
+        print(
+            f"  Conversion buckets: {item.conversion_bucket_records:,} records; "
+            f"total={item.conversion_bucket_total:,}"
+        )
+        print(
+            f"  AGA conversions: {item.aga_records:,} records; total={item.aga_total:,}"
+        )
+        print(
+            f"  Overview: preserved {item.overview_campaigns_preserved:,} campaign rows "
+            f"and {item.overview_funnel_preserved:,} funnel rows from existing ghin_trials.json"
+        )
+        print("  Parity vs existing data/ghin_trials.json")
+        if item.parity_differences:
+            for diff in item.parity_differences:
+                print(f"    DIFF {diff}")
+        else:
+            print("    PASS generated output matches existing comparable GHIN values")
+        print()
+
     if report.calculation_notes:
         print("Calculation methods")
         for note in report.calculation_notes:
@@ -2778,6 +3279,71 @@ def run(args: argparse.Namespace) -> int:
                 f"activity month and dashboard label {display_month(activity_month)}"
             ),
         )
+        if args.ghin_only:
+            existing_state, report.json_state = load_existing_json_state(data_directory)
+            report.add_check(
+                "Existing JSON loading",
+                "PASS",
+                f"loaded {len(existing_state)} cumulative output files",
+            )
+            report.ghin_trials_output, report.ghin_trials_diagnostics = generate_ghin_trials_output(
+                report_month,
+                raw_directory,
+                existing_state["ghin_trials.json"],
+            )
+            report.add_check(
+                "GHIN Trials Tableau exports",
+                "PASS",
+                "validated five aggregate Tableau CSV exports",
+            )
+            report.add_check(
+                "GHIN Trials generation",
+                "PASS",
+                (
+                    f"generated summary, {len(report.ghin_trials_output['monthly'])} monthly rows, "
+                    f"{len(report.ghin_trials_output['conversionBuckets'])} conversion buckets, and "
+                    f"{len(report.ghin_trials_output['agaConversions'])} AGA rows"
+                ),
+            )
+            report.calculation_notes.extend(
+                (
+                    "ghin_trials.json summary is generated from Yearly Statistics.csv for the report year",
+                    "ghin_trials.json monthly rows aggregate Trials Created by Day.csv and Trial Conversions by Day.csv by activity-month calendar month",
+                    "ghin_trials.json conversionBuckets uses Conversions by Days in Trial.csv counts and validates Tableau percentages against count share",
+                    "ghin_trials.json agaConversions uses AGA Conversions.csv grouped counts sorted by count descending and association name",
+                    "overview numeric fields are generated from summary; overview campaign and funnel rows are preserved from existing ghin_trials.json because the five aggregate Tableau exports do not include campaign, activation, or engagement detail",
+                )
+            )
+            if args.dry_run:
+                report.add_check(
+                    "GHIN Trials JSON write",
+                    "SKIPPED",
+                    "dry-run output was validated in memory; data/ghin_trials.json was not modified",
+                )
+            else:
+                report.written_outputs.append(
+                    write_ghin_trials_json(
+                        data_directory,
+                        report.backup_directory,
+                        report.ghin_trials_output,
+                    )
+                )
+                report.add_check(
+                    "GHIN Trials JSON write",
+                    "PASS",
+                    "wrote data/ghin_trials.json",
+                )
+            print_qa_summary(
+                report,
+                status="PASS (GHIN TRIALS)",
+                message=(
+                    "GHIN Trials dry-run completed; no JSON files were written."
+                    if args.dry_run
+                    else "GHIN Trials JSON was written."
+                ),
+            )
+            return 0
+
         report.inputs = discover_inputs(
             raw_directory,
             skip_marketing=args.skip_marketing,
@@ -3031,6 +3597,32 @@ def run(args: argparse.Namespace) -> int:
                 "Recovery Analysis monthly, club, creation-year, membership-age, and ranking datasets reconcile to the same YTD recovery cohort",
             )
         )
+        try:
+            report.ghin_trials_output, report.ghin_trials_diagnostics = generate_ghin_trials_output(
+                report_month,
+                raw_directory,
+                existing_state["ghin_trials.json"],
+            )
+            report.add_check(
+                "GHIN Trials generation",
+                "PASS",
+                (
+                    f"generated summary, {len(report.ghin_trials_output['monthly'])} monthly rows, "
+                    f"{len(report.ghin_trials_output['conversionBuckets'])} conversion buckets, and "
+                    f"{len(report.ghin_trials_output['agaConversions'])} AGA rows"
+                ),
+            )
+            report.calculation_notes.extend(
+                (
+                    "ghin_trials.json summary is generated from Yearly Statistics.csv for the report year",
+                    "ghin_trials.json monthly rows aggregate Trials Created by Day.csv and Trial Conversions by Day.csv by activity-month calendar month",
+                    "ghin_trials.json conversionBuckets uses Conversions by Days in Trial.csv counts and validates Tableau percentages against count share",
+                    "ghin_trials.json agaConversions uses AGA Conversions.csv grouped counts sorted by count descending and association name",
+                    "overview numeric fields are generated from summary; overview campaign and funnel rows are preserved from existing ghin_trials.json because the five aggregate Tableau exports do not include campaign, activation, or engagement detail",
+                )
+            )
+        except ValidationError as exc:
+            report.warnings.append(f"GHIN Trials generation skipped: {exc}")
         dashboard_record, baseline_label, baseline_is_fallback = membership_parity_baseline(
             existing_state["membership_monthly.json"], activity_month
         )
@@ -3128,6 +3720,19 @@ def run(args: argparse.Namespace) -> int:
                 "PASS",
                 "wrote data/recovery_analysis.json; no other JSON output was modified",
             )
+            if report.ghin_trials_output:
+                report.written_outputs.append(
+                    write_ghin_trials_json(
+                        data_directory,
+                        report.backup_directory,
+                        report.ghin_trials_output,
+                    )
+                )
+                report.add_check(
+                    "GHIN Trials JSON write",
+                    "PASS",
+                    "wrote data/ghin_trials.json",
+                )
     except ValidationError as exc:
         report.add_check("Update validation", "FAIL", str(exc))
         print_qa_summary(
