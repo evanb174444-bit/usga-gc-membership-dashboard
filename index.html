@@ -4884,6 +4884,35 @@ let GHIN_TRIALS_YEARLY_DRAFT = {};
 let GHIN_TRIALS_MONTHLY_DRAFT = [];
 let GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT = [];
 let GHIN_TRIALS_AGA_DRAFT = [];
+let MARKETING_MONTHLY_PERFORMANCE_DRAFT = [];
+let MARKETING_MONTHLY_FUNNEL_SPEND_DRAFT = [];
+let MARKETING_FUNNEL_DRAFT = [];
+let MARKETING_CHANNEL_PERFORMANCE_DRAFT = [];
+let MARKETING_INFLUENCER_PERFORMANCE_DRAFT = [];
+
+async function loadMarketingAnalysisData() {
+  const response = await fetch("./data/marketing_analysis.json");
+  if(!response.ok) {
+    throw new Error(`Unable to load Marketing Attribution data: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const requiredArrays = ["monthlyPerformance", "monthlyFunnelSpend", "funnel", "channels", "influencers"];
+  if(!data?.metadata || data.metadata.schemaVersion !== 1
+    || !data?.qa
+    || requiredArrays.some(key => !Array.isArray(data[key]))) {
+    throw new Error("Marketing Attribution JSON does not contain the expected metadata, monthly, funnel, channel, influencer, and QA records.");
+  }
+
+  MARKETING_MONTHLY_PERFORMANCE_DRAFT = data.monthlyPerformance;
+  MARKETING_MONTHLY_FUNNEL_SPEND_DRAFT = data.monthlyFunnelSpend;
+  MARKETING_FUNNEL_DRAFT = data.funnel;
+  MARKETING_CHANNEL_PERFORMANCE_DRAFT = data.channels;
+  MARKETING_INFLUENCER_PERFORMANCE_DRAFT = data.influencers.map(row => ({
+    ...row,
+    influencer: row.influencer || row.channel
+  }));
+}
 
 async function loadGhinTrialsData() {
   const response = await fetch("./data/ghin_trials.json");
@@ -6067,48 +6096,27 @@ function ghinTrialAgaRows() {
 }
 
 
-const MARKETING_MONTHLY_PERFORMANCE_DRAFT = [
-  {month:'YTD', spend:350686, conversions:16667, cpa:21.04, cvr:0.01277, impressions:56084076, clicks:1305169, ctr:0.0232717, cpc:0.26869}
-];
-
-const MARKETING_MONTHLY_FUNNEL_SPEND_DRAFT = [
-  {month:'YTD', awareness:67274, consideration:180201, conversion:103211}
-];
-
-const MARKETING_FUNNEL_DRAFT = [
-  {stage:'Awareness', objective:'Drive reach and introduce the brand to new audiences.', spend:67274, impressions:5378496, clicks:3993, ctr:0.000742401, cpc:16.848, conversions:0, cpa:null},
-  {stage:'Interest / Consideration', objective:'Drive engagement and traffic from interested audiences.', spend:180201, impressions:46475173, clicks:1145107, ctr:0.0246391, cpc:0.157366, conversions:286, cpa:630.073},
-  {stage:'Conversion', objective:'Capture demand and drive registrations.', spend:103211, impressions:4230407, clicks:156069, ctr:0.0368922, cpc:0.661316, conversions:16381, cpa:6.30065}
-];
-
-const MARKETING_CHANNEL_PERFORMANCE_DRAFT = [
-  {channel:'Cable / CTV', conversions:0, spend:21200, cpa:null, clicks:0, impressions:1029690},
-  {channel:'Streaming', conversions:0, spend:30285, cpa:null, clicks:0, impressions:642042},
-  {channel:'YouTube (Awareness)', conversions:0, spend:9277, cpa:null, clicks:1856, impressions:2309239},
-  {channel:'Reddit', conversions:0, spend:6512, cpa:null, clicks:2137, impressions:1397525},
-  {channel:'Meta Ads (Non-Influencer)', conversions:56, spend:48403, cpa:864.34, clicks:550607, impressions:7985678},
-  {channel:'Meta (Influencer / Creator)', conversions:102, spend:37475, cpa:367.4, clicks:288316, impressions:4598407},
-  {channel:'Venmo / Paypal', conversions:3, spend:15000, cpa:5000, clicks:2607, impressions:1535807},
-  {channel:'Youtube (For Action)', conversions:0, spend:17536, cpa:null, clicks:154067, impressions:8302681},
-  {channel:'Reddit (Traffic)', conversions:5, spend:12659, cpa:2531.8, clicks:9574, impressions:1375224},
-  {channel:'TikTok (Traffic)', conversions:53, spend:26100, cpa:492.45, clicks:71273, impressions:9973948},
-  {channel:'TikTok (Search)', conversions:2, spend:5279, cpa:2639.5, clicks:10565, impressions:669482},
-  {channel:'X (Twitter)', conversions:65, spend:17749, cpa:273.06, clicks:58098, impressions:12033946},
-  {channel:'WRX Emails', conversions:0, spend:10000, cpa:null, clicks:210, impressions:150078},
-  {channel:'YouTube (Demand Gen)', conversions:0, spend:18047, cpa:null, clicks:48605, impressions:3306837},
-  {channel:'Paid Search (Google)', conversions:7517, spend:44339, cpa:5.9, clicks:70396, impressions:581125},
-  {channel:'Google Performance Max', conversions:8864, spend:30825, cpa:3.48, clicks:36858, impressions:192367}
-];
-
-const MARKETING_INFLUENCER_PERFORMANCE_DRAFT = [
-  {influencer:'Meta (Influencer / Creator)', spend:37475, conversions:102, cpa:367.4, clicks:288316, impressions:4598407}
-];
-
-
 function moneyShort(v){
   if(v == null || !isFinite(v)) return '—';
   if(Math.abs(v) >= 1000) return '$' + Math.round(v).toLocaleString();
   return '$' + Number(v).toFixed(2);
+}
+
+function marketingMonthlyRows(rows){
+  const monthly = rows.filter(row => row.month !== 'YTD');
+  return monthly.length ? monthly : rows;
+}
+
+function marketingYtdPerformance(){
+  const ytd = MARKETING_MONTHLY_PERFORMANCE_DRAFT.find(row => row.month === 'YTD');
+  if(ytd) return ytd;
+  return MARKETING_MONTHLY_PERFORMANCE_DRAFT.reduce((acc,r) => {
+    acc.spend += r.spend || 0;
+    acc.conversions += r.conversions || 0;
+    acc.impressions += r.impressions || 0;
+    acc.clicks += r.clicks || 0;
+    return acc;
+  }, {spend:0, conversions:0, impressions:0, clicks:0});
 }
 
 function marketingMetricValue(key, val){
@@ -6146,7 +6154,7 @@ function marketingFunnelCards(){
 
 
 function marketingMonthlyFunnelSpendSvg(){
-  const data = MARKETING_MONTHLY_FUNNEL_SPEND_DRAFT.map(d => ({...d, total:d.awareness+d.consideration+d.conversion}));
+  const data = marketingMonthlyRows(MARKETING_MONTHLY_FUNNEL_SPEND_DRAFT).map(d => ({...d, total:d.awareness+d.consideration+d.conversion}));
   const W=760,H=470;
   const m={l:72,r:36,t:28,b:132};
   const innerW=W-m.l-m.r, innerH=H-m.t-m.b;
@@ -6185,7 +6193,7 @@ function marketingMonthlyFunnelSpendSvg(){
 }
 
 function marketingMonthlyPerformanceSvg(metric='conversions', mode='auto'){
-  const data = MARKETING_MONTHLY_PERFORMANCE_DRAFT;
+  const data = marketingMonthlyRows(MARKETING_MONTHLY_PERFORMANCE_DRAFT);
   const W=760,H=410;
   const m={l:62,r:36,t:28,b:58};
   const innerW=W-m.l-m.r, innerH=H-m.t-m.b;
@@ -6651,13 +6659,7 @@ function renderAcquisitionAttributionDraft() {
         </div>
       </div>`;
 
-  const marketingTotals = MARKETING_MONTHLY_PERFORMANCE_DRAFT.reduce((acc,r) => {
-    acc.spend += r.spend;
-    acc.conversions += r.conversions;
-    acc.impressions += r.impressions;
-    acc.clicks += r.clicks;
-    return acc;
-  }, {spend:0, conversions:0, impressions:0, clicks:0});
+  const marketingTotals = marketingYtdPerformance();
   const marketingCpa = marketingTotals.spend / marketingTotals.conversions;
   const marketingCtr = marketingTotals.clicks / marketingTotals.impressions;
   const marketingCpc = marketingTotals.spend / marketingTotals.clicks;
@@ -8554,6 +8556,7 @@ async function initializeDashboard() {
   const loadResults = await Promise.allSettled([
     loadMembershipData(),
     loadGhinTrialsData(),
+    loadMarketingAnalysisData(),
     loadRecoveryAnalysisData(),
     loadSegmentationStatusData(),
     loadSegmentationBreakdownData(),

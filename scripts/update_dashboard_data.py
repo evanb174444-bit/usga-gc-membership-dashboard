@@ -57,6 +57,11 @@ REQUIRED_INPUT_FILENAMES = {
     "marketing workbook": "marketing_workbook.xlsx",
 }
 
+MARKETING_WORKBOOK_ALIASES = (
+    "marketing_workbook.xlsx",
+    "marketing_workbook.xlsx.xlsx",
+)
+
 EXISTING_JSON_FILENAMES = (
     "membership_monthly.json",
     "ghin_trials.json",
@@ -72,6 +77,60 @@ GHIN_TABLEAU_FILENAMES = {
     "trial conversions by day": "Trial Conversions by Day.csv",
     "conversions by days in trial": "Conversions by Days in Trial.csv",
     "aga conversions": "AGA Conversions.csv",
+}
+
+MARKETING_EXPECTED_SHEETS = (
+    "January Accelerate Report",
+    "February Accelerate Report",
+    "March Accelerate Report",
+    "April Accelerate Report",
+    "May Accelerate Report",
+)
+
+MARKETING_SECTIONS = (
+    {
+        "key": "awareness",
+        "stage": "Awareness",
+        "objective": "Drive reach and introduce the brand to new audiences.",
+        "channel_rows": range(4, 8),
+        "subtotal_row": 8,
+    },
+    {
+        "key": "consideration",
+        "stage": "Interest / Consideration",
+        "objective": "Drive engagement and traffic from interested audiences.",
+        "channel_rows": range(11, 19),
+        "subtotal_row": 19,
+    },
+    {
+        "key": "conversion",
+        "stage": "Conversion",
+        "objective": "Capture demand and drive registrations.",
+        "channel_rows": range(23, 27),
+        "subtotal_row": 27,
+    },
+)
+
+MARKETING_COLUMN_INDEXES = {
+    "channel": 2,
+    "funnelRole": 3,
+    "spend": 4,
+    "conversions": 5,
+    "cpa": 6,
+    "impressions": 7,
+    "clicks": 8,
+    "ctr": 9,
+    "cpc": 10,
+    "notes": 11,
+    "allConversions": 12,
+}
+
+MARKETING_BLENDED_COLUMNS = {
+    "spend": 3,
+    "impressions": 4,
+    "clicks": 5,
+    "conversions": 6,
+    "cpa": 7,
 }
 
 RAW_SOURCE_SUFFIXES = {".csv", ".xlsx", ".xls"}
@@ -291,6 +350,22 @@ class GhinTrialsDiagnostics:
     parity_differences: list[str]
 
 
+@dataclass(frozen=True)
+class MarketingDiagnostics:
+    source_file: Path
+    worksheets: list[str]
+    monthly_records: int
+    channel_records: int
+    influencer_records: int
+    generated_totals: dict[str, Any]
+    parity_results: list[tuple[str, Any, Any, Any, str]]
+    section_reconciliations: list[tuple[str, str, str, float]]
+    blended_reconciliations: list[tuple[str, str, float]]
+    formula_cells_used: int
+    excel_error_cells_seen: int
+    warnings: list[str]
+
+
 @dataclass
 class QAReport:
     report_month: str
@@ -316,6 +391,8 @@ class QAReport:
     recovery_output: dict[str, Any] | None = None
     ghin_trials_diagnostics: GhinTrialsDiagnostics | None = None
     ghin_trials_output: dict[str, Any] | None = None
+    marketing_diagnostics: MarketingDiagnostics | None = None
+    marketing_output: dict[str, Any] | None = None
     written_outputs: list[Path] = field(default_factory=list)
 
     def add_check(self, name: str, status: str, detail: str) -> None:
@@ -386,6 +463,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "validate and generate GHIN Trials JSON from the five Tableau exports only "
             "(Yearly Statistics.csv, Trials Created by Day.csv, Trial Conversions by Day.csv, "
             "Conversions by Days in Trial.csv, and AGA Conversions.csv)"
+        ),
+    )
+    parser.add_argument(
+        "--marketing-only",
+        action="store_true",
+        help=(
+            "validate and generate Marketing Attribution JSON from marketing_workbook.xlsx only"
         ),
     )
     return parser.parse_args(argv)
@@ -808,6 +892,37 @@ def count_xlsx_sheets(path: Path) -> int:
     return len(sheets)
 
 
+def xlsx_sheet_names(path: Path) -> list[str]:
+    """Return workbook sheet names from the XLSX container without modifying it."""
+    workbook_xml = "xl/workbook.xml"
+    try:
+        with zipfile.ZipFile(path) as archive:
+            if workbook_xml not in archive.namelist():
+                raise ValidationError(
+                    f"workbook is missing {workbook_xml}: {path}"
+                )
+            root = ElementTree.fromstring(archive.read(workbook_xml))
+    except (zipfile.BadZipFile, ElementTree.ParseError) as exc:
+        raise ValidationError(f"workbook is not a valid XLSX file: {path}") from exc
+
+    namespace = {"main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+    return [
+        sheet.attrib["name"]
+        for sheet in root.findall("main:sheets/main:sheet", namespace)
+        if "name" in sheet.attrib
+    ]
+
+
+def resolve_required_input_path(raw_directory: Path, label: str, filename: str) -> Path:
+    """Resolve a required input path, allowing known legacy aliases."""
+    if label == "marketing workbook":
+        for candidate_name in MARKETING_WORKBOOK_ALIASES:
+            candidate = raw_directory / candidate_name
+            if candidate.is_file():
+                return candidate
+    return raw_directory / filename
+
+
 def discover_inputs(
     raw_directory: Path,
     *,
@@ -818,7 +933,7 @@ def discover_inputs(
         raise ValidationError(f"raw input directory does not exist: {raw_directory}")
 
     required_paths = {
-        label: raw_directory / filename
+        label: resolve_required_input_path(raw_directory, label, filename)
         for label, filename in REQUIRED_INPUT_FILENAMES.items()
         if not (skip_marketing and label == "marketing workbook")
     }
@@ -843,18 +958,23 @@ def discover_inputs(
                 )
             )
         else:
-            sheet_count = count_xlsx_sheets(path)
-            if sheet_count != 3:
+            sheet_names = xlsx_sheet_names(path)
+            missing_sheets = [
+                sheet
+                for sheet in MARKETING_EXPECTED_SHEETS
+                if sheet not in sheet_names
+            ]
+            if missing_sheets:
                 raise ValidationError(
-                    f"marketing workbook must contain exactly 3 sheets; "
-                    f"found {sheet_count}: {path}"
+                    "marketing workbook is missing expected sheets: "
+                    + ", ".join(missing_sheets)
                 )
             summaries.append(
                 InputFileSummary(
                     label=label,
                     path=path,
                     size_bytes=size_bytes,
-                    sheet_count=sheet_count,
+                    sheet_count=len(sheet_names),
                 )
             )
     return summaries
@@ -957,6 +1077,12 @@ def activity_month_for_report(report_month: str) -> str:
     """Map a report-month snapshot to its prior-calendar-month dashboard label."""
     year, month = previous_calendar_month(report_month)
     return f"{year}-{month:02d}"
+
+
+def end_date_for_month(month: str) -> date:
+    """Return the last calendar date for a YYYY-MM month."""
+    year, month_number = target_year_month(month)
+    return date(year, month_number, calendar.monthrange(year, month_number)[1])
 
 
 def display_month(month: str) -> str:
@@ -2590,6 +2716,461 @@ def write_ghin_trials_json(
     return output_path
 
 
+def column_letters_to_index(letters: str) -> int:
+    """Convert Excel column letters to a 1-based column index."""
+    index = 0
+    for char in letters.upper():
+        index = index * 26 + (ord(char) - ord("A") + 1)
+    return index
+
+
+def parse_cell_reference(reference: str) -> tuple[int, int]:
+    match = re.fullmatch(r"([A-Z]+)([0-9]+)", reference.upper())
+    if not match:
+        raise ValidationError(f"invalid Excel cell reference: {reference}")
+    return int(match.group(2)), column_letters_to_index(match.group(1))
+
+
+def read_xlsx_cached_workbook(path: Path) -> tuple[dict[str, dict[tuple[int, int], Any]], dict[str, set[tuple[int, int]]], int]:
+    """Read cached cell values and formula-cell coordinates from an XLSX file."""
+    namespace = {
+        "main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+        "rel": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+        "pkgrel": "http://schemas.openxmlformats.org/package/2006/relationships",
+    }
+    with zipfile.ZipFile(path) as archive:
+        shared_strings: list[str] = []
+        if "xl/sharedStrings.xml" in archive.namelist():
+            shared_root = ElementTree.fromstring(archive.read("xl/sharedStrings.xml"))
+            for item in shared_root.findall("main:si", namespace):
+                text_parts = [
+                    text_node.text or ""
+                    for text_node in item.findall(".//main:t", namespace)
+                ]
+                shared_strings.append("".join(text_parts))
+
+        workbook_root = ElementTree.fromstring(archive.read("xl/workbook.xml"))
+        rels_root = ElementTree.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+        relationship_targets = {
+            relationship.attrib["Id"]: relationship.attrib["Target"]
+            for relationship in rels_root.findall("pkgrel:Relationship", namespace)
+        }
+        sheets: list[tuple[str, str]] = []
+        for sheet in workbook_root.findall("main:sheets/main:sheet", namespace):
+            name = sheet.attrib["name"]
+            rel_id = sheet.attrib[
+                "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+            ]
+            target = relationship_targets[rel_id]
+            sheet_path = target if target.startswith("xl/") else f"xl/{target}"
+            sheets.append((name, sheet_path))
+
+        workbook_values: dict[str, dict[tuple[int, int], Any]] = {}
+        workbook_formulas: dict[str, set[tuple[int, int]]] = {}
+        excel_error_cells = 0
+        for sheet_name, sheet_path in sheets:
+            values: dict[tuple[int, int], Any] = {}
+            formulas: set[tuple[int, int]] = set()
+            sheet_root = ElementTree.fromstring(archive.read(sheet_path))
+            for cell in sheet_root.findall(".//main:c", namespace):
+                reference = cell.attrib.get("r")
+                if not reference:
+                    continue
+                row_index, column_index = parse_cell_reference(reference)
+                coordinate = (row_index, column_index)
+                if cell.find("main:f", namespace) is not None:
+                    formulas.add(coordinate)
+                value_node = cell.find("main:v", namespace)
+                inline_text_node = cell.find("main:is/main:t", namespace)
+                cell_type = cell.attrib.get("t")
+                value: Any = None
+                if cell_type == "inlineStr":
+                    value = inline_text_node.text if inline_text_node is not None else None
+                elif value_node is not None:
+                    raw_value = value_node.text
+                    if cell_type == "s":
+                        value = shared_strings[int(raw_value)] if raw_value is not None else None
+                    elif cell_type == "b":
+                        value = raw_value == "1"
+                    elif cell_type == "e":
+                        value = raw_value
+                        excel_error_cells += 1
+                    elif raw_value is not None:
+                        try:
+                            numeric = float(raw_value)
+                            value = int(numeric) if numeric.is_integer() else numeric
+                        except ValueError:
+                            value = raw_value
+                values[coordinate] = value
+            workbook_values[sheet_name] = values
+            workbook_formulas[sheet_name] = formulas
+    return workbook_values, workbook_formulas, excel_error_cells
+
+
+def workbook_cell(
+    worksheet: dict[tuple[int, int], Any],
+    row_index: int,
+    column_index: int,
+) -> Any:
+    return worksheet.get((row_index, column_index))
+
+
+def safe_number(value: Any) -> float | int | None:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float)) and math.isfinite(value):
+        return value
+    return None
+
+
+def safe_ratio(numerator: float | int | None, denominator: float | int | None) -> float | None:
+    if denominator in (None, 0):
+        return None
+    if numerator is None:
+        numerator = 0
+    return numerator / denominator
+
+
+def marketing_month_label(sheet_name: str) -> str:
+    month_name = sheet_name.split()[0]
+    try:
+        month_number = list(calendar.month_name).index(month_name)
+    except ValueError as exc:
+        raise ValidationError(f"unable to parse month from worksheet name: {sheet_name}") from exc
+    return calendar.month_abbr[month_number]
+
+
+def marketing_metric_record(
+    spend: float | int | None,
+    conversions: float | int | None,
+    impressions: float | int | None,
+    clicks: float | int | None,
+    *,
+    include_cvr: bool = False,
+) -> dict[str, Any]:
+    record: dict[str, Any] = {
+        "spend": spend or 0,
+        "conversions": conversions or 0,
+        "cpa": safe_ratio(spend, conversions),
+        "impressions": impressions or 0,
+        "clicks": clicks or 0,
+        "ctr": safe_ratio(clicks, impressions),
+        "cpc": safe_ratio(spend, clicks),
+    }
+    if include_cvr:
+        record["cvr"] = safe_ratio(conversions, clicks)
+    return record
+
+
+def read_marketing_row(
+    worksheet: dict[tuple[int, int], Any],
+    row_index: int,
+) -> dict[str, Any]:
+    spend = safe_number(workbook_cell(worksheet, row_index, MARKETING_COLUMN_INDEXES["spend"]))
+    conversions = safe_number(workbook_cell(worksheet, row_index, MARKETING_COLUMN_INDEXES["conversions"]))
+    impressions = safe_number(workbook_cell(worksheet, row_index, MARKETING_COLUMN_INDEXES["impressions"]))
+    clicks = safe_number(workbook_cell(worksheet, row_index, MARKETING_COLUMN_INDEXES["clicks"]))
+    all_conversions = safe_number(workbook_cell(worksheet, row_index, MARKETING_COLUMN_INDEXES["allConversions"]))
+    record = marketing_metric_record(spend, conversions, impressions, clicks)
+    record["allConversions"] = all_conversions
+    return record
+
+
+def read_marketing_blended_row(worksheet: dict[tuple[int, int], Any]) -> dict[str, Any]:
+    spend = safe_number(workbook_cell(worksheet, 30, MARKETING_BLENDED_COLUMNS["spend"]))
+    impressions = safe_number(workbook_cell(worksheet, 30, MARKETING_BLENDED_COLUMNS["impressions"]))
+    clicks = safe_number(workbook_cell(worksheet, 30, MARKETING_BLENDED_COLUMNS["clicks"]))
+    conversions = safe_number(workbook_cell(worksheet, 30, MARKETING_BLENDED_COLUMNS["conversions"]))
+    return marketing_metric_record(spend, conversions, impressions, clicks, include_cvr=True)
+
+
+def add_marketing_totals(total: dict[str, Any], record: dict[str, Any]) -> None:
+    for key in ("spend", "conversions", "impressions", "clicks"):
+        total[key] = (total.get(key) or 0) + (safe_number(record.get(key)) or 0)
+
+
+def finalize_marketing_totals(total: dict[str, Any], *, include_cvr: bool = False) -> dict[str, Any]:
+    return marketing_metric_record(
+        safe_number(total.get("spend")) or 0,
+        safe_number(total.get("conversions")) or 0,
+        safe_number(total.get("impressions")) or 0,
+        safe_number(total.get("clicks")) or 0,
+        include_cvr=include_cvr,
+    )
+
+
+def marketing_reconciliation_status(difference: float, tolerance: float = 0.01) -> str:
+    return "PASS" if abs(difference) <= tolerance else "FAIL"
+
+
+def generate_marketing_analysis_output(
+    report_month: str,
+    raw_directory: Path,
+) -> tuple[dict[str, Any], MarketingDiagnostics]:
+    """Generate marketing_analysis.json from the monthly Accelerate workbook."""
+    source_file = resolve_required_input_path(
+        raw_directory, "marketing workbook", REQUIRED_INPUT_FILENAMES["marketing workbook"]
+    )
+    if not source_file.is_file():
+        raise ValidationError(f"marketing workbook not found: {source_file}")
+
+    workbook_values, workbook_formulas, excel_error_cells = read_xlsx_cached_workbook(source_file)
+    missing_sheets = [
+        sheet_name for sheet_name in MARKETING_EXPECTED_SHEETS if sheet_name not in workbook_values
+    ]
+    if missing_sheets:
+        raise ValidationError(
+            "marketing workbook is missing expected sheets: " + ", ".join(missing_sheets)
+        )
+
+    warnings: list[str] = []
+    if source_file.name != REQUIRED_INPUT_FILENAMES["marketing workbook"]:
+        warnings.append(
+            f"Marketing workbook used fallback filename {source_file.name}; expected marketing_workbook.xlsx."
+        )
+
+    monthly_performance: list[dict[str, Any]] = []
+    monthly_funnel_spend: list[dict[str, Any]] = []
+    funnel_totals: dict[str, dict[str, Any]] = {
+        str(section["key"]): {} for section in MARKETING_SECTIONS
+    }
+    channel_totals: dict[str, dict[str, Any]] = {}
+    blended_ytd: dict[str, Any] = {}
+    section_reconciliations: list[tuple[str, str, str, float]] = []
+    blended_reconciliations: list[tuple[str, str, float]] = []
+
+    for sheet_name in MARKETING_EXPECTED_SHEETS:
+        worksheet = workbook_values[sheet_name]
+        month_label = marketing_month_label(sheet_name)
+        blended_record = read_marketing_blended_row(worksheet)
+        monthly_performance.append({"month": month_label, **blended_record})
+        add_marketing_totals(blended_ytd, blended_record)
+
+        funnel_spend_record: dict[str, Any] = {"month": month_label}
+        section_subtotals: dict[str, dict[str, Any]] = {}
+        for section in MARKETING_SECTIONS:
+            section_key = str(section["key"])
+            subtotal = read_marketing_row(worksheet, int(section["subtotal_row"]))
+            section_subtotals[section_key] = subtotal
+            funnel_spend_record[section_key] = subtotal["spend"]
+            add_marketing_totals(funnel_totals[section_key], subtotal)
+
+            channel_sum: dict[str, Any] = {}
+            for row_index in section["channel_rows"]:  # type: ignore[index]
+                row_number = int(row_index)
+                channel_name = workbook_cell(
+                    worksheet, row_number, MARKETING_COLUMN_INDEXES["channel"]
+                )
+                funnel_role = workbook_cell(
+                    worksheet, row_number, MARKETING_COLUMN_INDEXES["funnelRole"]
+                )
+                if not channel_name:
+                    continue
+                channel_record = read_marketing_row(worksheet, row_number)
+                add_marketing_totals(channel_sum, channel_record)
+                entry = channel_totals.setdefault(
+                    str(channel_name),
+                    {
+                        "channel": str(channel_name),
+                        "funnelRole": funnel_role or section["stage"],
+                        "spend": 0,
+                        "conversions": 0,
+                        "impressions": 0,
+                        "clicks": 0,
+                    },
+                )
+                add_marketing_totals(entry, channel_record)
+
+            for metric in ("spend", "conversions", "impressions", "clicks"):
+                difference = (channel_sum.get(metric) or 0) - (subtotal.get(metric) or 0)
+                section_reconciliations.append((sheet_name, section_key, metric, float(difference)))
+
+        monthly_funnel_spend.append(funnel_spend_record)
+        for metric in ("spend", "conversions", "impressions", "clicks"):
+            section_total = sum(
+                safe_number(section_subtotals[str(section["key"])].get(metric)) or 0
+                for section in MARKETING_SECTIONS
+            )
+            difference = section_total - (safe_number(blended_record.get(metric)) or 0)
+            blended_reconciliations.append((sheet_name, metric, float(difference)))
+
+    ytd_performance = {"month": "YTD", **finalize_marketing_totals(blended_ytd, include_cvr=True)}
+    monthly_performance.append(ytd_performance)
+    monthly_funnel_spend.append(
+        {
+            "month": "YTD",
+            **{
+                str(section["key"]): finalize_marketing_totals(
+                    funnel_totals[str(section["key"])]
+                )["spend"]
+                for section in MARKETING_SECTIONS
+            },
+        }
+    )
+
+    funnel: list[dict[str, Any]] = []
+    for section in MARKETING_SECTIONS:
+        section_key = str(section["key"])
+        funnel.append(
+            {
+                "stage": section["stage"],
+                "objective": section["objective"],
+                **finalize_marketing_totals(funnel_totals[section_key]),
+            }
+        )
+
+    channels: list[dict[str, Any]] = []
+    for channel_name, totals in channel_totals.items():
+        channels.append(
+            {
+                "channel": channel_name,
+                "funnelRole": totals.get("funnelRole"),
+                **finalize_marketing_totals(totals),
+            }
+        )
+    channels.sort(key=lambda record: record["channel"])
+    influencers = [
+        record for record in channels if "influencer" in record["channel"].lower()
+    ]
+
+    validation_targets = {
+        "spend": 350686,
+        "impressions": 56084076,
+        "clicks": 1305169,
+        "conversions": 16667,
+        "cpa": 21.04,
+        "ctr": 0.0233,
+        "cpc": 0.27,
+    }
+    parity_results: list[tuple[str, Any, Any, Any, str]] = []
+    for metric, expected in validation_targets.items():
+        actual = ytd_performance.get(metric)
+        difference = (actual or 0) - expected
+        tolerance = 0.01 if metric in {"spend", "impressions", "clicks", "conversions"} else 0.005
+        parity_results.append(
+            (
+                metric,
+                actual,
+                expected,
+                difference,
+                marketing_reconciliation_status(float(difference), tolerance),
+            )
+        )
+
+    formula_cells_used = sum(
+        1
+        for sheet_name in MARKETING_EXPECTED_SHEETS
+        for row_index in (
+            list(range(4, 9))
+            + list(range(11, 20))
+            + list(range(23, 28))
+            + [30]
+        )
+        for column_index in range(2, 13)
+        if (row_index, column_index) in workbook_formulas[sheet_name]
+    )
+
+    section_failures = [
+        item for item in section_reconciliations if marketing_reconciliation_status(item[3]) == "FAIL"
+    ]
+    blended_failures = [
+        item for item in blended_reconciliations if marketing_reconciliation_status(item[2]) == "FAIL"
+    ]
+    if section_failures:
+        warnings.append(
+            f"{len(section_failures)} marketing section subtotal reconciliation checks failed."
+        )
+    if blended_failures:
+        warnings.append(
+            f"{len(blended_failures)} marketing blended-total reconciliation checks failed."
+        )
+
+    output = {
+        "metadata": {
+            "schemaVersion": 1,
+            "source": source_file.name,
+            "reportMonth": report_month,
+            "activityThrough": end_date_for_month(activity_month_for_report(report_month)).isoformat(),
+            "status": "generated",
+        },
+        "monthlyPerformance": monthly_performance,
+        "monthlyFunnelSpend": monthly_funnel_spend,
+        "funnel": funnel,
+        "channels": channels,
+        "influencers": influencers,
+        "qa": {
+            "worksheetsRead": list(MARKETING_EXPECTED_SHEETS),
+            "subtotalRows": {
+                "awareness": 8,
+                "consideration": 19,
+                "conversion": 27,
+                "blended": 30,
+            },
+            "formulaCellsUsedAsCachedValues": formula_cells_used,
+            "excelErrorCellsSeen": excel_error_cells,
+            "sectionSubtotalReconciliationsPassed": not section_failures,
+            "blendedTotalReconciliationsPassed": not blended_failures,
+            "warnings": warnings,
+        },
+    }
+    validate_marketing_analysis_output(output)
+    return output, MarketingDiagnostics(
+        source_file=source_file,
+        worksheets=list(MARKETING_EXPECTED_SHEETS),
+        monthly_records=len(monthly_performance),
+        channel_records=len(channels),
+        influencer_records=len(influencers),
+        generated_totals=ytd_performance,
+        parity_results=parity_results,
+        section_reconciliations=section_reconciliations,
+        blended_reconciliations=blended_reconciliations,
+        formula_cells_used=formula_cells_used,
+        excel_error_cells_seen=excel_error_cells,
+        warnings=warnings,
+    )
+
+
+def validate_marketing_analysis_output(output: dict[str, Any]) -> None:
+    required_keys = {
+        "metadata",
+        "monthlyPerformance",
+        "monthlyFunnelSpend",
+        "funnel",
+        "channels",
+        "influencers",
+        "qa",
+    }
+    if set(output) != required_keys:
+        raise ValidationError("marketing_analysis.json has an invalid top-level schema")
+    if output["metadata"].get("schemaVersion") != 1:
+        raise ValidationError("marketing_analysis.json metadata.schemaVersion must be 1")
+    for key in ("monthlyPerformance", "monthlyFunnelSpend", "funnel", "channels", "influencers"):
+        if not isinstance(output[key], list):
+            raise ValidationError(f"marketing_analysis.json {key} must be an array")
+    forbidden_errors = {"#DIV/0!", "#VALUE!", "#REF!", "#NAME?", "#N/A", "#NUM!"}
+    serialized = json.dumps(output)
+    if any(error in serialized for error in forbidden_errors):
+        raise ValidationError("marketing_analysis.json must not emit Excel error values")
+
+
+def write_marketing_analysis_json(
+    data_directory: Path,
+    backup_directory: Path,
+    output: dict[str, Any],
+) -> Path:
+    """Write the validated Marketing Analysis output with backup-on-replace."""
+    output_path = data_directory / "marketing_analysis.json"
+    if output_path.exists():
+        backup_directory.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(output_path, backup_directory / output_path.name)
+    validate_marketing_analysis_output(output)
+    output_path.write_text(
+        json.dumps(output, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return output_path
+
+
 def membership_parity_baseline(
     membership_state: Any,
     target_month: str,
@@ -3225,6 +3806,68 @@ def print_qa_summary(report: QAReport, status: str, message: str) -> None:
             print("    PASS generated output matches existing comparable GHIN values")
         print()
 
+    if report.marketing_diagnostics:
+        item = report.marketing_diagnostics
+        print("Marketing Attribution dry-run diagnostics")
+        print(f"  Source file: {item.source_file.name}")
+        print(f"  Worksheets: {', '.join(item.worksheets)}")
+        print(
+            f"  Generated records: {item.monthly_records:,} monthlyPerformance, "
+            f"{item.channel_records:,} channels, {item.influencer_records:,} influencers"
+        )
+        print("  Generated YTD totals")
+        print(
+            f"    spend={item.generated_totals['spend']:,.2f}; "
+            f"impressions={item.generated_totals['impressions']:,.0f}; "
+            f"clicks={item.generated_totals['clicks']:,.0f}; "
+            f"conversions={item.generated_totals['conversions']:,.0f}; "
+            f"cpa={item.generated_totals['cpa']:.2f}; "
+            f"ctr={item.generated_totals['ctr']:.2%}; "
+            f"cpc={item.generated_totals['cpc']:.2f}"
+        )
+        print("  Parity vs embedded Marketing dashboard targets")
+        for metric, actual, expected, difference, result in item.parity_results:
+            if isinstance(actual, float):
+                actual_display = f"{actual:,.6g}"
+            else:
+                actual_display = f"{actual:,}" if isinstance(actual, int) else str(actual)
+            if isinstance(expected, float):
+                expected_display = f"{expected:,.6g}"
+            else:
+                expected_display = f"{expected:,}" if isinstance(expected, int) else str(expected)
+            difference_display = f"{difference:+,.6g}" if isinstance(difference, float) else str(difference)
+            print(
+                f"    {metric}: calculated={actual_display}; "
+                f"target={expected_display}; difference={difference_display}; {result}"
+            )
+        section_passes = sum(
+            1
+            for _, _, _, difference in item.section_reconciliations
+            if marketing_reconciliation_status(difference) == "PASS"
+        )
+        blended_passes = sum(
+            1
+            for _, _, difference in item.blended_reconciliations
+            if marketing_reconciliation_status(difference) == "PASS"
+        )
+        print(
+            f"  Section subtotal reconciliation: {section_passes}/"
+            f"{len(item.section_reconciliations)} checks PASS"
+        )
+        print(
+            f"  Blended total reconciliation: {blended_passes}/"
+            f"{len(item.blended_reconciliations)} checks PASS"
+        )
+        print(
+            f"  Workbook formulas read from cached values: {item.formula_cells_used:,}; "
+            f"Excel error cells seen in workbook XML: {item.excel_error_cells_seen:,}"
+        )
+        if item.warnings:
+            print("  Marketing warnings")
+            for warning in item.warnings:
+                print(f"    - {warning}")
+        print()
+
     if report.calculation_notes:
         print("Calculation methods")
         for note in report.calculation_notes:
@@ -3348,6 +3991,78 @@ def run(args: argparse.Namespace) -> int:
             )
             return 0
 
+        if args.marketing_only:
+            report.marketing_output, report.marketing_diagnostics = (
+                generate_marketing_analysis_output(report_month, raw_directory)
+            )
+            report.add_check(
+                "Marketing workbook",
+                "PASS",
+                "validated monthly Accelerate worksheets and fixed row structure",
+            )
+            report.add_check(
+                "Marketing Attribution generation",
+                "PASS",
+                (
+                    f"generated {len(report.marketing_output['monthlyPerformance'])} monthlyPerformance rows, "
+                    f"{len(report.marketing_output['monthlyFunnelSpend'])} monthlyFunnelSpend rows, "
+                    f"{len(report.marketing_output['funnel'])} funnel rows, "
+                    f"{len(report.marketing_output['channels'])} channel rows, and "
+                    f"{len(report.marketing_output['influencers'])} influencer rows"
+                ),
+            )
+            marketing_parity_passes = sum(
+                1
+                for _, _, _, _, result in report.marketing_diagnostics.parity_results
+                if result == "PASS"
+            )
+            report.add_check(
+                "Marketing Attribution parity",
+                "PASS" if marketing_parity_passes == len(report.marketing_diagnostics.parity_results) else "FAIL",
+                (
+                    f"{marketing_parity_passes}/{len(report.marketing_diagnostics.parity_results)} "
+                    "embedded-dashboard target metrics match"
+                ),
+            )
+            if args.dry_run:
+                report.add_check(
+                    "Marketing Analysis JSON write",
+                    "SKIPPED",
+                    "dry-run output was validated in memory; data/marketing_analysis.json was not modified",
+                )
+            else:
+                report.written_outputs.append(
+                    write_marketing_analysis_json(
+                        data_directory,
+                        report.backup_directory,
+                        report.marketing_output,
+                    )
+                )
+                report.add_check(
+                    "Marketing Analysis JSON write",
+                    "PASS",
+                    "wrote data/marketing_analysis.json",
+                )
+            report.calculation_notes.extend(
+                (
+                    "marketing_analysis.json uses cached values from marketing_workbook.xlsx monthly Accelerate worksheets",
+                    "marketing channel rows are fixed ranges 4–7, 11–18, and 23–26; rows 8, 19, 27, and 30 are treated as totals only",
+                    "marketing CPA, CTR, CPC, and CVR are recalculated in Python with null rates when denominators are zero",
+                    "marketing YTD records are the sum of monthly cached values and are validated against current embedded Marketing dashboard targets",
+                )
+            )
+            report.warnings.extend(report.marketing_diagnostics.warnings)
+            print_qa_summary(
+                report,
+                status="PASS (MARKETING ATTRIBUTION)",
+                message=(
+                    "Marketing Attribution dry-run completed; no JSON files were written."
+                    if args.dry_run
+                    else "Marketing Attribution JSON was written."
+                ),
+            )
+            return 0
+
         report.inputs = discover_inputs(
             raw_directory,
             skip_marketing=args.skip_marketing,
@@ -3367,7 +4082,7 @@ def run(args: argparse.Namespace) -> int:
             (
                 "disabled by --skip-marketing"
                 if args.skip_marketing
-                else "workbook contains exactly 3 sheets"
+                else "workbook contains the expected monthly Accelerate sheets"
             ),
         )
 
@@ -3627,6 +4342,67 @@ def run(args: argparse.Namespace) -> int:
             )
         except ValidationError as exc:
             report.warnings.append(f"GHIN Trials generation skipped: {exc}")
+        if not args.skip_marketing:
+            report.marketing_output, report.marketing_diagnostics = (
+                generate_marketing_analysis_output(report_month, raw_directory)
+            )
+            marketing_parity_passes = sum(
+                1
+                for _, _, _, _, result in report.marketing_diagnostics.parity_results
+                if result == "PASS"
+            )
+            section_passes = sum(
+                1
+                for _, _, _, difference in report.marketing_diagnostics.section_reconciliations
+                if marketing_reconciliation_status(difference) == "PASS"
+            )
+            blended_passes = sum(
+                1
+                for _, _, difference in report.marketing_diagnostics.blended_reconciliations
+                if marketing_reconciliation_status(difference) == "PASS"
+            )
+            report.add_check(
+                "Marketing Attribution generation",
+                "PASS",
+                (
+                    f"generated {len(report.marketing_output['monthlyPerformance'])} monthlyPerformance rows, "
+                    f"{len(report.marketing_output['funnel'])} funnel rows, "
+                    f"{len(report.marketing_output['channels'])} channel rows, and "
+                    f"{len(report.marketing_output['influencers'])} influencer rows"
+                ),
+            )
+            report.add_check(
+                "Marketing Attribution parity",
+                "PASS" if marketing_parity_passes == len(report.marketing_diagnostics.parity_results) else "FAIL",
+                (
+                    f"{marketing_parity_passes}/{len(report.marketing_diagnostics.parity_results)} "
+                    "embedded-dashboard target metrics match"
+                ),
+            )
+            report.add_check(
+                "Marketing workbook reconciliation",
+                (
+                    "PASS"
+                    if section_passes == len(report.marketing_diagnostics.section_reconciliations)
+                    and blended_passes == len(report.marketing_diagnostics.blended_reconciliations)
+                    else "FAIL"
+                ),
+                (
+                    f"section subtotal checks {section_passes}/"
+                    f"{len(report.marketing_diagnostics.section_reconciliations)}; "
+                    f"blended total checks {blended_passes}/"
+                    f"{len(report.marketing_diagnostics.blended_reconciliations)}"
+                ),
+            )
+            report.calculation_notes.extend(
+                (
+                    "marketing_analysis.json uses cached values from marketing_workbook.xlsx monthly Accelerate worksheets",
+                    "marketing channel rows are fixed ranges 4–7, 11–18, and 23–26; rows 8, 19, 27, and 30 are treated as totals only",
+                    "marketing CPA, CTR, CPC, and CVR are recalculated in Python with null rates when denominators are zero",
+                    "marketing YTD records are the sum of monthly cached values and are validated against current embedded Marketing dashboard targets",
+                )
+            )
+            report.warnings.extend(report.marketing_diagnostics.warnings)
         dashboard_record, baseline_label, baseline_is_fallback = membership_parity_baseline(
             existing_state["membership_monthly.json"], activity_month
         )
@@ -3701,9 +4477,9 @@ def run(args: argparse.Namespace) -> int:
             "Current Month_Golfer Detail is the master current-month source for membership, segmentation, retention, and recovery outputs; Current Month_GC Golfer Clubs is no longer required."
         )
         report.warnings.append(
-            "Marketing workbook processing was skipped."
+            "Marketing Attribution generation was skipped."
             if args.skip_marketing
-            else "Marketing workbook column validation remains deferred."
+            else "Marketing Attribution generator ran from the workbook in memory."
         )
         if args.dry_run:
             report.add_check(
@@ -3711,6 +4487,12 @@ def run(args: argparse.Namespace) -> int:
                 "SKIPPED",
                 "dry-run output was validated in memory; no JSON was written",
             )
+            if report.marketing_output:
+                report.add_check(
+                    "Marketing Analysis JSON write",
+                    "SKIPPED",
+                    "dry-run output was validated in memory; data/marketing_analysis.json was not modified",
+                )
         else:
             report.written_outputs.append(
                 write_recovery_analysis(
@@ -3736,6 +4518,19 @@ def run(args: argparse.Namespace) -> int:
                     "GHIN Trials JSON write",
                     "PASS",
                     "wrote data/ghin_trials.json",
+                )
+            if report.marketing_output:
+                report.written_outputs.append(
+                    write_marketing_analysis_json(
+                        data_directory,
+                        report.backup_directory,
+                        report.marketing_output,
+                    )
+                )
+                report.add_check(
+                    "Marketing Analysis JSON write",
+                    "PASS",
+                    "wrote data/marketing_analysis.json",
                 )
     except ValidationError as exc:
         report.add_check("Update validation", "FAIL", str(exc))
