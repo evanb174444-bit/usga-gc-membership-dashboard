@@ -6477,14 +6477,14 @@ function marketingFunnelPerformanceSection(section){
 
 function marketingBlendedPerformanceTotal(row){
   return `<div class="marketing-blended-total">
-    <div class="marketing-blended-label">${row.label}</div>
-    <div>${marketingMetricDisplay(row.spend, 'money')}</div>
-    <div>${marketingMetricDisplay(row.impressions)}</div>
-    <div>${marketingMetricDisplay(row.cpm, 'money')}</div>
-    <div>${marketingMetricDisplay(row.clicks)}</div>
-    <div>${marketingMetricDisplay(row.cpc, 'money')}</div>
-    <div>${marketingMetricDisplay(row.conversions)}</div>
-    <div>${marketingMetricDisplay(row.cpa, 'money')}</div>
+    <div class="marketing-blended-title">${row.label}</div>
+    <div class="marketing-blended-metric"><span>Total Spend</span><strong>${marketingMetricDisplay(row.spend, 'money')}</strong></div>
+    <div class="marketing-blended-metric"><span>Total Impressions</span><strong>${marketingMetricDisplay(row.impressions)}</strong></div>
+    <div class="marketing-blended-metric"><span>Avg CPM</span><strong>${marketingMetricDisplay(row.cpm, 'money')}</strong></div>
+    <div class="marketing-blended-metric"><span>Total Clicks</span><strong>${marketingMetricDisplay(row.clicks)}</strong></div>
+    <div class="marketing-blended-metric"><span>Avg CPC</span><strong>${marketingMetricDisplay(row.cpc, 'money')}</strong></div>
+    <div class="marketing-blended-metric"><span>Total Conversions</span><strong>${marketingMetricDisplay(row.conversions)}</strong></div>
+    <div class="marketing-blended-metric"><span>Overall CPA</span><strong>${marketingMetricDisplay(row.cpa, 'money')}</strong></div>
   </div>`;
 }
 
@@ -10614,8 +10614,9 @@ initializeDashboard();
   display:flex;
   align-items:center;
   gap:12px;
-  padding:14px 18px;
-  color:#ffffff;
+  padding:15px 18px;
+  color:#14395f;
+  border-bottom:1px solid rgba(15,23,42,.06);
 }
 .marketing-funnel-section-head h4{
   margin:0;
@@ -10631,27 +10632,51 @@ initializeDashboard();
   width:34px;
   height:34px;
   border-radius:12px;
-  background:rgba(255,255,255,.18);
-  color:#ffffff;
+  background:#ffffff;
+  color:#14395f;
   font-size:16px;
   font-weight:950;
+  box-shadow:inset 0 0 0 1px rgba(15,23,42,.06);
 }
 .marketing-funnel-section-awareness .marketing-funnel-section-head{
-  background:linear-gradient(135deg,#14395f,#2f6fa6);
+  background:#eaf3fb;
+  color:#14395f;
+}
+.marketing-funnel-section-awareness .marketing-funnel-section-icon{
+  color:#14395f;
 }
 .marketing-funnel-section-consideration .marketing-funnel-section-head{
-  background:linear-gradient(135deg,#176b4d,#39a879);
+  background:#eaf8f1;
+  color:#176b4d;
+}
+.marketing-funnel-section-consideration .marketing-funnel-section-icon{
+  color:#176b4d;
 }
 .marketing-funnel-section-conversion .marketing-funnel-section-head{
-  background:linear-gradient(135deg,#513187,#8160c8);
+  background:#f0ecfb;
+  color:#513187;
+}
+.marketing-funnel-section-conversion .marketing-funnel-section-icon{
+  color:#513187;
+}
+.marketing-funnel-section-awareness{
+  background:#f7fbff;
+  border-color:#cfe2f3;
+}
+.marketing-funnel-section-consideration{
+  background:#f7fcfa;
+  border-color:#cbeedd;
+}
+.marketing-funnel-section-conversion{
+  background:#faf8ff;
+  border-color:#ddd4f3;
 }
 .marketing-funnel-table{
   overflow-x:auto;
-  background:#ffffff;
+  background:rgba(255,255,255,.82);
 }
 .marketing-funnel-table-head,
-.marketing-funnel-table-row,
-.marketing-blended-total{
+.marketing-funnel-table-row{
   display:grid;
   grid-template-columns:minmax(230px,1.45fr) repeat(7,minmax(104px,.72fr));
   gap:0;
@@ -10667,8 +10692,7 @@ initializeDashboard();
   border-bottom:1px solid #e8eef6;
 }
 .marketing-funnel-table-head > div,
-.marketing-funnel-table-row > div,
-.marketing-blended-total > div{
+.marketing-funnel-table-row > div{
   padding:12px 13px;
   display:flex;
   align-items:center;
@@ -10677,14 +10701,12 @@ initializeDashboard();
   border-right:1px solid #f1f5f9;
 }
 .marketing-funnel-table-head > div:first-child,
-.marketing-funnel-table-row > div:first-child,
-.marketing-blended-total > div:first-child{
+.marketing-funnel-table-row > div:first-child{
   justify-content:flex-start;
   text-align:left;
 }
 .marketing-funnel-table-head > div:last-child,
-.marketing-funnel-table-row > div:last-child,
-.marketing-blended-total > div:last-child{
+.marketing-funnel-table-row > div:last-child{
   border-right:0;
 }
 .marketing-funnel-table-row{
@@ -10707,42 +10729,72 @@ initializeDashboard();
   border-top:1px solid rgba(15,23,42,.06);
 }
 .marketing-funnel-section-awareness .marketing-funnel-table-row.is-subtotal > div{
-  background:#eaf3fb;
+  background:#dfeffb;
   color:#14395f;
 }
 .marketing-funnel-section-consideration .marketing-funnel-table-row.is-subtotal > div{
-  background:#eaf8f1;
+  background:#dff5ea;
   color:#176b4d;
 }
 .marketing-funnel-section-conversion .marketing-funnel-table-row.is-subtotal > div{
-  background:#f0ecfb;
+  background:#e8e0f8;
   color:#513187;
 }
 .marketing-funnel-section-awareness .is-highlight{
-  background:rgba(47,111,166,.09);
+  background:rgba(47,111,166,.15);
 }
 .marketing-funnel-section-consideration .is-highlight{
-  background:rgba(57,168,121,.11);
+  background:rgba(57,168,121,.16);
 }
 .marketing-funnel-section-conversion .is-highlight{
-  background:rgba(129,96,200,.11);
+  background:rgba(129,96,200,.16);
 }
 .marketing-blended-total{
-  overflow:hidden;
-  border:1px solid #dfe7f1;
-  border-radius:16px;
-  background:#f8fafc;
-  color:#0f172a;
+  display:grid;
+  grid-template-columns:minmax(220px,1.35fr) repeat(7,minmax(110px,1fr));
+  gap:10px;
+  align-items:stretch;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:18px;
+  background:linear-gradient(135deg,#14395f,#1e4f7f);
+  color:#ffffff;
+  padding:14px;
+  box-shadow:0 12px 24px rgba(20,57,95,.20);
+}
+.marketing-blended-title{
+  display:flex;
+  align-items:center;
+  color:#ffffff;
   font-size:13px;
   font-weight:950;
-}
-.marketing-blended-total > div{
-  background:#f8fafc;
-}
-.marketing-blended-label{
-  color:#334155;
   text-transform:uppercase;
-  letter-spacing:.04em;
+  letter-spacing:.06em;
+}
+.marketing-blended-metric{
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:13px;
+  padding:10px 11px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-end;
+  gap:4px;
+  text-align:right;
+}
+.marketing-blended-metric span{
+  color:rgba(255,255,255,.78);
+  font-size:9px;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  line-height:1.05;
+}
+.marketing-blended-metric strong{
+  color:#ffffff;
+  font-size:14px;
+  font-weight:950;
+  white-space:nowrap;
 }
 .influencer-placeholder-table .marketing-channel-table-head,
 .influencer-placeholder-table .marketing-channel-table-row{
@@ -10754,9 +10806,14 @@ initializeDashboard();
 }
 @media(max-width:900px){
   .marketing-funnel-table-head,
-  .marketing-funnel-table-row,
-  .marketing-blended-total{
+  .marketing-funnel-table-row{
     min-width:1120px;
+  }
+  .marketing-blended-total{
+    grid-template-columns:1fr 1fr;
+  }
+  .marketing-blended-title{
+    grid-column:1 / -1;
   }
 }
 
