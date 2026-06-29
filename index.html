@@ -4889,6 +4889,30 @@ let MARKETING_MONTHLY_FUNNEL_SPEND_DRAFT = [];
 let MARKETING_FUNNEL_DRAFT = [];
 let MARKETING_CHANNEL_PERFORMANCE_DRAFT = [];
 let MARKETING_INFLUENCER_PERFORMANCE_DRAFT = [];
+let AFFILIATE_MARKETING_DRAFT = [];
+let AFFILIATE_MONTHLY_PERFORMANCE_DRAFT = [];
+let AFFILIATE_PARTNER_PERFORMANCE_DRAFT = [];
+
+async function loadAffiliateAttributionData() {
+  const response = await fetch("./data/affiliate_attribution.json");
+  if(!response.ok) {
+    throw new Error(`Unable to load Affiliate Attribution data: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  if(!data?.metadata || data.metadata.schemaVersion !== 1
+    || data.metadata.status !== "placeholder"
+    || data.metadata.source !== "placeholder data pending affiliate reporting source"
+    || !Array.isArray(data.marketing)
+    || !Array.isArray(data.monthlyPerformance)
+    || !Array.isArray(data.partnerPerformance)) {
+    throw new Error("Affiliate Attribution JSON does not contain the expected placeholder metadata, marketing, monthly performance, and partner performance records.");
+  }
+
+  AFFILIATE_MARKETING_DRAFT = data.marketing;
+  AFFILIATE_MONTHLY_PERFORMANCE_DRAFT = data.monthlyPerformance;
+  AFFILIATE_PARTNER_PERFORMANCE_DRAFT = data.partnerPerformance;
+}
 
 async function loadMarketingAnalysisData() {
   const response = await fetch("./data/marketing_analysis.json");
@@ -5560,32 +5584,6 @@ const MARKETING_MIX_DRAFT = [
   {label:'Venmo / Paypal', value:3, sub:'0.0% of marketing conversions'},
   {label:'TikTok (Search)', value:2, sub:'0.0% of marketing conversions'}
 ];
-
-const AFFILIATE_MARKETING_DRAFT = [
-  {label:"DICK'S Sporting Goods", value:1125, sub:'38.8% of affiliate'},
-  {label:'Golf.com', value:740, sub:'25.5% of affiliate'},
-  {label:'Arccos Golf', value:565, sub:'19.5% of affiliate'},
-  {label:'Influencer', value:470, sub:'16.2% of affiliate'}
-];
-
-
-const AFFILIATE_MONTHLY_PERFORMANCE_DRAFT = [
-  {month:'Jan', traffic:4200, conversions:310},
-  {month:'Feb', traffic:4550, conversions:345},
-  {month:'Mar', traffic:5200, conversions:430},
-  {month:'Apr', traffic:6100, conversions:520},
-  {month:'May', traffic:7350, conversions:650}
-];
-
-const AFFILIATE_PARTNER_PERFORMANCE_DRAFT = [
-  {partner:"DICK'S Sporting Goods", traffic:8200, conversions:1125},
-  {partner:'Golf.com', traffic:6100, conversions:740},
-  {partner:'Arccos Golf', traffic:4300, conversions:565},
-  {partner:'Influencer', traffic:3900, conversions:470},
-  {partner:'GolfNow', traffic:2850, conversions:315},
-  {partner:'Partner Email', traffic:2050, conversions:210}
-];
-
 
 function attributionDraftCustomRankRows(rows, metric='count') {
   const total = rows.reduce((s,r) => s + r.value, 0);
@@ -6827,6 +6825,7 @@ function renderAcquisitionAttributionDraft() {
             ${attributionDetailKpi('Top Partner', topAffiliate.conversions, topAffiliate.partner)}
           </div>
         </div>
+        <div class="affiliate-placeholder-note">Placeholder data pending affiliate reporting source.</div>
 
         <div class="attribution-draft-card marketing-chart-card affiliate-top-tile">
           <div class="attribution-draft-head">
@@ -8637,6 +8636,7 @@ async function initializeDashboard() {
     loadMembershipData(),
     loadGhinTrialsData(),
     loadMarketingAnalysisData(),
+    loadAffiliateAttributionData(),
     loadRecoveryAnalysisData(),
     loadSegmentationStatusData(),
     loadSegmentationBreakdownData(),
@@ -10827,6 +10827,13 @@ initializeDashboard();
 }
 .affiliate-partner-card{
   min-height:auto !important;
+}
+.affiliate-placeholder-note{
+  grid-column:span 12;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  margin:-4px 0 0;
 }
 .affiliate-partner-table .marketing-channel-table-head,
 .affiliate-partner-table .marketing-channel-table-row,
