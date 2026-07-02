@@ -135,6 +135,14 @@ MARKETING_BLENDED_COLUMNS = {
 
 RAW_SOURCE_SUFFIXES = {".csv", ".xlsx", ".xls"}
 
+CANONICAL_HEADER_ALIASES = {
+    "month_day_year_of_date_of_birth": "date_of_birth",
+    "gender": "gender",
+}
+
+ALIAS_RESOLUTION_WARNINGS: list[str] = []
+ALIAS_RESOLUTION_WARNING_KEYS: set[tuple[str, str, str]] = set()
+
 FIELD_ALIASES = {
     "golfer_id": ("golfer_id", "member_id", "membership_id", "ghin_number", "ghin", "id"),
     "status": ("status", "membership_status", "golfer_status"),
@@ -532,7 +540,8 @@ def normalize_header(value: str) -> str:
     """Normalize common CSV header styles to lowercase snake_case."""
     value = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", value.strip())
     value = re.sub(r"[^A-Za-z0-9]+", "_", value)
-    return value.strip("_").lower()
+    normalized = value.strip("_").lower()
+    return CANONICAL_HEADER_ALIASES.get(normalized, normalized)
 
 
 def read_csv_snapshot(path: Path, label: str) -> CsvSnapshot:
@@ -614,6 +623,16 @@ def resolve_field(
     aliases = FIELD_ALIASES[logical_name]
     matches = [alias for alias in aliases if alias in snapshot.headers]
     if len(matches) > 1:
+        if logical_name == "golfer_id" and "golfer_id" in matches:
+            key = (snapshot.label, logical_name, ",".join(matches))
+            if key not in ALIAS_RESOLUTION_WARNING_KEYS:
+                ALIAS_RESOLUTION_WARNING_KEYS.add(key)
+                ALIAS_RESOLUTION_WARNINGS.append(
+                    f"{snapshot.label} contains multiple golfer_id aliases "
+                    f"({', '.join(matches)}); using golfer_id and treating "
+                    "id as a fallback alias."
+                )
+            return "golfer_id"
         raise ValidationError(
             f"{snapshot.label} contains multiple aliases for {logical_name}: "
             + ", ".join(matches)
@@ -692,6 +711,7 @@ def parse_source_date(value: str, context: str) -> date | None:
         "%Y-%m-%d",
         "%m/%d/%Y",
         "%m/%d/%y",
+        "%B %d, %Y",
         "%Y-%m-%d %H:%M:%S",
         "%Y-%m-%dT%H:%M:%S",
     ):
@@ -1438,6 +1458,116 @@ def merge_target_month_records(
     ):
         raise ValidationError(f"{output_filename} cumulative row-count check failed")
     return merged, existing_target_records, len(historical_records)
+
+
+def merge_membership_monthly_record(
+    existing_records: Any,
+    generated_record: dict[str, Any],
+    activity_month: str,
+) -> list[dict[str, Any]]:
+    """Replace one monthly membership record while preserving all other months."""
+    if not isinstance(existing_records, list) or not all(
+        isinstance(record, dict) for record in existing_records
+    ):
+        raise ValidationError("membership_monthly.json must contain a top-level array")
+    year, month_number = target_year_month(activity_month)
+    historical_records: list[dict[str, Any]] = []
+    insertion_index: int | None = None
+    replaced = 0
+    for record in existing_records:
+        is_target = (
+            record.get("year") == year
+            and record.get("monthNum") == month_number
+        )
+        if is_target:
+            replaced += 1
+            if insertion_index is None:
+                insertion_index = len(historical_records)
+        else:
+            historical_records.append(record)
+    if insertion_index is None:
+        insertion_index = len(historical_records)
+    merged = historical_records.copy()
+    merged[insertion_index:insertion_index] = [generated_record]
+    if len(merged) != len(existing_records) - replaced + 1:
+        raise ValidationError("membership_monthly.json merge changed row counts unexpectedly")
+    return merged
+
+
+def write_json_with_backup(
+    output_path: Path,
+    backup_directory: Path,
+    output: Any,
+) -> Path:
+    """Write JSON with backup-on-replace."""
+    if output_path.exists():
+        backup_directory.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(output_path, backup_directory / output_path.name)
+    output_path.write_text(
+        json.dumps(output, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return output_path
+
+
+def write_membership_monthly_json(
+    data_directory: Path,
+    backup_directory: Path,
+    output: list[dict[str, Any]],
+) -> Path:
+    return write_json_with_backup(
+        data_directory / "membership_monthly.json",
+        backup_directory,
+        output,
+    )
+
+
+def write_segmentation_status_json(
+    data_directory: Path,
+    backup_directory: Path,
+    output: list[dict[str, Any]],
+) -> Path:
+    return write_json_with_backup(
+        data_directory / "segmentation_status.json",
+        backup_directory,
+        output,
+    )
+
+
+def write_segmentation_breakdown_json(
+    data_directory: Path,
+    backup_directory: Path,
+    output: list[dict[str, Any]],
+) -> Path:
+    return write_json_with_backup(
+        data_directory / "segmentation_breakdown.json",
+        backup_directory,
+        output,
+    )
+
+
+def write_retention_cohorts_json(
+    data_directory: Path,
+    backup_directory: Path,
+    output: dict[str, Any],
+) -> Path:
+    return write_json_with_backup(
+        data_directory / "retention_cohorts.json",
+        backup_directory,
+        output,
+    )
+
+
+def write_retention_club_rankings_json(
+    data_directory: Path,
+    backup_directory: Path,
+    output: list[dict[str, Any]],
+) -> Path:
+    return write_json_with_backup(
+        data_directory / "retention_club_rankings.json",
+        backup_directory,
+        output,
+    )
 
 
 def add_calendar_months(value: date, months: int) -> date:
@@ -3903,6 +4033,8 @@ def print_qa_summary(report: QAReport, status: str, message: str) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
+    ALIAS_RESOLUTION_WARNINGS.clear()
+    ALIAS_RESOLUTION_WARNING_KEYS.clear()
     root = project_root()
     data_directory = root / "data"
     report_month = args.month
@@ -4110,6 +4242,12 @@ def run(args: argparse.Namespace) -> int:
             "PASS",
             f"golfer_id, status, and inactive_date are present; {prior_gc_golfers:,} unique golfers available for renewal eligibility",
         )
+        prior_year_identifier = resolve_field(prior_year, "golfer_id")
+        report.add_check(
+            "Same-month prior-year identifier",
+            "PASS",
+            f"using {prior_year_identifier} as the golfer identifier",
+        )
         (
             report.membership_record,
             report.calculation_notes,
@@ -4127,6 +4265,11 @@ def run(args: argparse.Namespace) -> int:
                 f"report month {display_month(report_month)} reads data/raw/{report_month}/ "
                 f"and produces the {display_month(activity_month)} dashboard record"
             ),
+        )
+        merged_membership_records = merge_membership_monthly_record(
+            existing_state["membership_monthly.json"],
+            report.membership_record,
+            activity_month,
         )
 
         status_records, status_counts = generate_segmentation_status_records(
@@ -4473,6 +4616,7 @@ def run(args: argparse.Namespace) -> int:
         )
         for warning in validate_output_row_counts_stub(existing_state):
             report.warnings.append(warning)
+        report.warnings.extend(ALIAS_RESOLUTION_WARNINGS)
         report.warnings.append(
             "Current Month_Golfer Detail is the master current-month source for membership, segmentation, retention, and recovery outputs; Current Month_GC Golfer Clubs is no longer required."
         )
@@ -4494,6 +4638,66 @@ def run(args: argparse.Namespace) -> int:
                     "dry-run output was validated in memory; data/marketing_analysis.json was not modified",
                 )
         else:
+            report.written_outputs.append(
+                write_membership_monthly_json(
+                    data_directory,
+                    report.backup_directory,
+                    merged_membership_records,
+                )
+            )
+            report.add_check(
+                "Membership Monthly JSON write",
+                "PASS",
+                "wrote data/membership_monthly.json",
+            )
+            report.written_outputs.append(
+                write_segmentation_status_json(
+                    data_directory,
+                    report.backup_directory,
+                    merged_status_records,
+                )
+            )
+            report.add_check(
+                "Segmentation Status JSON write",
+                "PASS",
+                "wrote data/segmentation_status.json",
+            )
+            report.written_outputs.append(
+                write_segmentation_breakdown_json(
+                    data_directory,
+                    report.backup_directory,
+                    merged_breakdown_records,
+                )
+            )
+            report.add_check(
+                "Segmentation Breakdown JSON write",
+                "PASS",
+                "wrote data/segmentation_breakdown.json",
+            )
+            report.written_outputs.append(
+                write_retention_cohorts_json(
+                    data_directory,
+                    report.backup_directory,
+                    retention_cohorts_output,
+                )
+            )
+            report.add_check(
+                "Retention Cohorts JSON write",
+                "PASS",
+                "wrote data/retention_cohorts.json",
+            )
+            report.written_outputs.append(
+                write_retention_club_rankings_json(
+                    data_directory,
+                    report.backup_directory,
+                    retention_rankings_output,
+                )
+            )
+            report.add_check(
+                "Retention Club Rankings JSON write",
+                "PASS",
+                "wrote data/retention_club_rankings.json",
+            )
             report.written_outputs.append(
                 write_recovery_analysis(
                     data_directory,
@@ -4534,6 +4738,7 @@ def run(args: argparse.Namespace) -> int:
                 )
     except ValidationError as exc:
         report.add_check("Update validation", "FAIL", str(exc))
+        report.warnings.extend(ALIAS_RESOLUTION_WARNINGS)
         print_qa_summary(
             report,
             status="FAIL",

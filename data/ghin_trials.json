@@ -5,10 +5,10 @@
     "source": "Tableau aggregate CSV exports"
   },
   "overview": {
-    "signups": 92394,
-    "activeTrials": 48468,
-    "conversions": 46424,
-    "conversionRate": 0.5025,
+    "signups": 96977,
+    "activeTrials": 49609,
+    "conversions": 48934,
+    "conversionRate": 0.5046,
     "campaigns": [
       {
         "label": "Spring Trial Push",
@@ -51,11 +51,11 @@
     ]
   },
   "summary": {
-    "totalTrialsCreated": 92394,
-    "trialConversions": 46424,
-    "conversionRate": 0.5025,
-    "activeTrialGolfers": 48468,
-    "inactiveTrialGolfers": 13270
+    "totalTrialsCreated": 96977,
+    "trialConversions": 48934,
+    "conversionRate": 0.5046,
+    "activeTrialGolfers": 49609,
+    "inactiveTrialGolfers": 14763
   },
   "monthly": [
     {
@@ -70,271 +70,276 @@
     },
     {
       "label": "Mar",
-      "trials": 14104,
+      "trials": 14103,
       "conversions": 6602
     },
     {
       "label": "Apr",
-      "trials": 22015,
-      "conversions": 11950
+      "trials": 22014,
+      "conversions": 11949
     },
     {
       "label": "May",
       "trials": 22884,
       "conversions": 12633
+    },
+    {
+      "label": "Jun",
+      "trials": 23574,
+      "conversions": 12033
     }
   ],
   "conversionBuckets": [
     {
       "label": "First day",
-      "count": 53510,
-      "pct": 0.3194
+      "count": 54122,
+      "pct": 0.3181
     },
     {
       "label": "Next day",
-      "count": 8650,
-      "pct": 0.0516
+      "count": 8738,
+      "pct": 0.051399999999999994
     },
     {
       "label": "First week",
-      "count": 16449,
-      "pct": 0.09820000000000001
+      "count": 16682,
+      "pct": 0.098
     },
     {
       "label": "First month",
-      "count": 26794,
-      "pct": 0.15990000000000001
+      "count": 27220,
+      "pct": 0.16
     },
     {
       "label": "Beyond 1 month",
-      "count": 62147,
-      "pct": 0.3709
+      "count": 63395,
+      "pct": 0.3726
     }
   ],
   "agaConversions": [
     {
       "name": "Texas Golf Association",
-      "count": 12821
+      "count": 12972
     },
     {
       "name": "Florida State Golf Association",
-      "count": 11447
+      "count": 11578
     },
     {
       "name": "Carolinas Golf Association",
-      "count": 10332
+      "count": 10487
     },
     {
       "name": "Metropolitan Golf Association",
-      "count": 6987
+      "count": 7130
     },
     {
       "name": "Southern California Golf Association",
-      "count": 6442
+      "count": 6506
     },
     {
       "name": "Mass Golf",
-      "count": 6022
+      "count": 6103
     },
     {
       "name": "GAP",
-      "count": 5608
+      "count": 5709
     },
     {
       "name": "Georgia State Golf Association",
-      "count": 5446
+      "count": 5529
     },
     {
       "name": "Golf Association of Michigan",
-      "count": 5099
+      "count": 5182
     },
     {
       "name": "Colorado Golf Association",
-      "count": 4080
+      "count": 4142
     },
     {
       "name": "Northern California Golf Association",
-      "count": 3544
+      "count": 3572
     },
     {
       "name": "Arizona Golf Association",
-      "count": 3460
+      "count": 3485
     },
     {
       "name": "Virginia State Golf Association",
-      "count": 3385
+      "count": 3423
     },
     {
       "name": "Washington Golf",
-      "count": 3156
+      "count": 3199
     },
     {
       "name": "Tennessee Golf Association",
-      "count": 2960
+      "count": 3000
     },
     {
       "name": "Minnesota Golf Association",
-      "count": 2835
+      "count": 2884
     },
     {
       "name": "Maryland State Golf Association",
-      "count": 2750
+      "count": 2805
     },
     {
       "name": "Chicago District Golf Association",
-      "count": 2616
+      "count": 2660
     },
     {
       "name": "New Jersey Golf",
-      "count": 2523
+      "count": 2560
     },
     {
       "name": "Utah Golf Association",
-      "count": 2222
+      "count": 2244
     },
     {
       "name": "Alabama Golf Association",
-      "count": 2212
+      "count": 2230
     },
     {
       "name": "Western Pennsylvania Golf Association",
-      "count": 2147
+      "count": 2178
     },
     {
       "name": "Northern Ohio Golf Association",
-      "count": 2134
-    },
-    {
-      "name": "Oregon Golf Association",
-      "count": 1981
+      "count": 2172
     },
     {
       "name": "New York State Golf Association",
-      "count": 1976
+      "count": 2037
+    },
+    {
+      "name": "Oregon Golf Association",
+      "count": 2014
     },
     {
       "name": "Central Links Golf",
-      "count": 1883
+      "count": 1896
     },
     {
       "name": "Wisconsin State Golf Association",
-      "count": 1842
+      "count": 1877
     },
     {
       "name": "Metropolitan Amateur Golf Association",
-      "count": 1777
+      "count": 1809
     },
     {
       "name": "Indiana Golf Association",
-      "count": 1539
+      "count": 1576
     },
     {
       "name": "Iowa Golf Association",
-      "count": 1520
+      "count": 1551
     },
     {
       "name": "Ohio Golf Association",
-      "count": 1518
+      "count": 1543
     },
     {
       "name": "Kentucky Golf Association",
-      "count": 1490
+      "count": 1506
     },
     {
       "name": "Connecticut State Golf Association",
-      "count": 1466
+      "count": 1488
     },
     {
       "name": "Louisiana Golf Association",
-      "count": 1449
+      "count": 1462
     },
     {
       "name": "Oklahoma Golf Association",
-      "count": 1329
+      "count": 1346
     },
     {
       "name": "Nebraska Golf Association",
-      "count": 1267
+      "count": 1281
     },
     {
       "name": "Greater Cincinnati Golf Association",
-      "count": 1187
+      "count": 1206
     },
     {
       "name": "Idaho Golf Association",
-      "count": 1146
+      "count": 1164
     },
     {
       "name": "Nevada Golf",
-      "count": 1142
+      "count": 1155
     },
     {
       "name": "New Hampshire Golf",
-      "count": 1040
+      "count": 1059
     },
     {
       "name": "Montana State Golf Association",
-      "count": 922
+      "count": 937
     },
     {
       "name": "Arkansas State Golf Association",
-      "count": 887
+      "count": 906
     },
     {
       "name": "Maine Golf",
-      "count": 681
+      "count": 697
     },
     {
       "name": "Mississippi Golf Association",
-      "count": 669
+      "count": 676
     },
     {
       "name": "Missouri Golf Association",
-      "count": 642
+      "count": 651
     },
     {
       "name": "South Dakota Golf Association",
-      "count": 610
+      "count": 625
     },
     {
       "name": "Rhode Island Golf Association",
-      "count": 566
+      "count": 579
     },
     {
       "name": "Sun Country Amateur Golf Association",
-      "count": 550
+      "count": 558
     },
     {
       "name": "Hawaii State Golf Association",
-      "count": 549
+      "count": 555
     },
     {
       "name": "Rochester District Golf Association",
-      "count": 535
+      "count": 541
     },
     {
       "name": "North Dakota Golf Association",
-      "count": 501
+      "count": 517
     },
     {
       "name": "Wyoming State / Colorado GA",
-      "count": 381
+      "count": 388
     },
     {
       "name": "Miami Valley Golf",
-      "count": 377
+      "count": 385
     },
     {
       "name": "Federacion Mexicana de Golf",
-      "count": 362
+      "count": 363
     },
     {
       "name": "West Virginia Golf Association",
-      "count": 345
+      "count": 347
     },
     {
       "name": "Vermont Golf Association",
-      "count": 335
+      "count": 342
     },
     {
       "name": "Dominican Golf Federation",
@@ -342,7 +347,7 @@
     },
     {
       "name": "Alaska / WA Golf GA",
-      "count": 130
+      "count": 129
     },
     {
       "name": "Golf Association of Hong Kong, China Ltd",
@@ -354,7 +359,7 @@
     },
     {
       "name": "Emirates Golf Federation",
-      "count": 52
+      "count": 53
     },
     {
       "name": "Asociacion de Golf de Panama",
@@ -362,7 +367,7 @@
     },
     {
       "name": "Indian Golf Union",
-      "count": 22
+      "count": 23
     },
     {
       "name": "Saudi Golf Federation",
