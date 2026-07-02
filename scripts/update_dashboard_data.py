@@ -3403,10 +3403,7 @@ def calculate_renewal_metrics(
             f"{three_months_prior_golfer_clubs.label} inactive_date "
             f"for golfer {golfer_id}",
         )
-        if (
-            row["status"].strip().lower() == "active"
-            and is_target_month(inactive_date, year, month)
-        ):
+        if is_target_month(inactive_date, year, month):
             eligible_ids.add(golfer_id)
 
     renewed_ids = eligible_ids & current_detail_active
@@ -3414,9 +3411,10 @@ def calculate_renewal_metrics(
     renewed = len(renewed_ids)
     rate = renewed / up_for_renewal if up_for_renewal else None
     method = (
-        "upForRenewal: three-months-prior GC Golfer Clubs rows with "
-        "status Active and inactive_date in target month; renewed: eligible "
-        "golfer_id is Active anywhere in Current Month_Golfer Detail"
+        "upForRenewal: distinct golfer_ids from three-months-prior GC Golfer "
+        "Clubs rows with inactive_date in target month, regardless of row "
+        "status; renewed: eligible golfer_id is Active anywhere in Current "
+        "Month_Golfer Detail"
     )
     return renewed, up_for_renewal, rate, method
 def calculate_membership_record(

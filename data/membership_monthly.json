@@ -858,9 +858,9 @@
     "percentChange": 0.02930032887506982,
     "newGolfers": 26325,
     "reactivations": 6151,
-    "onTimeRenewalRate": null,
-    "renewed": 0,
-    "upForRenewal": 0,
+    "onTimeRenewalRate": 0.8408731553056922,
+    "renewed": 76580,
+    "upForRenewal": 91072,
     "retentionRate": 0.7719216566487218
   },
   {
