@@ -2383,6 +2383,43 @@ svg{height:100%;width:100%;overflow:visible}
   background:#eef2f7 !important;
   color:#14395f !important;
 }
+.attribution-coming-soon-kpi{
+  background:#fffdf5 !important;
+  border-color:#f1dfae !important;
+}
+.attribution-coming-soon-kpi .attribution-draft-kpi-label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.attribution-mock-data-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#fff3c4;
+  color:#7a4f00;
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.04em;
+  line-height:1;
+  text-transform:uppercase;
+  box-shadow:inset 0 0 0 1px rgba(122,79,0,.18);
+}
+.attribution-coming-soon-value{
+  font-size:22px !important;
+  color:#334155 !important;
+}
+.attribution-draft-kpi .attribution-open-link-disabled,
+.attribution-draft-kpi .attribution-open-link-disabled:hover{
+  cursor:not-allowed !important;
+  border-color:#e2e8f0 !important;
+  background:#f8fafc !important;
+  color:#94a3b8 !important;
+  box-shadow:none !important;
+}
 
 
 /* v46: align Attribution summary tile heights by reducing Monthly Trend chart height to match donut tile. */
@@ -4713,6 +4750,7 @@ svg{height:100%;width:100%;overflow:visible}
 
 
     <div class="retention-subpanel" id="retentionCohortPanel">
+      <div class="retention-analysis-updated" id="retentionAnalysisUpdated"></div>
       <div class="grid retention-tenure-grid">
         <div class="card full retention-card retention-tenure-card retention-tenure-summary-card">
           <div class="kpis" id="retentionCohortSummaryKpis"></div>
@@ -5130,6 +5168,14 @@ function yoyControls() {
 
 function monthNum(name) { return MONTH_LOOKUP[name] || 1; }
 function monthName(n) { return MONTHS.find(m => m[1] === Number(n))?.[0] || ""; }
+function reportDateLabelForRow(row) {
+  if(!row) return "latest report date";
+  if(row.reportDate) return row.reportDate;
+  const activityMonth = monthNum(row.month);
+  const reportMonth = activityMonth === 12 ? 1 : activityMonth + 1;
+  const reportYear = activityMonth === 12 ? Number(row.year) + 1 : Number(row.year);
+  return `${monthName(reportMonth)} 1, ${reportYear}`;
+}
 function idx(year, month) { return Number(year) * 12 + Number(month); }
 function rowIdx(r) { return idx(r.year, monthNum(r.month)); }
 function fmt(v, type="count") {
@@ -5445,17 +5491,24 @@ function attributionDraftSourceRows() {
   ];
 }
 
+function attributionProductionSourceRows() {
+  return attributionDraftSourceRows().filter(r => r.key !== 'affiliate');
+}
+
+function attributionProductionTotalForRow(row) {
+  return row.trials + row.marketing + row.organic;
+}
+
 function attributionDraftStackedBars() {
   const rows = ATTRIBUTION_DRAFT_DATA;
   return rows.map(r => {
-    const total = r.trials + r.marketing + r.affiliate + r.organic;
+    const total = attributionProductionTotalForRow(r);
     return `
       <div class="attribution-stacked-month">
         <div class="attribution-stacked-label">${r.label}</div>
         <div class="attribution-stacked-bar" aria-label="${r.month} acquisition source mix">
           <div class="attribution-seg-trials" style="width:${100*r.trials/total}%"></div>
           <div class="attribution-seg-marketing" style="width:${100*r.marketing/total}%"></div>
-          <div class="attribution-seg-affiliate" style="width:${100*r.affiliate/total}%"></div>
           <div class="attribution-seg-organic" style="width:${100*r.organic/total}%"></div>
         </div>
         <div class="attribution-stacked-total">${fmt(total)}</div>
@@ -5469,7 +5522,6 @@ function attributionDraftTrendChart() {
   const sources = [
     {key:'trials', label:'GHIN Trials', color:'#14395f'},
     {key:'marketing', label:'Marketing', color:'#6f95bb'},
-    {key:'affiliate', label:'Affiliate Program', color:'#d85a32'},
     {key:'organic', label:'Organic / Unknown', color:'#a9bdd2'}
   ];
   const rows = ATTRIBUTION_DRAFT_DATA;
@@ -5551,7 +5603,7 @@ function attributionDraftTrendChart() {
 }
 
 function attributionDraftLegend() {
-  return attributionDraftSourceRows().map(r => `
+  return attributionProductionSourceRows().map(r => `
     <div class="attribution-legend-item"><span class="attribution-legend-dot ${r.cls}"></span>${r.label}</div>
   `).join('');
 }
@@ -5610,7 +5662,6 @@ function attributionDraftDonutChart(isYtd) {
   const rows = [
     {key:'trials', label:'Trials', value:vals.trials, color:'#14395f', textColor:'#ffffff'},
     {key:'marketing', label:'Marketing', value:vals.marketing, color:'#6f95bb', textColor:'#ffffff'},
-    {key:'affiliate', label:'Affiliate', value:vals.affiliate, color:'#d85a32', textColor:'#ffffff'},
     {key:'organic', label:'Organic', value:vals.organic, color:'#a9bdd2', textColor:'#0f172a'}
   ];
   const total = rows.reduce((s,r) => s + r.value, 0);
@@ -5720,11 +5771,14 @@ function attributionDraftFunnelRows() {
   `).join('');
 }
 
-function attributionDetailKpi(label, value, sub, format='count') {
+function attributionDetailKpi(label, value, sub, format='count', variant='') {
   const v = format === 'percent' ? pctPlain(value) : format === 'currency' ? moneyShort(value) : fmt(value);
+  const mockBadge = variant === 'affiliate-mock-kpi'
+    ? '<span class="affiliate-mock-kpi-badge">MOCK</span>'
+    : '';
   return `
-    <div class="attribution-detail-kpi">
-      <div class="attribution-detail-kpi-label">${label}</div>
+    <div class="attribution-detail-kpi ${variant === 'affiliate-mock-kpi' ? 'affiliate-mock-kpi' : ''}">
+      <div class="attribution-detail-kpi-label">${label}${mockBadge}</div>
       <div class="attribution-detail-kpi-value">${v}</div>
       <div class="attribution-detail-kpi-sub">${sub}</div>
     </div>
@@ -5956,6 +6010,17 @@ function attributionPeriodKpi(label, value, sub, change, openTarget) {
       ${sub ? `<div class="attribution-draft-kpi-sub">${sub}</div>` : ``}
       ${change ? `<div class="attribution-draft-kpi-change">${change}</div>` : ``}
       ${openTarget ? `<button type="button" class="dashboard-summary-link attribution-open-link" onclick="setAcquisitionAttributionSection('${openTarget}')">${openLabels[openTarget]} →</button>` : ``}
+    </div>
+  `;
+}
+
+function attributionAffiliateComingSoonKpi() {
+  return `
+    <div class="attribution-draft-kpi attribution-coming-soon-kpi">
+      <div class="attribution-draft-kpi-label">Affiliate Program <span class="attribution-mock-data-badge">Mock Data</span></div>
+      <div class="attribution-draft-kpi-value attribution-coming-soon-value">Coming Soon</div>
+      <div class="attribution-draft-kpi-sub">Affiliate attribution is not yet integrated</div>
+      <button type="button" class="dashboard-summary-link attribution-open-link attribution-open-link-disabled" disabled aria-disabled="true">Coming Soon</button>
     </div>
   `;
 }
@@ -6670,9 +6735,9 @@ function renderAcquisitionAttributionDraft() {
   });
 
   const ref = enrich(latestActiveRow());
-  const rows = attributionDraftSourceRows();
+  const rows = attributionProductionSourceRows();
   const selectedMonth = attributionDraftSelectedMonthRow();
-  const selectedMonthTotal = selectedMonth.trials + selectedMonth.marketing + selectedMonth.affiliate + selectedMonth.organic;
+  const selectedMonthTotal = attributionProductionTotalForRow(selectedMonth);
   const ytdTotal = rows.reduce((s,r) => s + r.value, 0);
   const trialVals = sourceMonthYtdValue('trials');
   const marketingVals = sourceMonthYtdValue('marketing');
@@ -6819,22 +6884,28 @@ function renderAcquisitionAttributionDraft() {
       <div class="marketing-dashboard affiliate-dashboard">
         <div class="marketing-kpis marketing-kpis-split affiliate-kpis">
           <div class="marketing-kpi-row affiliate-kpi-row">
-            ${attributionDetailKpi('Total Affiliate Traffic', affiliateTotalsRow.traffic, `${periodLabel} visits`)}
-            ${attributionDetailKpi('Affiliate Conversions', affiliateTotalsRow.conversions, `${periodLabel} conversions`, null, 'marketing-kpi-highlight')}
-            ${attributionDetailKpi('Conversion Rate', affiliateTotalsRow.conversions / affiliateTotalsRow.traffic, 'Conversions / traffic', 'percent')}
-            ${attributionDetailKpi('Top Partner', topAffiliate.conversions, topAffiliate.partner)}
+            ${attributionDetailKpi('Total Affiliate Traffic', affiliateTotalsRow.traffic, `${periodLabel} visits`, 'count', 'affiliate-mock-kpi')}
+            ${attributionDetailKpi('Affiliate Conversions', affiliateTotalsRow.conversions, `${periodLabel} conversions`, 'count', 'affiliate-mock-kpi')}
+            ${attributionDetailKpi('Conversion Rate', affiliateTotalsRow.conversions / affiliateTotalsRow.traffic, 'Conversions / traffic', 'percent', 'affiliate-mock-kpi')}
+            ${attributionDetailKpi('Top Partner', topAffiliate.conversions, topAffiliate.partner, 'count', 'affiliate-mock-kpi')}
           </div>
         </div>
-        <div class="affiliate-placeholder-note">Placeholder data pending affiliate reporting source.</div>
+        <div class="affiliate-mock-banner">
+          <div class="affiliate-mock-banner-icon">ⓘ</div>
+          <div>
+            <div class="affiliate-mock-banner-title">MOCK DATA</div>
+            <div class="affiliate-mock-banner-copy">Affiliate reporting has not yet been integrated.<br>The values displayed on this page are sample data used to demonstrate the dashboard layout and functionality.</div>
+          </div>
+        </div>
 
-        <div class="attribution-draft-card marketing-chart-card affiliate-top-tile">
+        <div class="attribution-draft-card marketing-chart-card affiliate-top-tile affiliate-sample-watermark-card">
           <div class="attribution-draft-head">
             <div><h3>Affiliate Conversions by Month</h3></div>
           </div>
           ${affiliateMonthlyTrendSvg('conversions')}
         </div>
 
-        <div class="attribution-draft-card marketing-chart-card affiliate-top-tile">
+        <div class="attribution-draft-card marketing-chart-card affiliate-top-tile affiliate-sample-watermark-card">
           <div class="attribution-draft-head">
             <div><h3>Conversion Share by Partner</h3></div>
           </div>
@@ -6865,8 +6936,9 @@ function renderAcquisitionAttributionDraft() {
             r.periodValue,
             '',
             isYtd ? `${pct(r.periodValue / ytdTotal)} of YTD acquisition` : `${pct(r.periodValue / selectedMonthTotal)} of monthly acquisition`,
-            r.key === 'trials' ? 'ghin' : r.key === 'marketing' ? 'marketing' : r.key === 'affiliate' ? 'affiliate' : null
+            r.key === 'trials' ? 'ghin' : r.key === 'marketing' ? 'marketing' : null
           )).join('')}
+          ${attributionAffiliateComingSoonKpi()}
         </div>
       </div>
 
@@ -7486,6 +7558,7 @@ function renderMembership() {
   const annualGrowthDelta = annualGrowth != null && priorYearGrowthSoFar != null ? annualGrowth - priorYearGrowthSoFar : null;
   const targetLast = target[target.length-1];
   const decProj = proj?.projected?.length ? proj.projected[proj.projected.length-1].value : null;
+  const reportDateLabel = reportDateLabelForRow(ref);
 
   const sameMonthPrior = BY_YEAR_MONTH[(ref.year-1) + "-" + monthNum(ref.month)];
   const prevMonthNum = monthNum(ref.month) === 1 ? 12 : monthNum(ref.month) - 1;
@@ -7538,7 +7611,7 @@ function renderMembership() {
     <div>
       <div class="summary-strip-top">
         <div class="summary-strip-copy">
-          <div class="dashboard-summary-title">Membership KPIs – As of June 1, 2026</div>
+          <div class="dashboard-summary-title">Membership KPIs</div>
           
         </div>
       </div>
@@ -7550,7 +7623,7 @@ function renderMembership() {
             <div class="dashboard-topline-number">${fmt(ref.activeGolfers)}</div>
             <div class="dashboard-topline-label">Active GC Golfers</div>
           </div>
-          <div class="dashboard-topline-sub">Current total as of ${ref.month} 1, ${ref.year}</div>
+          <div class="dashboard-topline-sub">Active GC Golfers as of ${reportDateLabel}</div>
         </div>
         <div class="dashboard-topline-change">
           <span class="dashboard-topline-change-main">${activeChange > 0 ? "▲" : activeChange < 0 ? "▼" : "•"} ${pct(activeChange)}</span>
@@ -8467,8 +8540,21 @@ function sortRetentionClubRanks(tile, sortKey){
   });
 }
 
+function retentionAnalysisUpdatedLabel(data){
+  const metadataDate = data?.metadata?.reportDate || data?.metadata?.generatedAt;
+  if(metadataDate) return metadataDate;
+  const analyzed = data?.summary?.find(record => record.label === 'Golfers Analyzed');
+  return analyzed?.subDisplay || data?.summary?.find(record => record.subDisplay)?.subDisplay || '';
+}
+
 function renderRetentionCohorts(){
   if(!RETENTION_COHORT_DATA) return;
+
+  const updated = document.getElementById('retentionAnalysisUpdated');
+  if(updated){
+    const updatedLabel = retentionAnalysisUpdatedLabel(RETENTION_COHORT_DATA);
+    updated.textContent = updatedLabel ? `Analysis updated: ${updatedLabel}` : '';
+  }
 
   const summary = document.getElementById('retentionCohortSummaryKpis');
   if(summary){
@@ -10614,7 +10700,7 @@ initializeDashboard();
   display:flex;
   align-items:center;
   gap:12px;
-  padding:15px 18px;
+  padding:17px 18px;
   color:#14395f;
   border-bottom:1px solid rgba(15,23,42,.06);
 }
@@ -10634,8 +10720,9 @@ initializeDashboard();
   border-radius:12px;
   background:#ffffff;
   color:#14395f;
-  font-size:16px;
+  font-size:14px;
   font-weight:950;
+  line-height:1;
   box-shadow:inset 0 0 0 1px rgba(15,23,42,.06);
 }
 .marketing-funnel-section-awareness .marketing-funnel-section-head{
@@ -10653,11 +10740,11 @@ initializeDashboard();
   color:#176b4d;
 }
 .marketing-funnel-section-conversion .marketing-funnel-section-head{
-  background:#fef3c7;
-  color:#a16207;
+  background:#d8eeee;
+  color:#0b5960;
 }
 .marketing-funnel-section-conversion .marketing-funnel-section-icon{
-  color:#a16207;
+  color:#0b5960;
 }
 .marketing-funnel-section-awareness{
   background:#f7fbff;
@@ -10668,8 +10755,8 @@ initializeDashboard();
   border-color:#cbeedd;
 }
 .marketing-funnel-section-conversion{
-  background:#fffbeb;
-  border-color:#fde68a;
+  background:#eef8f8;
+  border-color:#8ecaca;
 }
 .marketing-funnel-table{
   overflow-x:auto;
@@ -10722,23 +10809,29 @@ initializeDashboard();
   color:#334155;
   font-weight:950;
 }
+.marketing-funnel-table-row:not(.is-subtotal) > div:not(:first-child){
+  font-weight:400;
+}
 .marketing-funnel-table-row.is-subtotal{
   font-weight:950;
 }
 .marketing-funnel-table-row.is-subtotal > div{
+  min-height:64px;
   border-top:1px solid rgba(15,23,42,.06);
+  color:#0f172a;
+  font-weight:950;
 }
 .marketing-funnel-section-awareness .marketing-funnel-table-row.is-subtotal > div{
   background:#dfeffb;
-  color:#14395f;
+  color:#0f172a;
 }
 .marketing-funnel-section-consideration .marketing-funnel-table-row.is-subtotal > div{
   background:#dff5ea;
-  color:#176b4d;
+  color:#0f172a;
 }
 .marketing-funnel-section-conversion .marketing-funnel-table-row.is-subtotal > div{
-  background:#fde68a;
-  color:#a16207;
+  background:#c2e4e4;
+  color:#0f172a;
 }
 .marketing-funnel-section-awareness .is-highlight{
   background:rgba(47,111,166,.15);
@@ -10747,7 +10840,7 @@ initializeDashboard();
   background:rgba(57,168,121,.16);
 }
 .marketing-funnel-section-conversion .is-highlight{
-  background:rgba(245,158,11,.18);
+  background:rgba(15,95,103,.20);
 }
 .marketing-blended-total{
   display:grid;
@@ -10835,6 +10928,89 @@ initializeDashboard();
   font-size:12px;
   font-weight:800;
   margin:-4px 0 0;
+}
+.affiliate-mock-banner{
+  grid-column:span 12;
+  display:flex;
+  align-items:flex-start;
+  gap:13px;
+  padding:16px 18px;
+  border:1px solid #f4d88d;
+  border-radius:16px;
+  background:#fff8df;
+  color:#4b3a11;
+  box-shadow:0 8px 18px rgba(120,88,12,.06);
+}
+.affiliate-mock-banner-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  border-radius:999px;
+  background:#f4c95d;
+  color:#14395f;
+  font-size:17px;
+  font-weight:950;
+  line-height:1;
+}
+.affiliate-mock-banner-title{
+  color:#7a4f00;
+  font-size:13px;
+  font-weight:950;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:4px;
+}
+.affiliate-mock-banner-copy{
+  color:#5f4b16;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.45;
+}
+.affiliate-mock-kpi .attribution-detail-kpi-label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.affiliate-mock-kpi-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#fff3c4;
+  color:#7a4f00;
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.07em;
+  line-height:1;
+  box-shadow:inset 0 0 0 1px rgba(122,79,0,.18);
+}
+.affiliate-sample-watermark-card{
+  position:relative;
+  overflow:hidden;
+}
+.affiliate-sample-watermark-card::before{
+  content:"SAMPLE DATA";
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) rotate(-18deg);
+  z-index:0;
+  color:rgba(20,57,95,.055);
+  font-size:58px;
+  font-weight:950;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.affiliate-sample-watermark-card > *{
+  position:relative;
+  z-index:1;
 }
 .affiliate-partner-table .marketing-channel-table-head,
 .affiliate-partner-table .marketing-channel-table-row,
@@ -11081,6 +11257,16 @@ initializeDashboard();
 }
 .retention-tenure-summary-card .card-head{
   margin-bottom:10px;
+}
+.retention-analysis-updated{
+  margin:4px 0 0;
+  color:#64748b;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.02em;
+}
+.retention-analysis-updated + .retention-tenure-grid{
+  margin-top:14px;
 }
 .retention-tenure-summary-card .kpis{
   margin-bottom:0;
