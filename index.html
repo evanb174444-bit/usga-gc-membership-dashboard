@@ -4666,6 +4666,7 @@ svg{height:100%;width:100%;overflow:visible}
   <div class="tabs" role="tablist" aria-label="Dashboard sections">
     <button class="tab-btn active" data-tab="summary" onclick="setTab('summary')">Summary</button>
     <button class="tab-btn" data-tab="acquisition" onclick="setTab('acquisition')">Acquisition</button>
+    <button class="tab-btn" data-tab="engagement" onclick="setTab('engagement')">Engagement</button>
     <button class="tab-btn" data-tab="retention" onclick="setTab('retention')">Retention</button>
     <button class="tab-btn" data-tab="recovery" onclick="setTab('recovery')">Recovery</button>
     <button class="tab-btn" data-tab="segmentation" onclick="setTab('segmentation')">Segmentation</button>
@@ -4726,6 +4727,29 @@ svg{height:100%;width:100%;overflow:visible}
       </div>
       <div class="grid">
         <div class="attribution-draft-wrap" id="acquisitionAttributionDraft"></div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <div class="tab-panel" id="tab-engagement">
+  <section class="section" id="engagementSection">
+    <div class="retention-secondary-head">
+      <div class="retention-secondary-tabs" role="tablist" aria-label="Engagement view">
+        <button data-engagement-subtab="totals" class="active" onclick="setEngagementSubtab('totals')">Totals</button>
+        <button data-engagement-subtab="ghinChallenges" onclick="setEngagementSubtab('ghinChallenges')">GHIN Challenges</button>
+      </div>
+    </div>
+
+    <div class="retention-subpanel active" id="engagementTotalsPanel">
+      <div class="grid">
+        <div class="card full retention-card retention-tenure-card" id="engagementTotalsCard"></div>
+      </div>
+    </div>
+
+    <div class="retention-subpanel" id="engagementGhinChallengesPanel">
+      <div class="grid">
+        <div class="card full retention-card retention-tenure-card" id="ghinChallengesCard"></div>
       </div>
     </div>
   </section>
@@ -4930,6 +4954,43 @@ let MARKETING_INFLUENCER_PERFORMANCE_DRAFT = [];
 let AFFILIATE_MARKETING_DRAFT = [];
 let AFFILIATE_MONTHLY_PERFORMANCE_DRAFT = [];
 let AFFILIATE_PARTNER_PERFORMANCE_DRAFT = [];
+let ENGAGEMENT_TOTALS_DATA = null;
+let GHIN_CHALLENGES_DATA = null;
+
+async function loadEngagementTotalsData() {
+  const response = await fetch("./data/engagement_totals.json");
+  if(!response.ok) {
+    throw new Error(`Unable to load Engagement Totals data: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  if(!data?.metadata || data.metadata.schemaVersion !== 1
+    || data.metadata.status !== "placeholder"
+    || !Array.isArray(data.kpis)
+    || !Array.isArray(data.monthly)) {
+    throw new Error("Engagement Totals JSON does not contain the expected placeholder metadata, KPI, and monthly records.");
+  }
+
+  ENGAGEMENT_TOTALS_DATA = data;
+}
+
+async function loadGhinChallengesData() {
+  const response = await fetch("./data/ghin_challenges.json");
+  if(!response.ok) {
+    throw new Error(`Unable to load GHIN Challenges data: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  if(!data?.metadata || data.metadata.schemaVersion !== 1
+    || data.metadata.status !== "placeholder"
+    || !data.summary
+    || !Array.isArray(data.monthly)
+    || !Array.isArray(data.challenges)) {
+    throw new Error("GHIN Challenges JSON does not contain the expected placeholder metadata, summary, monthly, and challenge records.");
+  }
+
+  GHIN_CHALLENGES_DATA = data;
+}
 
 async function loadAffiliateAttributionData() {
   const response = await fetch("./data/affiliate_attribution.json");
@@ -5278,6 +5339,9 @@ function enrich(r) {
 }
 function kpiBlock(items) {
   return `<div class="kpis">${items.map(i => `<div class="kpi"><div class="kpi-label">${escapeHtml(i[0])}</div><div class="kpi-value">${fmt(i[1], i[2])}</div></div>`).join("")}</div>`;
+}
+function placeholderKpiBlock(items) {
+  return `<div class="kpis">${items.map(item => `<div class="kpi"><div class="kpi-label">${escapeHtml(item.label)}</div><div class="kpi-value">TBD</div></div>`).join("")}</div>`;
 }
 function relChange(curr, prior) {
   return (curr != null && prior != null && Number(prior) !== 0) ? (curr - prior) / prior : null;
@@ -5859,6 +5923,23 @@ function setRecoverySubtab(subtab) {
 }
 function initRecoverySubtab() {
   setRecoverySubtab(RECOVERY_SUBTAB);
+}
+
+let ENGAGEMENT_SUBTAB = localStorage.getItem("pa_engagement_subtab") || "totals";
+function setEngagementSubtab(subtab) {
+  const allowed = ["totals", "ghinChallenges"];
+  ENGAGEMENT_SUBTAB = allowed.includes(subtab) ? subtab : "totals";
+  localStorage.setItem("pa_engagement_subtab", ENGAGEMENT_SUBTAB);
+  document.querySelectorAll("[data-engagement-subtab]").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.engagementSubtab === ENGAGEMENT_SUBTAB);
+  });
+  const totals = document.getElementById("engagementTotalsPanel");
+  const ghinChallenges = document.getElementById("engagementGhinChallengesPanel");
+  if(totals) totals.classList.toggle("active", ENGAGEMENT_SUBTAB === "totals");
+  if(ghinChallenges) ghinChallenges.classList.toggle("active", ENGAGEMENT_SUBTAB === "ghinChallenges");
+}
+function initEngagementSubtab() {
+  setEngagementSubtab(ENGAGEMENT_SUBTAB);
 }
 
 function setAcquisitionSubtab(subtab) {
@@ -8445,8 +8526,51 @@ function renderSegmentationSection() {
   if(ageBreakdown) ageBreakdown.innerHTML = renderSegmentationAgeHighlight(selected) + renderSegmentationBreakdown(selected, 'Age');
 }
 
+function renderEngagementSection() {
+  const totalsCard = document.getElementById("engagementTotalsCard");
+  if(totalsCard) {
+    const kpis = ENGAGEMENT_TOTALS_DATA?.kpis?.length ? ENGAGEMENT_TOTALS_DATA.kpis : [
+      {label:"Active Participants"},
+      {label:"Engagement Rate"},
+      {label:"Repeat Engagement"},
+      {label:"Last Updated"}
+    ];
+    totalsCard.innerHTML = `
+      <div class="card-head">
+        <div>
+          <h3>Engagement Totals</h3>
+          <div class="card-sub">Placeholder structure for engagement totals. Production source and calculations are TBD.</div>
+        </div>
+      </div>
+      ${placeholderKpiBlock(kpis)}
+      <div class="empty-note">Engagement Totals data is TBD.</div>
+    `;
+  }
+
+  const challengesCard = document.getElementById("ghinChallengesCard");
+  if(challengesCard) {
+    const summary = GHIN_CHALLENGES_DATA?.summary || {};
+    challengesCard.innerHTML = `
+      <div class="card-head">
+        <div>
+          <h3>GHIN Challenges</h3>
+          <div class="card-sub">Placeholder-ready section for future GHIN Challenges participation and completion reporting.</div>
+        </div>
+      </div>
+      ${placeholderKpiBlock([
+        {label:"Total Challenges", value:summary.totalChallenges},
+        {label:"Participants", value:summary.participants},
+        {label:"Completions", value:summary.completions},
+        {label:"Completion Rate", value:summary.completionRate}
+      ])}
+      <div class="empty-note">GHIN Challenges data is TBD.</div>
+    `;
+  }
+}
+
 function renderOtherSections() {
   renderAcquisitionSection();
+  renderEngagementSection();
   renderRetentionSection();
   renderRecoverySection();
   renderSegmentationSection();
@@ -8464,6 +8588,7 @@ function render() {
 
   initRetentionSubtab();
   initRecoverySubtab();
+  initEngagementSubtab();
 }
 function initControls() {
   // Global date controls removed. Widgets own their reporting-month controls.
@@ -8478,6 +8603,7 @@ function setTab(tabName) {
   });
   localStorage.setItem("pa_active_tab", tabName);
   if(tabName === "acquisition" && typeof initAcquisitionSubtab === "function") initAcquisitionSubtab();
+  if(tabName === "engagement" && typeof initEngagementSubtab === "function") initEngagementSubtab();
   if(tabName === "recovery" && typeof initRecoverySubtab === "function") initRecoverySubtab();
   if(tabName === "segmentation" && typeof renderSegmentationSection === "function") renderSegmentationSection();
 }
@@ -8723,6 +8849,8 @@ async function initializeDashboard() {
     loadGhinTrialsData(),
     loadMarketingAnalysisData(),
     loadAffiliateAttributionData(),
+    loadEngagementTotalsData(),
+    loadGhinChallengesData(),
     loadRecoveryAnalysisData(),
     loadSegmentationStatusData(),
     loadSegmentationBreakdownData(),

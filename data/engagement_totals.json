@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "schemaVersion": 1,
+    "status": "placeholder",
+    "source": "TBD",
+    "dataAsOf": null,
+    "description": "Placeholder structure for future Engagement Totals reporting."
+  },
+  "kpis": [
+    {
+      "key": "activeParticipants",
+      "label": "Active Participants",
+      "value": null,
+      "format": "count",
+      "status": "TBD"
+    },
+    {
+      "key": "engagementRate",
+      "label": "Engagement Rate",
+      "value": null,
+      "format": "percent",
+      "status": "TBD"
+    },
+    {
+      "key": "repeatEngagement",
+      "label": "Repeat Engagement",
+      "value": null,
+      "format": "percent",
+      "status": "TBD"
+    },
+    {
+      "key": "lastUpdated",
+      "label": "Last Updated",
+      "value": null,
+      "format": "text",
+      "status": "TBD"
+    }
+  ],
+  "monthly": []
+}

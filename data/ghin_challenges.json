@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "schemaVersion": 1,
+    "status": "placeholder",
+    "source": "TBD",
+    "dataAsOf": null,
+    "description": "Placeholder structure for future GHIN Challenges engagement reporting."
+  },
+  "summary": {
+    "totalChallenges": null,
+    "participants": null,
+    "completions": null,
+    "completionRate": null
+  },
+  "monthly": [],
+  "challenges": []
+}
