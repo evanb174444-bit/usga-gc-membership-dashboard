@@ -585,6 +585,62 @@ svg{height:100%;width:100%;overflow:visible}
   color:#64748b;
   margin-top:5px;
 }
+.kpi-secondary{
+  border-top:1px solid #e8eef6;
+  margin-top:8px;
+  padding-top:7px;
+}
+.kpi-secondary-value{
+  color:#0f172a;
+  font-size:17px;
+  font-weight:950;
+  line-height:1;
+}
+.kpi-secondary-label{
+  color:#64748b;
+  font-size:10.5px;
+  font-weight:950;
+  letter-spacing:.06em;
+  margin-top:4px;
+  text-transform:uppercase;
+}
+.engagement-kpi-callout{
+  background:#f0fdf4 !important;
+  border-color:#bbf7d0 !important;
+}
+.kpi-split-metric{
+  display:flex;
+  flex-direction:column;
+}
+.kpi-split-body{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  align-items:center;
+  flex:1;
+  margin-top:7px;
+}
+.kpi-split-half{
+  display:flex;
+  min-height:100%;
+  flex-direction:column;
+  justify-content:center;
+}
+.kpi-split-half + .kpi-split-half{
+  border-left:1px solid #e8eef6;
+  padding-left:14px;
+}
+.kpi-split-metric .kpi-value{
+  margin-top:0;
+}
+.kpi-split-label{
+  color:#64748b;
+  font-size:12px;
+  margin-top:6px;
+}
+.ghin-challenges-executive-card{
+  min-height:0 !important;
+  padding-bottom:12px !important;
+}
 .acquisition-highlights{
   margin:0 0 14px;
 }
@@ -4650,6 +4706,92 @@ svg{height:100%;width:100%;overflow:visible}
 .recovery-rank-header{padding-bottom:8px}.recovery-rank-header>div,.recovery-rank-head{padding:10px;border:0;background:#fff;color:#64748b;font-size:11px;font-weight:950;letter-spacing:.05em;text-transform:uppercase;text-align:right}
 .recovery-rank-header>div:first-child,.recovery-rank-head:nth-child(2){text-align:left}.recovery-rank-head.active,.recovery-rank-head:hover{color:#14395f}
 .recovery-rank-extra{display:none}.recovery-rank-list.show-all .recovery-rank-extra{display:grid}
+.engagement-rank-list{overflow-x:auto}
+.engagement-rank-row{
+  display:grid !important;
+  min-width:var(--engagement-rank-width, 1040px);
+  grid-template-columns:var(--engagement-rank-template) !important;
+}
+.engagement-rank-row>div,
+.engagement-rank-row>button{
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.engagement-rank-row>button{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+}
+.engagement-rank-row .engagement-text-col{
+  text-align:left;
+  justify-content:flex-start;
+}
+.engagement-rank-filter{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#64748b;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.engagement-rank-filter select{
+  border-radius:9px;
+  font-size:12px;
+  font-weight:900;
+  padding:6px 8px;
+}
+.engagement-growth-card{
+  min-height:0 !important;
+}
+.engagement-growth-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+.engagement-growth-chart{
+  background:#ffffff;
+  border:1px solid #e8eef6;
+  border-radius:12px;
+  padding:12px;
+}
+.engagement-growth-chart-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:6px;
+}
+.engagement-growth-chart-head h4{
+  margin:0;
+  color:#0f172a;
+  font-size:13px;
+  font-weight:950;
+}
+.engagement-growth-chart-head span{
+  background:#f0fdf4;
+  border:1px solid #bbf7d0;
+  border-radius:999px;
+  color:#15803d;
+  font-size:11px;
+  font-weight:950;
+  padding:5px 8px;
+  white-space:nowrap;
+}
+.engagement-growth-svg{
+  height:190px;
+}
+.engagement-growth-svg svg{
+  display:block;
+  height:100%;
+  width:100%;
+}
+@media(max-width:1000px){
+  .engagement-growth-grid{grid-template-columns:1fr;}
+}
 
 </style>
 </head>
@@ -4748,9 +4890,7 @@ svg{height:100%;width:100%;overflow:visible}
     </div>
 
     <div class="retention-subpanel" id="engagementGhinChallengesPanel">
-      <div class="grid">
-        <div class="card full retention-card retention-tenure-card" id="ghinChallengesCard"></div>
-      </div>
+      <div class="grid" id="ghinChallengesCard"></div>
     </div>
   </section>
   </div>
@@ -4956,6 +5096,7 @@ let AFFILIATE_MONTHLY_PERFORMANCE_DRAFT = [];
 let AFFILIATE_PARTNER_PERFORMANCE_DRAFT = [];
 let ENGAGEMENT_TOTALS_DATA = null;
 let GHIN_CHALLENGES_DATA = null;
+let GHIN_CHALLENGES_GROWTH_DATA = null;
 
 async function loadEngagementTotalsData() {
   const response = await fetch("./data/engagement_totals.json");
@@ -4975,21 +5116,41 @@ async function loadEngagementTotalsData() {
 }
 
 async function loadGhinChallengesData() {
-  const response = await fetch("./data/ghin_challenges.json");
+  const response = await fetch("./data/processed/ghin_challenges.json");
   if(!response.ok) {
     throw new Error(`Unable to load GHIN Challenges data: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
   if(!data?.metadata || data.metadata.schemaVersion !== 1
-    || data.metadata.status !== "placeholder"
+    || data.metadata.status !== "official"
     || !data.summary
-    || !Array.isArray(data.monthly)
+    || !Array.isArray(data.statusSummary)
+    || !Array.isArray(data.topAgasByGolfers)
+    || !Array.isArray(data.topChallengesByGolfers)
+    || !Array.isArray(data.topChallengesByScoresPosted)
     || !Array.isArray(data.challenges)) {
-    throw new Error("GHIN Challenges JSON does not contain the expected placeholder metadata, summary, monthly, and challenge records.");
+    throw new Error("GHIN Challenges JSON does not contain the expected metadata, summary, status, ranking, and challenge records.");
   }
 
   GHIN_CHALLENGES_DATA = data;
+}
+
+async function loadGhinChallengesGrowthData() {
+  const response = await fetch("./data/processed/ghin_challenges_growth.json");
+  if(!response.ok) {
+    throw new Error(`Unable to load GHIN Challenges Growth data: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  if(!Array.isArray(data)) {
+    throw new Error("GHIN Challenges Growth JSON does not contain the expected snapshot records.");
+  }
+
+  GHIN_CHALLENGES_GROWTH_DATA = data
+    .filter(row => row?.date)
+    .slice()
+    .sort((a,b) => String(a.date).localeCompare(String(b.date)));
 }
 
 async function loadAffiliateAttributionData() {
@@ -5357,11 +5518,26 @@ function kpiChangeMarkup(change, basisLabel) {
 }
 function richKpiBlock(items) {
   return `<div class="kpis acquisition-kpis">${items.map(i => `
-    <div class="kpi acquisition-kpi">
-      <div class="kpi-label">${escapeHtml(i.label)}</div>
-      <div class="kpi-value">${fmt(i.value, i.format || 'count')}</div>
-      ${i.changeHtml || ''}
-      <div class="kpi-sub">${escapeHtml(i.sub || '')}</div>
+    <div class="kpi acquisition-kpi ${escapeHtml(i.className || '')}">
+      ${i.split ? `
+        <div class="kpi-label">${escapeHtml(i.header || i.label)}</div>
+        <div class="kpi-split-body">
+          <div class="kpi-split-half">
+            <div class="kpi-value">${fmt(i.value, i.format || 'count')}</div>
+            <div class="kpi-split-label">${escapeHtml(i.label)}</div>
+          </div>
+          <div class="kpi-split-half">
+            <div class="kpi-value">${escapeHtml(i.secondary?.value || '—')}</div>
+            <div class="kpi-split-label">${escapeHtml(i.secondary?.label || '')}</div>
+          </div>
+        </div>
+      ` : `
+        <div class="kpi-label">${escapeHtml(i.label)}</div>
+        <div class="kpi-value">${fmt(i.value, i.format || 'count')}</div>
+        ${i.changeHtml || ''}
+        <div class="kpi-sub">${escapeHtml(i.sub || '')}</div>
+        ${i.secondary ? `<div class="kpi-secondary"><div class="kpi-secondary-value">${escapeHtml(i.secondary.value)}</div><div class="kpi-secondary-label">${escapeHtml(i.secondary.label)}</div></div>` : ''}
+      `}
     </div>`).join("")}</div>`;
 }
 function acquisitionPacingSeries(ref) {
@@ -8526,6 +8702,279 @@ function renderSegmentationSection() {
   if(ageBreakdown) ageBreakdown.innerHTML = renderSegmentationAgeHighlight(selected) + renderSegmentationBreakdown(selected, 'Age');
 }
 
+function engagementDecimal(value, decimals=1) {
+  if(value === null || value === undefined || Number.isNaN(Number(value))) return "—";
+  return Number(value).toFixed(decimals);
+}
+
+const ENGAGEMENT_RANK_TABLES = {
+  agas: {
+    title: "Top AGAs by Golfers",
+    nameKey: "aga",
+    nameLabel: "Association",
+    sourceKey: "topAgasByGolfers",
+    storageKey: "pa_engagement_aga_rank",
+    defaultSort: "totalGolfers",
+    expanded: false,
+    sortKey: localStorage.getItem("pa_engagement_aga_rank_sort") || "totalGolfers",
+    sortDir: localStorage.getItem("pa_engagement_aga_rank_dir") || "desc",
+    minGolfers: localStorage.getItem("pa_engagement_aga_min_golfers") || "all",
+    columns: [
+      {key:"rank", label:"Rank", sortable:false},
+      {key:"aga", label:"Association", sortable:true, align:"left"},
+      {key:"totalGolfers", label:"Golfers", sortable:true},
+      {key:"rankedGolfers", label:"Ranked Golfers", sortable:true},
+      {key:"scoresPosted", label:"Scores Posted", sortable:true},
+      {key:"rankedGolferRate", label:"Ranked Golfer Rate", sortable:true}
+    ]
+  },
+  challenges: {
+    title: "Top Challenges",
+    nameKey: "name",
+    nameLabel: "Challenge",
+    sourceKey: "challenges",
+    storageKey: "pa_engagement_challenge_rank",
+    defaultSort: "golfers",
+    expanded: false,
+    sortKey: localStorage.getItem("pa_engagement_challenge_rank_sort") || "golfers",
+    sortDir: localStorage.getItem("pa_engagement_challenge_rank_dir") || "desc",
+    minGolfers: localStorage.getItem("pa_engagement_challenge_min_golfers") || "all",
+    columns: [
+      {key:"rank", label:"Rank", sortable:false},
+      {key:"name", label:"Challenge", sortable:true, align:"left"},
+      {key:"aga", label:"Hosting Association", sortable:true, align:"left"},
+      {key:"golfers", label:"Golfers", sortable:true},
+      {key:"rankedGolfers", label:"Ranked Golfers", sortable:true},
+      {key:"scoresPosted", label:"Scores Posted", sortable:true},
+      {key:"rankedGolferRate", label:"Ranked Golfer Rate", sortable:true}
+    ]
+  }
+};
+
+function engagementRankValue(row, key) {
+  if(key === "totalGolfers") return row.totalGolfers ?? row.golfers ?? 0;
+  return row[key];
+}
+
+function engagementRankRows(tableKey) {
+  const config = ENGAGEMENT_RANK_TABLES[tableKey];
+  const sourceRows = GHIN_CHALLENGES_DATA?.challenges || [];
+  let rows = tableKey === "agas"
+    ? engagementAgaRows(sourceRows)
+    : sourceRows.slice();
+  if(tableKey === "agas") {
+    const minGolfers = config.minGolfers === "all" ? 0 : Number(config.minGolfers || 0);
+    if(minGolfers > 0) rows = rows.filter(row => Number(row.totalGolfers || 0) >= minGolfers);
+  }
+  if(tableKey === "challenges") {
+    const minGolfers = config.minGolfers === "all" ? 0 : Number(config.minGolfers || 0);
+    if(minGolfers > 0) rows = rows.filter(row => Number(row.golfers || 0) >= minGolfers);
+  }
+  const sortKey = config.sortKey || config.defaultSort;
+  const sortDir = config.sortDir === "asc" ? "asc" : "desc";
+  rows.sort((a,b) => {
+    const av = engagementRankValue(a, sortKey);
+    const bv = engagementRankValue(b, sortKey);
+    const numeric = typeof av === "number" || typeof bv === "number";
+    let cmp;
+    if(numeric) {
+      cmp = Number(av || 0) - Number(bv || 0);
+    } else {
+      cmp = String(av || "").localeCompare(String(bv || ""));
+    }
+    if(cmp === 0) cmp = String(a[config.nameKey] || "").localeCompare(String(b[config.nameKey] || ""));
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+  return rows;
+}
+
+function engagementAgaRows(challenges) {
+  const grouped = new Map();
+  (challenges || []).forEach(row => {
+    const key = row.aga || "Unknown";
+    if(!grouped.has(key)) {
+      grouped.set(key, {aga:key, totalChallenges:0, totalGolfers:0, rankedGolfers:0, scoresPosted:0});
+    }
+    const group = grouped.get(key);
+    group.totalChallenges += 1;
+    group.totalGolfers += Number(row.golfers || 0);
+    group.rankedGolfers += Number(row.rankedGolfers || 0);
+    group.scoresPosted += Number(row.scoresPosted || 0);
+  });
+  return Array.from(grouped.values()).map(row => ({
+    ...row,
+    rankedGolferRate: row.totalGolfers ? row.rankedGolfers / row.totalGolfers : null
+  }));
+}
+
+function engagementRankCell(row, key) {
+  if(key === "rank") return "";
+  if(key === "rankedGolferRate") return pctPlain(row.rankedGolferRate);
+  if(key === "totalGolfers") return fmt(row.totalGolfers ?? row.golfers);
+  if(["golfers", "rankedGolfers", "scoresPosted"].includes(key)) return fmt(row[key]);
+  return escapeHtml(row[key] || "");
+}
+
+function engagementGrowthRate(rows, key) {
+  const first = rows[0]?.[key];
+  const last = rows[rows.length - 1]?.[key];
+  return first ? (last - first) / first : null;
+}
+
+function engagementGrowthLineChart(title, key) {
+  const rows = GHIN_CHALLENGES_GROWTH_DATA || [];
+  if(rows.length < 2) return `<div class="empty-note">Program growth data is unavailable.</div>`;
+  const values = rows.map(row => Number(row[key] || 0));
+  const maxValue = Math.max(...values, 1);
+  const w = 360;
+  const h = 190;
+  const left = 42;
+  const right = 18;
+  const top = 20;
+  const bottom = 42;
+  const yMax = maxValue * 1.18;
+  const x = index => left + (rows.length === 1 ? 0 : index * (w - left - right) / (rows.length - 1));
+  const y = value => h - bottom - (value / yMax) * (h - top - bottom);
+  const points = rows.map((row, index) => ({row, x:x(index), y:y(Number(row[key] || 0))}));
+  const path = points.map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
+  const growth = engagementGrowthRate(rows, key);
+  const callout = growth === null ? "—" : `${growth >= 0 ? "+" : ""}${(growth * 100).toFixed(1)}%`;
+  const gridValues = [0, yMax / 2, yMax];
+  let svg = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${escapeHtml(title)} growth line chart">`;
+  gridValues.forEach(value => {
+    const yy = y(value);
+    svg += `<line class="gridline" x1="${left}" x2="${w-right}" y1="${yy}" y2="${yy}"></line>`;
+  });
+  svg += `<line class="axis" x1="${left}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+  svg += `<path d="${path}" fill="none" stroke="#14395f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>`;
+  points.forEach(point => {
+    svg += `<circle class="dot" cx="${point.x}" cy="${point.y}" r="5" style="stroke:#14395f"></circle>`;
+    svg += `<text class="value-label" x="${point.x}" y="${point.y - 12}" text-anchor="middle">${fmtShort(point.row[key])}</text>`;
+    svg += `<text class="axis-label" x="${point.x}" y="${h - 14}" text-anchor="middle">${escapeHtml(point.row.label)}</text>`;
+  });
+  svg += `</svg>`;
+  return `
+    <div class="engagement-growth-chart">
+      <div class="engagement-growth-chart-head">
+        <h4>${escapeHtml(title)}</h4>
+        <span>${callout}</span>
+      </div>
+      <div class="engagement-growth-svg">${svg}</div>
+    </div>
+  `;
+}
+
+function engagementGrowthCard() {
+  return `
+    <div class="card full retention-card retention-tenure-card engagement-growth-card">
+      <div class="card-head">
+        <div>
+          <h3>Program Growth</h3>
+        </div>
+      </div>
+      <div class="engagement-growth-grid">
+        ${engagementGrowthLineChart("Participating Associations", "participatingAssociations")}
+        ${engagementGrowthLineChart("Total Challenges", "totalChallenges")}
+        ${engagementGrowthLineChart("Total Golfers", "totalGolfers")}
+      </div>
+    </div>
+  `;
+}
+
+function setEngagementRankSort(tableKey, sortKey) {
+  const config = ENGAGEMENT_RANK_TABLES[tableKey];
+  if(!config || sortKey === "rank") return;
+  if(config.sortKey === sortKey) {
+    config.sortDir = config.sortDir === "asc" ? "desc" : "asc";
+  } else {
+    config.sortKey = sortKey;
+    config.sortDir = "desc";
+  }
+  localStorage.setItem(`${config.storageKey}_sort`, config.sortKey);
+  localStorage.setItem(`${config.storageKey}_dir`, config.sortDir);
+  renderEngagementSection();
+}
+
+function toggleEngagementRankTable(tableKey) {
+  const config = ENGAGEMENT_RANK_TABLES[tableKey];
+  if(!config) return;
+  config.expanded = !config.expanded;
+  renderEngagementSection();
+}
+
+function setEngagementAgaMinGolfers(value) {
+  const config = ENGAGEMENT_RANK_TABLES.agas;
+  config.minGolfers = ["all", "100", "500", "1000"].includes(value) ? value : "all";
+  localStorage.setItem("pa_engagement_aga_min_golfers", config.minGolfers);
+  renderEngagementSection();
+}
+
+function setEngagementChallengeMinGolfers(value) {
+  const config = ENGAGEMENT_RANK_TABLES.challenges;
+  config.minGolfers = ["all", "50", "100", "200", "300"].includes(value) ? value : "all";
+  localStorage.setItem("pa_engagement_challenge_min_golfers", config.minGolfers);
+  renderEngagementSection();
+}
+
+function engagementRankTable(tableKey) {
+  const config = ENGAGEMENT_RANK_TABLES[tableKey];
+  const rows = engagementRankRows(tableKey);
+  const visibleRows = config.expanded ? rows : rows.slice(0, 10);
+  const template = tableKey === "agas"
+    ? "56px minmax(300px,2.2fr) minmax(96px,.72fr) minmax(126px,.9fr) minmax(118px,.82fr) minmax(174px,1fr)"
+    : "56px minmax(280px,1.75fr) minmax(240px,1.35fr) minmax(90px,.58fr) minmax(126px,.82fr) minmax(118px,.75fr) minmax(174px,.95fr)";
+  const minWidth = "100%";
+  const rowStyle = `--engagement-rank-template:${template};--engagement-rank-width:${minWidth}`;
+  const header = config.columns.map(column => {
+    if(!column.sortable) return `<div class="retention-club-rank-head-cell">${column.label}</div>`;
+    const active = config.sortKey === column.key;
+    const arrow = active ? (config.sortDir === "asc" ? "▲" : "▼") : "";
+    return `<button type="button" class="retention-club-rank-head-cell recovery-rank-head ${column.align === "left" ? "engagement-text-col" : ""} ${active ? "active" : ""}" onclick="setEngagementRankSort('${tableKey}','${column.key}')">${column.label}<span class="retention-sort-arrow">${arrow}</span></button>`;
+  }).join("");
+  const filterConfig = tableKey === "agas"
+    ? {
+      handler:"setEngagementAgaMinGolfers",
+      aria:"Minimum golfers for Top AGAs",
+      options:[["all", "All"], ["100", "100+"], ["500", "500+"], ["1000", "1,000+"]]
+    }
+    : tableKey === "challenges"
+      ? {
+        handler:"setEngagementChallengeMinGolfers",
+        aria:"Minimum golfers for Top Challenges",
+        options:[["all", "All"], ["50", "50+"], ["100", "100+"], ["200", "200+"], ["300", "300+"]]
+      }
+      : null;
+  const headerControl = filterConfig ? `
+    <label class="engagement-rank-filter">
+      <span>Min Golfers</span>
+      <select onchange="${filterConfig.handler}(this.value)" aria-label="${filterConfig.aria}">
+        ${filterConfig.options.map(([value, label]) => `<option value="${value}" ${config.minGolfers === value ? "selected" : ""}>${label}</option>`).join("")}
+      </select>
+    </label>
+  ` : "";
+  return `
+    <div class="card-head">
+      <div>
+        <h3>${escapeHtml(config.title)}</h3>
+        <div class="card-sub">Default view shows the top 10. Sort any column to update rank order.</div>
+      </div>
+      ${headerControl}
+    </div>
+    <div class="recovery-rank-list engagement-rank-list" id="engagementRank-${tableKey}">
+      <div class="retention-club-rank-row retention-club-rank-header recovery-rank-row recovery-rank-header engagement-rank-row" style="${rowStyle}">
+        ${header}
+      </div>
+      ${visibleRows.map((row, index) => `
+        <div class="retention-club-rank-row recovery-rank-row engagement-rank-row" style="${rowStyle}">
+          <div class="retention-club-rank-rank recovery-rank-number">${index + 1}</div>
+          ${config.columns.slice(1).map(column => `<div class="${column.align === "left" ? "retention-club-rank-name recovery-rank-club engagement-text-col" : ""}">${engagementRankCell(row, column.key)}</div>`).join("")}
+        </div>
+      `).join("")}
+    </div>
+    <button type="button" class="retention-club-show-all" aria-controls="engagementRank-${tableKey}" aria-expanded="${config.expanded ? "true" : "false"}" onclick="toggleEngagementRankTable('${tableKey}')">${config.expanded ? "Show top 10" : `Show all ${rows.length}`}</button>
+  `;
+}
+
 function renderEngagementSection() {
   const totalsCard = document.getElementById("engagementTotalsCard");
   if(totalsCard) {
@@ -8549,21 +8998,36 @@ function renderEngagementSection() {
 
   const challengesCard = document.getElementById("ghinChallengesCard");
   if(challengesCard) {
-    const summary = GHIN_CHALLENGES_DATA?.summary || {};
+    if(!GHIN_CHALLENGES_DATA) {
+      challengesCard.innerHTML = `<div class="empty-note">GHIN Challenges data is unavailable.</div>`;
+      return;
+    }
+    const summary = GHIN_CHALLENGES_DATA.summary || {};
     challengesCard.innerHTML = `
-      <div class="card-head">
-        <div>
-          <h3>GHIN Challenges</h3>
-          <div class="card-sub">Placeholder-ready section for future GHIN Challenges participation and completion reporting.</div>
-        </div>
+      <div class="card full retention-card retention-tenure-card ghin-challenges-executive-card">
+        ${richKpiBlock([
+          {label:"Total Challenges", value:summary.totalChallenges, format:"count", sub:"Active + Completed + Upcoming", className:"engagement-kpi-callout"},
+          {label:"Active Challenges", value:summary.activeChallenges, format:"count", sub:"Currently active"},
+          {label:"Completed Challenges", value:summary.completedChallenges, format:"count", sub:"Completed"},
+          {label:"Upcoming Challenges", value:summary.upcomingChallenges, format:"count", sub:"Upcoming"},
+          {label:"Total Golfers", value:summary.totalGolfers, format:"count", sub:"Challenge participants"},
+          {label:"Ranked Golfers", value:summary.rankedGolfers, format:"count", sub:"With rank"},
+          {label:"Ranked Golfer Rate", value:summary.rankedGolferRate, format:"percent", sub:"Ranked golfers / golfers"},
+          {
+            header:"Score Posting",
+            label:"Scores Posted",
+            value:summary.scoresPosted,
+            format:"count",
+            sub:"",
+            className:"kpi-split-metric",
+            split:true,
+            secondary:{value:engagementDecimal(summary.scoresPerGolfer), label:"Avg. Per Golfer"}
+          }
+        ])}
       </div>
-      ${placeholderKpiBlock([
-        {label:"Total Challenges", value:summary.totalChallenges},
-        {label:"Participants", value:summary.participants},
-        {label:"Completions", value:summary.completions},
-        {label:"Completion Rate", value:summary.completionRate}
-      ])}
-      <div class="empty-note">GHIN Challenges data is TBD.</div>
+      ${engagementGrowthCard()}
+      <div class="card full retention-card retention-tenure-card">${engagementRankTable("agas")}</div>
+      <div class="card full retention-card retention-tenure-card">${engagementRankTable("challenges")}</div>
     `;
   }
 }
@@ -8851,6 +9315,7 @@ async function initializeDashboard() {
     loadAffiliateAttributionData(),
     loadEngagementTotalsData(),
     loadGhinChallengesData(),
+    loadGhinChallengesGrowthData(),
     loadRecoveryAnalysisData(),
     loadSegmentationStatusData(),
     loadSegmentationBreakdownData(),
@@ -10242,6 +10707,41 @@ initializeDashboard();
 }
 .retention-club-rank-row:not(.retention-club-rank-header):last-of-type{
   border-bottom:0 !important;
+}
+
+/* Engagement GHIN Challenges ranking layout */
+.engagement-rank-list{
+  overflow-x:auto !important;
+}
+.engagement-rank-row{
+  display:grid !important;
+  grid-template-columns:var(--engagement-rank-template) !important;
+  min-width:var(--engagement-rank-width, 1040px) !important;
+  align-items:center !important;
+}
+.engagement-rank-row > div,
+.engagement-rank-row > button{
+  min-width:0 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  align-self:stretch !important;
+}
+.retention-club-rank-row.engagement-rank-row:not(.retention-club-rank-header) > div,
+.retention-club-rank-row.engagement-rank-row.retention-club-rank-header > div,
+.retention-club-rank-row.engagement-rank-row.retention-club-rank-header > button{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.engagement-rank-row > button{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+}
+.engagement-rank-row .engagement-text-col{
+  text-align:left !important;
+  justify-content:flex-start !important;
 }
 
 </style>
@@ -12045,6 +12545,39 @@ initializeDashboard();
 }
 .retention-club-rank-row:not(.retention-club-rank-header):last-of-type{
   border-bottom:0 !important;
+}
+
+/* Final Engagement ranking table layout override */
+.engagement-rank-list{
+  width:100% !important;
+  overflow-x:auto !important;
+}
+.retention-club-rank-row.engagement-rank-row{
+  display:grid !important;
+  width:100% !important;
+  min-width:var(--engagement-rank-width, 100%) !important;
+  grid-template-columns:var(--engagement-rank-template) !important;
+  align-items:center !important;
+}
+.retention-club-rank-row.engagement-rank-row > div,
+.retention-club-rank-row.engagement-rank-row > button{
+  min-width:0 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.retention-club-rank-row.engagement-rank-row > div,
+.retention-club-rank-row.engagement-rank-row > button:not(.engagement-text-col){
+  text-align:right !important;
+  justify-content:flex-end !important;
+}
+.retention-club-rank-row.engagement-rank-row > button{
+  display:flex !important;
+  align-items:center !important;
+}
+.retention-club-rank-row.engagement-rank-row .engagement-text-col{
+  text-align:left !important;
+  justify-content:flex-start !important;
 }
 
 </style>

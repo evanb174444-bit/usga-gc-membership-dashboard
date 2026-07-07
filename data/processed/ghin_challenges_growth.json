@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-05-01",
+    "label": "May 1",
+    "participatingAssociations": 28,
+    "totalChallenges": 281,
+    "totalGolfers": 8136,
+    "rankedGolfers": 2295,
+    "scoresPosted": 18588
+  },
+  {
+    "date": "2026-07-01",
+    "label": "Jul 1",
+    "participatingAssociations": 36,
+    "totalChallenges": 769,
+    "totalGolfers": 30559,
+    "rankedGolfers": 8976,
+    "scoresPosted": 75662
+  }
+]
