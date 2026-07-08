@@ -608,6 +608,105 @@ svg{height:100%;width:100%;overflow:visible}
   background:#f0fdf4 !important;
   border-color:#bbf7d0 !important;
 }
+.ghin-challenges-hero-kpis{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  margin-bottom:10px;
+}
+.ghin-challenges-support-kpis{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  margin-top:0;
+  margin-bottom:0;
+}
+.ghin-challenges-hero-kpi{
+  position:relative;
+  padding:13px 14px;
+  padding-right:210px;
+  background:#ffffff;
+  border-color:#dfe7f1;
+}
+.ghin-challenges-hero-kpi.green{
+  background:#ffffff;
+  border-color:#dfe7f1;
+}
+.ghin-challenges-hero-kpi.blue{
+  background:#ffffff;
+  border-color:#dfe7f1;
+}
+.ghin-challenges-hero-kpi.slate{
+  background:#ffffff;
+  border-color:#dfe7f1;
+}
+.ghin-challenges-hero-row{
+  display:block;
+  margin-top:7px;
+}
+.ghin-challenges-hero-kpi .kpi-value{
+  font-size:28px;
+  margin-top:0;
+}
+.ghin-challenges-hero-kpi .kpi-sub{
+  margin-top:2px;
+}
+.ghin-challenges-growth-badge{
+  position:absolute;
+  top:19px;
+  right:82px;
+  min-width:148px;
+  background:#f0fdf4;
+  border:1px solid #bbf7d0;
+  border-radius:16px;
+  color:#14395f;
+  padding:10px 12px;
+  text-align:center;
+  white-space:nowrap;
+}
+.ghin-challenges-growth-main{
+  display:block;
+  color:#15803d;
+  font-size:18px;
+  font-weight:950;
+  letter-spacing:-.2px;
+  line-height:1;
+}
+.ghin-challenges-growth-basis{
+  display:block;
+  color:#15803d;
+  font-size:11px;
+  font-weight:900;
+  line-height:1.1;
+  margin-top:5px;
+}
+@media(max-width:1100px){
+  .ghin-challenges-support-kpis{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+@media(max-width:800px){
+  .ghin-challenges-hero-kpis,
+  .ghin-challenges-support-kpis{
+    grid-template-columns:1fr;
+  }
+}
+.engagement-info-callout{
+  width:100%;
+  background:#eef6ff;
+  border-left:4px solid #6f95bb;
+  border-radius:10px;
+  color:#334155;
+  font-size:13px;
+  line-height:1.35;
+  margin:0 0 14px;
+  padding:9px 13px;
+}
+.engagement-info-callout-icon{
+  color:#14395f;
+  font-weight:950;
+  margin-right:7px;
+}
+.attribution-info-callout{
+  grid-column:span 12;
+  margin-bottom:0;
+}
 .kpi-split-metric{
   display:flex;
   flex-direction:column;
@@ -4808,9 +4907,9 @@ svg{height:100%;width:100%;overflow:visible}
   <div class="tabs" role="tablist" aria-label="Dashboard sections">
     <button class="tab-btn active" data-tab="summary" onclick="setTab('summary')">Summary</button>
     <button class="tab-btn" data-tab="acquisition" onclick="setTab('acquisition')">Acquisition</button>
-    <button class="tab-btn" data-tab="engagement" onclick="setTab('engagement')">Engagement</button>
     <button class="tab-btn" data-tab="retention" onclick="setTab('retention')">Retention</button>
     <button class="tab-btn" data-tab="recovery" onclick="setTab('recovery')">Recovery</button>
+    <button class="tab-btn" data-tab="engagement" onclick="setTab('engagement')">Engagement</button>
     <button class="tab-btn" data-tab="segmentation" onclick="setTab('segmentation')">Segmentation</button>
   </div>
 
@@ -4876,6 +4975,7 @@ svg{height:100%;width:100%;overflow:visible}
 
   <div class="tab-panel" id="tab-engagement">
   <section class="section" id="engagementSection">
+    <div class="engagement-info-callout"><span class="engagement-info-callout-icon" aria-hidden="true">ⓘ</span>Note: Engagement metrics include golfers from all participating clubs, not just USGA GC members.</div>
     <div class="retention-secondary-head">
       <div class="retention-secondary-tabs" role="tablist" aria-label="Engagement view">
         <button data-engagement-subtab="totals" class="active" onclick="setEngagementSubtab('totals')">Totals</button>
@@ -5097,6 +5197,7 @@ let AFFILIATE_PARTNER_PERFORMANCE_DRAFT = [];
 let ENGAGEMENT_TOTALS_DATA = null;
 let GHIN_CHALLENGES_DATA = null;
 let GHIN_CHALLENGES_GROWTH_DATA = null;
+let AGA_MASTER_DATA = [];
 
 async function loadEngagementTotalsData() {
   const response = await fetch("./data/engagement_totals.json");
@@ -5151,6 +5252,22 @@ async function loadGhinChallengesGrowthData() {
     .filter(row => row?.date)
     .slice()
     .sort((a,b) => String(a.date).localeCompare(String(b.date)));
+}
+
+async function loadAgaMasterData() {
+  const response = await fetch("./data/processed/aga_master.json");
+  if(!response.ok) {
+    throw new Error(`Unable to load AGA master data: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  if(!Array.isArray(data)) {
+    throw new Error("AGA master JSON does not contain the expected association list.");
+  }
+
+  AGA_MASTER_DATA = Array.from(new Set(data
+    .map(row => typeof row === "string" ? row : row?.name)
+    .filter(Boolean)));
 }
 
 async function loadAffiliateAttributionData() {
@@ -7224,6 +7341,7 @@ function renderAcquisitionAttributionDraft() {
 
   wrap.innerHTML = `
     <div class="attribution-draft-grid">
+      ${ACQUISITION_ATTRIBUTION_SECTION === 'ghin' ? `<div class="engagement-info-callout attribution-info-callout"><span class="engagement-info-callout-icon" aria-hidden="true">ⓘ</span>Note: GHIN Trials metrics include golfers from all participating clubs, not just USGA GC members.</div>` : ``}
       ${ACQUISITION_ATTRIBUTION_SECTION === 'summary' ? summarySection : selectedDetail}
     </div>
   `;
@@ -8707,21 +8825,38 @@ function engagementDecimal(value, decimals=1) {
   return Number(value).toFixed(decimals);
 }
 
+const ENGAGEMENT_RANK_DEFAULT_VERSION = "rankedGolfersDefault";
+function engagementInitialRankSort(storageKey, defaultSort, legacyDefaultSort) {
+  const sortStorageKey = `${storageKey}_sort`;
+  const dirStorageKey = `${storageKey}_dir`;
+  const versionStorageKey = `${storageKey}_default_version`;
+  if(localStorage.getItem(versionStorageKey) !== ENGAGEMENT_RANK_DEFAULT_VERSION) {
+    const storedSort = localStorage.getItem(sortStorageKey);
+    if(!storedSort || storedSort === legacyDefaultSort) {
+      localStorage.removeItem(sortStorageKey);
+      localStorage.removeItem(dirStorageKey);
+    }
+    localStorage.setItem(versionStorageKey, ENGAGEMENT_RANK_DEFAULT_VERSION);
+  }
+  return localStorage.getItem(sortStorageKey) || defaultSort;
+}
+
 const ENGAGEMENT_RANK_TABLES = {
   agas: {
-    title: "Top AGAs by Golfers",
+    title: "GHIN Challenges by AGA",
     nameKey: "aga",
     nameLabel: "Association",
     sourceKey: "topAgasByGolfers",
     storageKey: "pa_engagement_aga_rank",
-    defaultSort: "totalGolfers",
+    defaultSort: "rankedGolfers",
     expanded: false,
-    sortKey: localStorage.getItem("pa_engagement_aga_rank_sort") || "totalGolfers",
+    sortKey: engagementInitialRankSort("pa_engagement_aga_rank", "rankedGolfers", "totalGolfers"),
     sortDir: localStorage.getItem("pa_engagement_aga_rank_dir") || "desc",
     minGolfers: localStorage.getItem("pa_engagement_aga_min_golfers") || "all",
     columns: [
       {key:"rank", label:"Rank", sortable:false},
       {key:"aga", label:"Association", sortable:true, align:"left"},
+      {key:"totalChallenges", label:"# of Challenges", sortable:true},
       {key:"totalGolfers", label:"Golfers", sortable:true},
       {key:"rankedGolfers", label:"Ranked Golfers", sortable:true},
       {key:"scoresPosted", label:"Scores Posted", sortable:true},
@@ -8729,14 +8864,14 @@ const ENGAGEMENT_RANK_TABLES = {
     ]
   },
   challenges: {
-    title: "Top Challenges",
+    title: "GHIN Challenge Site Performance",
     nameKey: "name",
     nameLabel: "Challenge",
     sourceKey: "challenges",
     storageKey: "pa_engagement_challenge_rank",
-    defaultSort: "golfers",
+    defaultSort: "rankedGolfers",
     expanded: false,
-    sortKey: localStorage.getItem("pa_engagement_challenge_rank_sort") || "golfers",
+    sortKey: engagementInitialRankSort("pa_engagement_challenge_rank", "rankedGolfers", "golfers"),
     sortDir: localStorage.getItem("pa_engagement_challenge_rank_dir") || "desc",
     minGolfers: localStorage.getItem("pa_engagement_challenge_min_golfers") || "all",
     columns: [
@@ -8756,6 +8891,26 @@ function engagementRankValue(row, key) {
   return row[key];
 }
 
+function engagementAgaIsZeroActivity(row) {
+  return Number(row.totalGolfers || 0) === 0
+    && Number(row.rankedGolfers || 0) === 0
+    && Number(row.scoresPosted || 0) === 0;
+}
+
+function engagementCompareRankRows(a, b, config, sortKey, sortDir) {
+  const av = engagementRankValue(a, sortKey);
+  const bv = engagementRankValue(b, sortKey);
+  const numeric = typeof av === "number" || typeof bv === "number";
+  let cmp;
+  if(numeric) {
+    cmp = Number(av || 0) - Number(bv || 0);
+  } else {
+    cmp = String(av || "").localeCompare(String(bv || ""));
+  }
+  if(cmp === 0) cmp = String(a[config.nameKey] || "").localeCompare(String(b[config.nameKey] || ""));
+  return sortDir === "asc" ? cmp : -cmp;
+}
+
 function engagementRankRows(tableKey) {
   const config = ENGAGEMENT_RANK_TABLES[tableKey];
   const sourceRows = GHIN_CHALLENGES_DATA?.challenges || [];
@@ -8773,23 +8928,22 @@ function engagementRankRows(tableKey) {
   const sortKey = config.sortKey || config.defaultSort;
   const sortDir = config.sortDir === "asc" ? "asc" : "desc";
   rows.sort((a,b) => {
-    const av = engagementRankValue(a, sortKey);
-    const bv = engagementRankValue(b, sortKey);
-    const numeric = typeof av === "number" || typeof bv === "number";
-    let cmp;
-    if(numeric) {
-      cmp = Number(av || 0) - Number(bv || 0);
-    } else {
-      cmp = String(av || "").localeCompare(String(bv || ""));
+    if(tableKey === "agas") {
+      const aZero = engagementAgaIsZeroActivity(a);
+      const bZero = engagementAgaIsZeroActivity(b);
+      if(aZero !== bZero) return aZero ? 1 : -1;
+      if(aZero && bZero) return String(a.aga || "").localeCompare(String(b.aga || ""));
     }
-    if(cmp === 0) cmp = String(a[config.nameKey] || "").localeCompare(String(b[config.nameKey] || ""));
-    return sortDir === "asc" ? cmp : -cmp;
+    return engagementCompareRankRows(a, b, config, sortKey, sortDir);
   });
   return rows;
 }
 
 function engagementAgaRows(challenges) {
   const grouped = new Map();
+  (AGA_MASTER_DATA || []).forEach(name => {
+    grouped.set(name, {aga:name, totalChallenges:0, totalGolfers:0, rankedGolfers:0, scoresPosted:0});
+  });
   (challenges || []).forEach(row => {
     const key = row.aga || "Unknown";
     if(!grouped.has(key)) {
@@ -8803,13 +8957,15 @@ function engagementAgaRows(challenges) {
   });
   return Array.from(grouped.values()).map(row => ({
     ...row,
-    rankedGolferRate: row.totalGolfers ? row.rankedGolfers / row.totalGolfers : null
+    rankedGolferRate: row.totalGolfers ? row.rankedGolfers / row.totalGolfers : 0
   }));
 }
 
 function engagementRankCell(row, key) {
   if(key === "rank") return "";
+  if(key === "rankedGolferRate" && Object.prototype.hasOwnProperty.call(row, "totalGolfers") && Number(row.totalGolfers || 0) === 0) return "0%";
   if(key === "rankedGolferRate") return pctPlain(row.rankedGolferRate);
+  if(key === "totalChallenges") return fmt(row.totalChallenges);
   if(key === "totalGolfers") return fmt(row.totalGolfers ?? row.golfers);
   if(["golfers", "rankedGolfers", "scoresPosted"].includes(key)) return fmt(row[key]);
   return escapeHtml(row[key] || "");
@@ -8819,6 +8975,72 @@ function engagementGrowthRate(rows, key) {
   const first = rows[0]?.[key];
   const last = rows[rows.length - 1]?.[key];
   return first ? (last - first) / first : null;
+}
+
+function engagementSnapshotGrowth(key) {
+  const rows = GHIN_CHALLENGES_GROWTH_DATA || [];
+  if(rows.length < 2) return null;
+  const first = Number(rows[0]?.[key] || 0);
+  const latest = Number(rows[rows.length - 1]?.[key] || 0);
+  return first ? (latest - first) / first : null;
+}
+
+function engagementLatestSnapshotValue(key, fallback=null) {
+  const rows = GHIN_CHALLENGES_GROWTH_DATA || [];
+  const latest = rows[rows.length - 1];
+  return latest?.[key] ?? fallback;
+}
+
+function engagementGrowthBadge(key) {
+  const growth = engagementSnapshotGrowth(key);
+  if(growth === null) return {main:"No comparison", basis:""};
+  return {
+    main:`${growth >= 0 ? "▲ +" : "▼ "}${Math.abs(growth * 100).toFixed(1)}%`,
+    basis:"since May"
+  };
+}
+
+function engagementExecutiveHeroCard(item) {
+  return `
+    <div class="kpi acquisition-kpi ghin-challenges-hero-kpi ${escapeHtml(item.className || '')}">
+      <div class="kpi-label">${escapeHtml(item.label)}</div>
+      <div class="ghin-challenges-hero-row">
+        <div class="kpi-value">${fmt(item.value, item.format || 'count')}</div>
+        <div class="ghin-challenges-growth-badge">
+          <span class="ghin-challenges-growth-main">${escapeHtml(item.badge.main)}</span>
+          <span class="ghin-challenges-growth-basis">${escapeHtml(item.badge.basis)}</span>
+        </div>
+      </div>
+      <div class="kpi-sub">${escapeHtml(item.sub || '')}</div>
+    </div>
+  `;
+}
+
+function engagementExecutiveHeroBlock(items) {
+  return `<div class="kpis acquisition-kpis ghin-challenges-hero-kpis">${items.map(engagementExecutiveHeroCard).join("")}</div>`;
+}
+
+function engagementSupportingKpiBlock(items) {
+  return `<div class="kpis acquisition-kpis ghin-challenges-support-kpis">${items.map(i => `
+    <div class="kpi acquisition-kpi ${escapeHtml(i.className || '')}">
+      ${i.split ? `
+        <div class="kpi-label">${escapeHtml(i.header || i.label)}</div>
+        <div class="kpi-split-body">
+          <div class="kpi-split-half">
+            <div class="kpi-value">${fmt(i.value, i.format || 'count')}</div>
+            <div class="kpi-split-label">${escapeHtml(i.label)}</div>
+          </div>
+          <div class="kpi-split-half">
+            <div class="kpi-value">${escapeHtml(i.secondary?.value || '—')}</div>
+            <div class="kpi-split-label">${escapeHtml(i.secondary?.label || '')}</div>
+          </div>
+        </div>
+      ` : `
+        <div class="kpi-label">${escapeHtml(i.label)}</div>
+        <div class="kpi-value">${fmt(i.value, i.format || 'count')}</div>
+        <div class="kpi-sub">${escapeHtml(i.sub || '')}</div>
+      `}
+    </div>`).join("")}</div>`;
 }
 
 function engagementGrowthLineChart(title, key) {
@@ -8869,7 +9091,7 @@ function engagementGrowthCard() {
     <div class="card full retention-card retention-tenure-card engagement-growth-card">
       <div class="card-head">
         <div>
-          <h3>Program Growth</h3>
+          <h3>Program Trend</h3>
         </div>
       </div>
       <div class="engagement-growth-grid">
@@ -8921,7 +9143,7 @@ function engagementRankTable(tableKey) {
   const rows = engagementRankRows(tableKey);
   const visibleRows = config.expanded ? rows : rows.slice(0, 10);
   const template = tableKey === "agas"
-    ? "56px minmax(300px,2.2fr) minmax(96px,.72fr) minmax(126px,.9fr) minmax(118px,.82fr) minmax(174px,1fr)"
+    ? "56px minmax(260px,2fr) minmax(126px,.9fr) minmax(92px,.66fr) minmax(126px,.9fr) minmax(118px,.82fr) minmax(174px,1fr)"
     : "56px minmax(280px,1.75fr) minmax(240px,1.35fr) minmax(90px,.58fr) minmax(126px,.82fr) minmax(118px,.75fr) minmax(174px,.95fr)";
   const minWidth = "100%";
   const rowStyle = `--engagement-rank-template:${template};--engagement-rank-width:${minWidth}`;
@@ -8965,12 +9187,13 @@ function engagementRankTable(tableKey) {
         ${header}
       </div>
       ${visibleRows.map((row, index) => `
-        <div class="retention-club-rank-row recovery-rank-row engagement-rank-row" style="${rowStyle}">
+        <div class="retention-club-rank-row recovery-rank-row engagement-rank-row ${tableKey === "agas" && engagementAgaIsZeroActivity(row) ? "engagement-zero-activity-row" : ""}" style="${rowStyle}">
           <div class="retention-club-rank-rank recovery-rank-number">${index + 1}</div>
           ${config.columns.slice(1).map(column => `<div class="${column.align === "left" ? "retention-club-rank-name recovery-rank-club engagement-text-col" : ""}">${engagementRankCell(row, column.key)}</div>`).join("")}
         </div>
       `).join("")}
     </div>
+    ${tableKey === "agas" ? `<div class="engagement-zero-activity-note">Zero-activity associations are shown at the bottom.</div>` : ""}
     <button type="button" class="retention-club-show-all" aria-controls="engagementRank-${tableKey}" aria-expanded="${config.expanded ? "true" : "false"}" onclick="toggleEngagementRankTable('${tableKey}')">${config.expanded ? "Show top 10" : `Show all ${rows.length}`}</button>
   `;
 }
@@ -9005,24 +9228,18 @@ function renderEngagementSection() {
     const summary = GHIN_CHALLENGES_DATA.summary || {};
     challengesCard.innerHTML = `
       <div class="card full retention-card retention-tenure-card ghin-challenges-executive-card">
-        ${richKpiBlock([
-          {label:"Total Challenges", value:summary.totalChallenges, format:"count", sub:"Active + Completed + Upcoming", className:"engagement-kpi-callout"},
+        ${engagementExecutiveHeroBlock([
+          {label:"Total Challenges", value:summary.totalChallenges, format:"count", badge:engagementGrowthBadge("totalChallenges"), sub:"Active + Completed + Upcoming", className:"green"},
+          {label:"Total Golfers", value:summary.totalGolfers, format:"count", badge:engagementGrowthBadge("totalGolfers"), sub:"Challenge participants", className:"blue"},
+          {label:"Participating Associations", value:engagementLatestSnapshotValue("participatingAssociations"), format:"count", badge:engagementGrowthBadge("participatingAssociations"), sub:"Participating AGAs", className:"slate"}
+        ])}
+        ${engagementSupportingKpiBlock([
           {label:"Active Challenges", value:summary.activeChallenges, format:"count", sub:"Currently active"},
           {label:"Completed Challenges", value:summary.completedChallenges, format:"count", sub:"Completed"},
-          {label:"Upcoming Challenges", value:summary.upcomingChallenges, format:"count", sub:"Upcoming"},
-          {label:"Total Golfers", value:summary.totalGolfers, format:"count", sub:"Challenge participants"},
           {label:"Ranked Golfers", value:summary.rankedGolfers, format:"count", sub:"With rank"},
           {label:"Ranked Golfer Rate", value:summary.rankedGolferRate, format:"percent", sub:"Ranked golfers / golfers"},
-          {
-            header:"Score Posting",
-            label:"Scores Posted",
-            value:summary.scoresPosted,
-            format:"count",
-            sub:"",
-            className:"kpi-split-metric",
-            split:true,
-            secondary:{value:engagementDecimal(summary.scoresPerGolfer), label:"Avg. Per Golfer"}
-          }
+          {label:"Scores Posted", value:summary.scoresPosted, format:"count", sub:""},
+          {label:"Average Posted / Golfer", value:engagementDecimal(summary.scoresPerGolfer), format:"text", sub:""}
         ])}
       </div>
       ${engagementGrowthCard()}
@@ -9316,6 +9533,7 @@ async function initializeDashboard() {
     loadEngagementTotalsData(),
     loadGhinChallengesData(),
     loadGhinChallengesGrowthData(),
+    loadAgaMasterData(),
     loadRecoveryAnalysisData(),
     loadSegmentationStatusData(),
     loadSegmentationBreakdownData(),
@@ -12578,6 +12796,20 @@ initializeDashboard();
 .retention-club-rank-row.engagement-rank-row .engagement-text-col{
   text-align:left !important;
   justify-content:flex-start !important;
+}
+.retention-club-rank-row.engagement-rank-row.engagement-zero-activity-row,
+.retention-club-rank-row.engagement-rank-row.engagement-zero-activity-row:nth-child(even),
+.retention-club-rank-row.engagement-rank-row.engagement-zero-activity-row:hover,
+.retention-club-rank-row.engagement-rank-row.engagement-zero-activity-row > div,
+.retention-club-rank-row.engagement-rank-row.engagement-zero-activity-row:nth-child(even) > div,
+.retention-club-rank-row.engagement-rank-row.engagement-zero-activity-row:hover > div{
+  background:#ffecef !important;
+}
+.engagement-zero-activity-note{
+  margin:8px 0 0;
+  color:#64748b;
+  font-size:12px;
+  line-height:1.35;
 }
 
 </style>
