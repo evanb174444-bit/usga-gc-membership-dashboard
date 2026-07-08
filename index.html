@@ -5820,31 +5820,104 @@ function toggleChartYear(chartId, year) {
 localStorage.setItem("pa_year_filters", JSON.stringify(YEAR_FILTERS));
 
 
-const ATTRIBUTION_DRAFT_DATA = [
-  {month:'January', label:"Jan", trials:2100, marketing:1450, affiliate:790, organic:4249},
-  {month:'February', label:"Feb", trials:2350, marketing:1510, affiliate:860, organic:4554},
-  {month:'March', label:"Mar", trials:5125, marketing:2610, affiliate:1420, organic:8413},
-  {month:'April', label:"Apr", trials:6900, marketing:3325, affiliate:1960, organic:10575},
-  {month:'May', label:"May", trials:8250, marketing:4500, affiliate:2900, organic:10025}
-];
+let ATTRIBUTION_DRAFT_DATA = [];
+
+function rebuildAttributionSummaryData() {
+  const ref = enrich(latestActiveRow());
+  const refYear = Number(ref?.year || DEFAULT_REF?.year || new Date().getFullYear());
+  const refMonth = Number(ref ? monthNum(ref.month) : DEFAULT_REF?.month || 12);
+  const ghinByMonth = Object.fromEntries((GHIN_TRIALS_MONTHLY_DRAFT || []).map(row => [String(row.label), Number(row.conversions || 0)]));
+  const marketingByMonth = Object.fromEntries((MARKETING_MONTHLY_PERFORMANCE_DRAFT || [])
+    .filter(row => row.month && row.month !== "YTD")
+    .map(row => [String(row.month), Number(row.conversions || 0)]));
+
+  ATTRIBUTION_DRAFT_DATA = MONTHS
+    .filter(([, monthNumber]) => monthNumber <= refMonth)
+    .map(([month, monthNumber]) => {
+      const label = month.slice(0, 3);
+      const membershipRow = BY_YEAR_MONTH[refYear + "-" + monthNumber];
+      const totalNewGolfers = Number(membershipRow?.newGolfers || 0);
+      const trials = Number(ghinByMonth[label] || 0);
+      const marketing = Number(marketingByMonth[label] || 0);
+      const affiliate = 0;
+      const organic = Math.max(0, totalNewGolfers - trials - marketing - affiliate);
+
+      return {
+        month,
+        label,
+        trials,
+        marketing,
+        affiliate,
+        organic,
+        totalNewGolfers,
+        residualOrganic: totalNewGolfers > 0
+      };
+    })
+    .filter(row => row.totalNewGolfers || row.trials || row.marketing || row.organic);
+
+  if(!ATTRIBUTION_DRAFT_DATA.length) {
+    ATTRIBUTION_DRAFT_DATA = (GHIN_TRIALS_MONTHLY_DRAFT || []).map(row => ({
+      month: monthName(MONTH_LOOKUP[Object.keys(MONTH_LOOKUP).find(name => name.slice(0,3) === row.label)] || 1) || row.label,
+      label: row.label,
+      trials: Number(row.conversions || 0),
+      marketing: Number(marketingByMonth[row.label] || 0),
+      affiliate: 0,
+      organic: 0,
+      totalNewGolfers: Number(row.conversions || 0) + Number(marketingByMonth[row.label] || 0),
+      residualOrganic: false
+    }));
+  }
+
+  const latestLabel = ATTRIBUTION_DRAFT_DATA[ATTRIBUTION_DRAFT_DATA.length - 1]?.label;
+  if(latestLabel && !ATTRIBUTION_DRAFT_DATA.some(row => row.label === ACQUISITION_ATTRIBUTION_MIX_MONTH)) {
+    ACQUISITION_ATTRIBUTION_MIX_MONTH = latestLabel;
+    localStorage.setItem("pa_acquisition_attribution_mix_month", ACQUISITION_ATTRIBUTION_MIX_MONTH);
+  }
+
+  validateAttributionSummaryConsistency();
+}
+
+function attributionOfficialYtdTotal() {
+  const ref = enrich(latestActiveRow());
+  return Number(ref?.ytdNewGolfers || 0);
+}
+
+function validateAttributionSummaryConsistency() {
+  const totals = attributionDraftTotals();
+  const sourceTotal = totals.trials + totals.marketing + totals.affiliate + totals.organic;
+  const officialTotal = attributionOfficialYtdTotal();
+  if(officialTotal && sourceTotal !== officialTotal) {
+    console.warn("Acquisition attribution summary QA warning", {
+      expectedTotal: officialTotal,
+      sourceTotal,
+      difference: sourceTotal - officialTotal,
+      ghinTrials: totals.trials,
+      marketing: totals.marketing,
+      organic: totals.organic,
+      affiliate: totals.affiliate
+    });
+  }
+}
 
 function attributionDraftTotals() {
-  return ATTRIBUTION_DRAFT_DATA.reduce((acc, r) => {
-    acc.trials += r.trials;
-    acc.marketing += r.marketing;
-    acc.affiliate += r.affiliate;
-    acc.organic += r.organic;
-    return acc;
-  }, {trials:0, marketing:0, affiliate:0, organic:0});
+  const officialTotal = attributionOfficialYtdTotal();
+  const trials = Number(GHIN_TRIALS_YEARLY_DRAFT?.trialConversions ?? 0);
+  const marketing = Number(marketingYtdPerformance()?.conversions || 0);
+  const affiliate = 0;
+  const monthlyResidualOrganic = ATTRIBUTION_DRAFT_DATA.reduce((sum, r) => sum + Number(r.organic || 0), 0);
+  const organic = officialTotal
+    ? Math.max(0, officialTotal - trials - marketing - affiliate)
+    : monthlyResidualOrganic;
+  return {trials, marketing, affiliate, organic};
 }
 
 function attributionDraftSourceRows() {
   const t = attributionDraftTotals();
   return [
-    {key:'trials', label:'GHIN Trials', value:t.trials, cls:'attribution-seg-trials', change:'+24.0% YoY'},
-    {key:'marketing', label:'Marketing', value:t.marketing, cls:'attribution-seg-marketing', change:'+12.5% YoY'},
-    {key:'affiliate', label:'Affiliate Program', value:t.affiliate, cls:'attribution-seg-affiliate', change:'+18.8% YoY'},
-    {key:'organic', label:'Organic / Unknown', value:t.organic, cls:'attribution-seg-organic', change:'+3.1% YoY'}
+    {key:'trials', label:'GHIN Trials', value:t.trials, cls:'attribution-seg-trials'},
+    {key:'marketing', label:'Marketing', value:t.marketing, cls:'attribution-seg-marketing'},
+    {key:'affiliate', label:'Affiliate Program', value:t.affiliate, cls:'attribution-seg-affiliate'},
+    {key:'organic', label:'Organic / Unknown', value:t.organic, cls:'attribution-seg-organic'}
   ];
 }
 
@@ -6291,7 +6364,10 @@ function attributionViewValue() {
 
 function syncAttributionViewControl() {
   const select = document.getElementById("attributionViewSelect");
-  if(select) select.value = attributionViewValue();
+  if(!select) return;
+  const monthOptions = ATTRIBUTION_DRAFT_DATA.map(row => `<option value="${row.label}">${row.month}</option>`).join("");
+  select.innerHTML = `<option value="ytd">YTD</option>${monthOptions}`;
+  select.value = attributionViewValue();
 }
 
 function setAcquisitionAttributionView(view) {
@@ -9543,6 +9619,7 @@ async function initializeDashboard() {
   if(loadResults[0].status === "rejected") throw loadResults[0].reason;
 
   initControls();
+  rebuildAttributionSummaryData();
   render();
   if(RETENTION_COHORT_DATA) renderRetentionCohorts();
   if(RETENTION_CLUB_RANKINGS_DATA.length) renderRetentionClubRankings();
