@@ -7621,9 +7621,10 @@ function acquisitionYoyBarChart(data, title) {
   const w = 1100, h = 500, left = 90, right = 34, top = 36, bottom = 70;
   const maxVal = Math.max(...data.map(d => d.value));
   const tick = maxVal > 100000 ? 20000 : 10000;
-  const yMax = Math.ceil(maxVal / tick) * tick;
   const plotW = w - left - right;
   const plotH = h - top - bottom;
+  const labelHeadroom = 28;
+  const yMax = Math.ceil((maxVal * plotH / (plotH - labelHeadroom)) / tick) * tick;
   const slot = plotW / data.length;
   const bw = Math.min(116, slot * 0.58);
   const y = v => h - bottom - (v / yMax) * plotH;
@@ -7642,7 +7643,7 @@ function acquisitionYoyBarChart(data, title) {
     const cls = d.current ? 'bar-current' : 'bar-muted';
     const tip = tooltip([title, `<strong>${fmt(d.value)}</strong>`, d.label, d.growth != null ? `Growth vs prior: ${pct(d.growth)}` : null]);
     svg += `<rect class="${cls} tiptarget" data-tip="${tip}" x="${x}" y="${yy}" width="${bw}" height="${barH}" rx="14"></rect>`;
-    svg += `<text class="yoy-bar-label" x="${x+bw/2}" y="${Math.max(yy-14, top+22)}" text-anchor="middle">${fmtShort(d.value)}</text>`;
+    svg += `<text class="yoy-bar-label" x="${x+bw/2}" y="${Math.max(yy-18, top+18)}" text-anchor="middle">${fmtShort(d.value)}</text>`;
     svg += `<text class="yoy-year-label" x="${x+bw/2}" y="${h-18}" text-anchor="middle">${d.label}</text>`;
     if(d.growth != null) {
       const pillW = 104, pillH = 36;
