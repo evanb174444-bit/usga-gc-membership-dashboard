@@ -1928,6 +1928,12 @@ svg{height:100%;width:100%;overflow:visible}
   font-size:18px;
   font-weight:950;
 }
+.attribution-trend-inline-label{
+  paint-order:stroke;
+  stroke:#ffffff;
+  stroke-width:5px;
+  stroke-linejoin:round;
+}
 .attribution-trend-axis{
   stroke:#d7dee9;
   stroke-width:1.5;
@@ -6014,10 +6020,26 @@ function attributionDraftTrendChart() {
   const lines = sources.map(s => {
     const pts = rows.map((r,i) => `${x(i).toFixed(1)},${yLine(r[s.key]).toFixed(1)}`).join(' ');
     const dots = rows.map((r,i) => `<circle cx="${x(i).toFixed(1)}" cy="${yLine(r[s.key]).toFixed(1)}" r="8" stroke="${s.color}" class="attribution-trend-dot"></circle>`).join('');
-    const last = rows[rows.length - 1];
-    const lx = x(rows.length - 1) + 14;
-    const ly = yLine(last[s.key]) + (s.key === 'trials' ? -4 : s.key === 'organic' ? 10 : 0);
-    return `<polyline points="${pts}" stroke="${s.color}" class="attribution-trend-line"></polyline>${dots}<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" class="attribution-trend-label">${s.label}</text>`;
+    return `<polyline points="${pts}" stroke="${s.color}" class="attribution-trend-line"></polyline>${dots}`;
+  }).join('');
+  const lineLabelConfig = {
+    trials:{anchor:Math.max(0, rows.length - 1.25), dx:18, dy:-22, color:'#14395f'},
+    organic:{anchor:Math.max(0, rows.length - 2), dx:18, dy:-22, color:'#64748b'},
+    marketing:{anchor:Math.max(0, rows.length - 2.35), dx:18, dy:34, color:'#6f95bb'}
+  };
+  const interpolatedLineValue = (key, position) => {
+    const leftIndex = Math.max(0, Math.min(rows.length - 1, Math.floor(position)));
+    const rightIndex = Math.max(0, Math.min(rows.length - 1, Math.ceil(position)));
+    if(leftIndex === rightIndex) return rows[leftIndex][key];
+    const t = position - leftIndex;
+    return rows[leftIndex][key] + (rows[rightIndex][key] - rows[leftIndex][key]) * t;
+  };
+  const inlineLabels = sources.map(s => {
+    const config = lineLabelConfig[s.key];
+    const anchor = Math.max(0, Math.min(rows.length - 1, config.anchor));
+    const lx = x(anchor) + config.dx;
+    const ly = yLine(interpolatedLineValue(s.key, anchor)) + config.dy;
+    return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" class="attribution-trend-label attribution-trend-inline-label" style="fill:${config.color}">${s.label}</text>`;
   }).join('');
   const xlabels = rows.map((r,i) => `<text x="${x(i).toFixed(1)}" y="${h - 30}" text-anchor="middle" class="attribution-trend-xlabel">${r.label}</text>`).join('');
   return `
@@ -6027,8 +6049,10 @@ function attributionDraftTrendChart() {
         <line x1="${m.left}" y1="${m.top + innerH}" x2="${w - m.right}" y2="${m.top + innerH}" class="attribution-trend-axis"></line>
         ${xlabels}
         ${lines}
+        ${inlineLabels}
       </svg>
     </div>
+    <div class="attribution-legend">${attributionDraftLegend()}</div>
   `;
 }
 
@@ -6632,6 +6656,30 @@ function marketingYtdPerformance(){
   }, {spend:0, conversions:0, impressions:0, clicks:0});
 }
 
+function selectedGhinTrialsKpiValues(isYtd, monthLabel){
+  if(isYtd) {
+    return GHIN_TRIALS_YEARLY_DRAFT;
+  }
+  const monthRow = (GHIN_TRIALS_MONTHLY_DRAFT || []).find(row => row.label === monthLabel);
+  if(!monthRow) {
+    return GHIN_TRIALS_YEARLY_DRAFT;
+  }
+  return {
+    totalTrialsCreated: monthRow.trials || 0,
+    trialConversions: monthRow.conversions || 0,
+    conversionRate: safeShare(monthRow.conversions || 0, monthRow.trials || 0),
+    activeTrialGolfers: GHIN_TRIALS_YEARLY_DRAFT.activeTrialGolfers,
+    inactiveTrialGolfers: GHIN_TRIALS_YEARLY_DRAFT.inactiveTrialGolfers
+  };
+}
+
+function selectedMarketingPerformance(isYtd, monthLabel){
+  if(isYtd) {
+    return marketingYtdPerformance();
+  }
+  return MARKETING_MONTHLY_PERFORMANCE_DRAFT.find(row => row.month === monthLabel) || marketingYtdPerformance();
+}
+
 function marketingMetricValue(key, val){
   if(key === 'spend' || key === 'cpa' || key === 'cpc') return moneyShort(val);
   if(key === 'ctr' || key === 'cvr') return pctPlain(val);
@@ -7189,9 +7237,6 @@ function renderAcquisitionAttributionDraft() {
   const selectedMonth = attributionDraftSelectedMonthRow();
   const selectedMonthTotal = attributionProductionTotalForRow(selectedMonth);
   const ytdTotal = rows.reduce((s,r) => s + r.value, 0);
-  const trialVals = sourceMonthYtdValue('trials');
-  const marketingVals = sourceMonthYtdValue('marketing');
-  const affiliateVals = sourceMonthYtdValue('affiliate');
   const monthLabel = selectedMonth.month;
   const ytdLabel = ref ? `Jan–${ref.month}` : 'YTD';
   const marketingMonth = marketingMonthRows();
@@ -7207,19 +7252,18 @@ function renderAcquisitionAttributionDraft() {
     periodValue: isYtd ? r.value : (selectedMonth[r.key] || 0)
   }));
 
-  const ghinSignups = isYtd ? trialVals.ytd : GHIN_TRIALS_DRAFT.signups;
-  const ghinConversions = isYtd ? Math.round(trialVals.ytd * GHIN_TRIALS_DRAFT.conversionRate) : GHIN_TRIALS_DRAFT.conversions;
+  const ghinKpiValues = selectedGhinTrialsKpiValues(isYtd, selectedMonth.label);
   const marketingRows = isYtd ? marketingYtd : marketingMonth;
   const affiliateRows = isYtd ? affiliateYtd : affiliateMonth;
 
   const ghinSection = `
       <div class="ghin-trials-dashboard">
         <div class="ghin-trials-kpis">
-          ${attributionDetailKpi('Total Trials Created', GHIN_TRIALS_YEARLY_DRAFT.totalTrialsCreated, `${periodLabel} trial starts`)}
-          ${attributionDetailKpi('Trial Conversions', GHIN_TRIALS_YEARLY_DRAFT.trialConversions, `${periodLabel} converted golfers`)}
-          ${attributionDetailKpi('Conversion Rate', GHIN_TRIALS_YEARLY_DRAFT.conversionRate, 'Conversions / trials created', 'percent')}
-          ${attributionDetailKpi('Active Trial Golfers', GHIN_TRIALS_YEARLY_DRAFT.activeTrialGolfers, 'Current active trial pool')}
-          ${attributionDetailKpi('Inactive Trial Golfers', GHIN_TRIALS_YEARLY_DRAFT.inactiveTrialGolfers, 'Current inactive trial pool')}
+          ${attributionDetailKpi('Total Trials Created', ghinKpiValues.totalTrialsCreated, `${periodLabel} trial starts`)}
+          ${attributionDetailKpi('Trial Conversions', ghinKpiValues.trialConversions, `${periodLabel} converted golfers`)}
+          ${attributionDetailKpi('Conversion Rate', ghinKpiValues.conversionRate, 'Conversions / trials created', 'percent')}
+          ${attributionDetailKpi('Active Trial Golfers', ghinKpiValues.activeTrialGolfers, 'Current active trial pool')}
+          ${attributionDetailKpi('Inactive Trial Golfers', ghinKpiValues.inactiveTrialGolfers, 'Current inactive trial pool')}
         </div>
 <div class="attribution-draft-card ghin-trials-chart-card">
           <div class="attribution-draft-head">
@@ -7252,12 +7296,11 @@ function renderAcquisitionAttributionDraft() {
         </div>
       </div>`;
 
-  const marketingTotals = marketingYtdPerformance();
-  const marketingCpa = marketingTotals.spend / marketingTotals.conversions;
-  const marketingCtr = marketingTotals.clicks / marketingTotals.impressions;
-  const marketingCpc = marketingTotals.spend / marketingTotals.clicks;
-  const marketingCpm = (marketingTotals.spend / marketingTotals.impressions) * 1000;
-  const marketingCvr = marketingTotals.conversions / marketingTotals.clicks;
+  const marketingTotals = selectedMarketingPerformance(isYtd, selectedMonth.label);
+  const marketingCpa = marketingTotals.cpa ?? safeShare(marketingTotals.spend, marketingTotals.conversions);
+  const marketingCtr = marketingTotals.ctr ?? safeShare(marketingTotals.clicks, marketingTotals.impressions);
+  const marketingCpc = marketingTotals.cpc ?? safeShare(marketingTotals.spend, marketingTotals.clicks);
+  const marketingCvr = marketingTotals.cvr ?? safeShare(marketingTotals.conversions, marketingTotals.clicks);
 
   const marketingSection = `
       <div class="marketing-dashboard">
@@ -7269,7 +7312,7 @@ function renderAcquisitionAttributionDraft() {
             ${attributionDetailKpi('Total Conversions', marketingTotals.conversions, `${periodLabel} marketing conversions`, null, 'marketing-kpi-highlight')}
           </div>
           <div class="marketing-kpi-row marketing-kpi-row-secondary">
-            ${attributionDetailKpi('CPM', marketingCpm, 'Cost per 1,000 impressions', 'currency')}
+            ${attributionDetailKpi('CVR', marketingCvr, 'Conversions / clicks', 'percent')}
             ${attributionDetailKpi('CTR', marketingCtr, 'Clicks / impressions', 'percent')}
             ${attributionDetailKpi('CPC', marketingCpc, 'Cost per click', 'currency')}
             ${attributionDetailKpi('CPA', marketingCpa, 'Cost per acquisition', 'currency', 'marketing-kpi-highlight')}
