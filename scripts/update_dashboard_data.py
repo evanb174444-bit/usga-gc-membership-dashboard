@@ -521,8 +521,6 @@ def count_csv_rows(path: Path) -> int:
             header = trim_trailing_empty_cells(raw_header) if raw_header else None
             if not header or not any(cell.strip() for cell in header):
                 raise ValidationError(f"CSV has no header row: {path}")
-            if len(set(header)) != len(header):
-                raise ValidationError(f"CSV contains duplicate headers: {path}")
             return sum(
                 1
                 for row in reader
@@ -557,10 +555,14 @@ def read_csv_snapshot(path: Path, label: str) -> CsvSnapshot:
             headers = tuple(normalize_header(name) for name in raw_headers)
             if any(not name for name in headers):
                 raise ValidationError(f"CSV contains a blank header: {path}")
-            if len(set(headers)) != len(headers):
-                raise ValidationError(
-                    f"CSV headers collide after normalization: {path}"
+            seen_headers: Counter[str] = Counter()
+            unique_headers: list[str] = []
+            for header in headers:
+                seen_headers[header] += 1
+                unique_headers.append(
+                    header if seen_headers[header] == 1 else f"{header}__{seen_headers[header]}"
                 )
+            headers = tuple(unique_headers)
             parsed_rows: list[dict[str, str]] = []
             for row_number, raw_row in enumerate(reader, start=2):
                 raw_row = trim_trailing_empty_cells(raw_row)

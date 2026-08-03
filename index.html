@@ -4905,7 +4905,7 @@ svg{height:100%;width:100%;overflow:visible}
   <div class="header-inner">
     <div>
       <h1>USGA/GC Membership Dashboard</h1>
-      <div class="subtitle">Report Date: July 1, 2026</div>
+      <div class="subtitle">Report Date: August 2, 2026</div>
     </div>
   </div>
 </header>
@@ -8035,7 +8035,7 @@ function setProjectionScenario(value) {
 }
 
 function renderMembership() {
-  const ref = enrich(latestActiveRow());
+  const ref = recoveryRefFromCanonical(enrich(latestActiveRow()));
   if(!ref) { document.getElementById("membershipSection").classList.add("hidden"); return; }
   document.getElementById("membershipSection").classList.remove("hidden");
   const annual = annualData(ref);
@@ -8303,6 +8303,42 @@ function renderRetentionSection() {
   `;
 }
 
+function canonicalRecoveryTrendRow(year, month) {
+  if(!RECOVERY_ANALYSIS_DATA?.monthlyTrend) return null;
+  const monthIndex = typeof month === 'number' ? month : monthNum(month);
+  return RECOVERY_ANALYSIS_DATA.monthlyTrend.find(row => Number(row.year) === Number(year) && Number(row.monthNum) === monthIndex) || null;
+}
+
+function recoveryRefFromCanonical(ref) {
+  if(!ref) return null;
+  const trendRow = canonicalRecoveryTrendRow(ref.year, ref.month);
+  if(!trendRow) return ref;
+  const priorYtd = ref.priorYtdReactivations;
+  const ytdReactivations = Number(trendRow.cumulativeRecoveries);
+  const reactivations = Number(trendRow.recoveries);
+  return {
+    ...ref,
+    reactivations,
+    ytdReactivations,
+    ytdReactivationsChange: priorYtd != null ? ytdReactivations - priorYtd : null,
+    ytdReactivationsPct: priorYtd ? (ytdReactivations - priorYtd) / priorYtd : null,
+    recoveryShare: ref.activeGolfers ? reactivations / ref.activeGolfers : null
+  };
+}
+
+function recoveryMonthlyRows(widgetId) {
+  return genericRows('reactivations', widgetId).map(row => {
+    const trendRow = canonicalRecoveryTrendRow(row.year, row.month);
+    if(!trendRow) return row;
+    const reactivations = Number(trendRow.recoveries);
+    return {
+      ...row,
+      reactivations,
+      recoveryShare: row.activeGolfers ? reactivations / row.activeGolfers : null
+    };
+  });
+}
+
 function recoveryPacingSeries(ref) {
   const refYear = ref.year;
   const years = [2025, 2026].filter(y => y <= refYear);
@@ -8310,9 +8346,11 @@ function recoveryPacingSeries(ref) {
     let running = 0;
     const pts = [];
     for(let m = 1; m <= 12; m++) {
+      const canonicalRow = canonicalRecoveryTrendRow(year, m);
       const row = BY_YEAR_MONTH[year + '-' + m];
-      if(row?.reactivations != null) {
-        running += Number(row.reactivations);
+      const monthlyRecoveries = canonicalRow ? canonicalRow.recoveries : row?.reactivations;
+      if(monthlyRecoveries != null) {
+        running = canonicalRow?.cumulativeRecoveries != null ? Number(canonicalRow.cumulativeRecoveries) : running + Number(monthlyRecoveries);
         pts.push({m, value: running});
       }
     }
@@ -8477,14 +8515,14 @@ function renderRecoveryAnalysis() {
 }
 
 function renderRecoverySection() {
-  const ref = enrich(latestActiveRow());
+  const ref = recoveryRefFromCanonical(enrich(latestActiveRow()));
   const highlightsCard = document.getElementById('recoveryHighlights');
   const monthlyCard = document.getElementById('reactivationsCard');
   const pacingCard = document.getElementById('ytdReactivationsCard');
   if(!ref || !highlightsCard || !monthlyCard || !pacingCard) return;
 
   const priorMonth = BY_YEAR_MONTH[(ref.year-1) + '-' + monthNum(ref.month)];
-  const monthlyRowsAll = genericRows('reactivations', 'reactivationsCard');
+  const monthlyRowsAll = recoveryMonthlyRows('reactivationsCard');
   const monthlyRows = filterRowsByVisibleYears(monthlyRowsAll, 'reactivationsCard', ref);
   const monthlyPref = CHART_PREFS['reactivationsCard'] || 'line';
 
