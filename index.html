@@ -5304,7 +5304,7 @@ async function loadMarketingAnalysisData() {
 }
 
 async function loadGhinTrialsData() {
-  const response = await fetch("./data/ghin_trials.json");
+  const response = await fetch("./data/ghin_trials.json", {cache:"no-store"});
   if(!response.ok) {
     throw new Error(`Unable to load GHIN Trials data: ${response.status} ${response.statusText}`);
   }
@@ -5312,16 +5312,22 @@ async function loadGhinTrialsData() {
   const data = await response.json();
   if(!data?.metadata || data.metadata.schemaVersion !== 1
     || !data?.overview || !data?.summary
-    || !Array.isArray(data.yearlyTotals)
     || !Array.isArray(data.monthly)
     || !Array.isArray(data.conversionBuckets)
     || !Array.isArray(data.agaConversions)) {
-    throw new Error("GHIN Trials JSON does not contain the expected metadata, overview, summary, yearly total, monthly, conversion bucket, and AGA records.");
+    throw new Error("GHIN Trials JSON does not contain the expected metadata, overview, summary, monthly, conversion bucket, and AGA records.");
   }
 
   GHIN_TRIALS_DRAFT = data.overview;
   GHIN_TRIALS_YEARLY_DRAFT = data.summary;
-  GHIN_TRIALS_YEARLY_TOTALS_DRAFT = data.yearlyTotals;
+  GHIN_TRIALS_YEARLY_TOTALS_DRAFT = Array.isArray(data.yearlyTotals) ? data.yearlyTotals : [{
+    year: 2026,
+    totalTrialsCreated: data.summary.totalTrialsCreated,
+    trialConversions: data.summary.trialConversions,
+    conversionRate: data.summary.conversionRate,
+    activeTrialGolfers: data.summary.activeTrialGolfers,
+    inactiveTrialGolfers: data.summary.inactiveTrialGolfers
+  }];
   GHIN_TRIALS_MONTHLY_DRAFT = data.monthly;
   GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT = data.conversionBuckets;
   GHIN_TRIALS_AGA_DRAFT = data.agaConversions;
