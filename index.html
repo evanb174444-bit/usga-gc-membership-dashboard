@@ -5973,8 +5973,7 @@ function attributionDraftTrendChart() {
     const barW = Math.min(132, Math.max(82, groupW * 0.68));
     const bars = rows.map((row, i) => {
       const ordered = sources
-        .map(src => ({...src, value:row[src.key]}))
-        .sort((a,b) => b.value - a.value);
+        .map(src => ({...src, value:row[src.key]}));
       let cumulative = 0;
       return ordered.map(seg => {
         const yTop = y(cumulative + seg.value);
