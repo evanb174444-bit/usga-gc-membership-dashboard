@@ -4968,7 +4968,7 @@ svg{height:100%;width:100%;overflow:visible}
         <div class="acquisition-secondary-tabs attribution-section-tabs" role="tablist" aria-label="Attribution source sections">
           <button class="active" data-attribution-section="summary" onclick="setAcquisitionAttributionSection('summary')">Summary</button>
           <button data-attribution-section="ghin" onclick="setAcquisitionAttributionSection('ghin')">GHIN Trials</button>
-          <button data-attribution-section="marketing" onclick="setAcquisitionAttributionSection('marketing')">Marketing</button>
+          <button data-attribution-section="marketing" onclick="setAcquisitionAttributionSection('marketing')">Paid Media</button>
           <button data-attribution-section="affiliate" onclick="setAcquisitionAttributionSection('affiliate')">Affiliate Marketing</button>
         </div>
       </div>
@@ -5300,7 +5300,7 @@ async function loadAffiliateAttributionData() {
 async function loadMarketingAnalysisData() {
   const response = await fetch("./data/marketing_analysis.json");
   if(!response.ok) {
-    throw new Error(`Unable to load Marketing Attribution data: ${response.status} ${response.statusText}`);
+    throw new Error(`Unable to load Paid Media Attribution data: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
@@ -5308,7 +5308,7 @@ async function loadMarketingAnalysisData() {
   if(!data?.metadata || data.metadata.schemaVersion !== 1
     || !data?.qa
     || requiredArrays.some(key => !Array.isArray(data[key]))) {
-    throw new Error("Marketing Attribution JSON does not contain the expected metadata, monthly, funnel, channel, influencer, and QA records.");
+    throw new Error("Paid Media Attribution JSON does not contain the expected metadata, monthly, funnel, channel, influencer, and QA records.");
   }
 
   MARKETING_MONTHLY_PERFORMANCE_DRAFT = data.monthlyPerformance;
@@ -5921,7 +5921,7 @@ function attributionDraftSourceRows() {
   const t = attributionDraftTotals();
   return [
     {key:'trials', label:'GHIN Trials', value:t.trials, cls:'attribution-seg-trials'},
-    {key:'marketing', label:'Marketing', value:t.marketing, cls:'attribution-seg-marketing'},
+    {key:'marketing', label:'Paid Media', value:t.marketing, cls:'attribution-seg-marketing'},
     {key:'affiliate', label:'Affiliate Program', value:t.affiliate, cls:'attribution-seg-affiliate'},
     {key:'organic', label:'Organic / Unknown', value:t.organic, cls:'attribution-seg-organic'}
   ];
@@ -5957,7 +5957,7 @@ function attributionDraftStackedBars() {
 function attributionDraftTrendChart() {
   const sources = [
     {key:'trials', label:'GHIN Trials', color:'#14395f'},
-    {key:'marketing', label:'Marketing', color:'#6f95bb'},
+    {key:'marketing', label:'Paid Media', color:'#6f95bb'},
     {key:'organic', label:'Organic / Unknown', color:'#a9bdd2'}
   ];
   const rows = ATTRIBUTION_DRAFT_DATA;
@@ -6080,15 +6080,15 @@ function attributionDraftRankRows(metric) {
    Influencer detail is limited to the aggregate Meta (Influencer / Creator) row.
 */
 const MARKETING_MIX_DRAFT = [
-  {label:'Google Performance Max', value:8864, sub:'53.2% of marketing conversions'},
-  {label:'Paid Search (Google)', value:7517, sub:'45.1% of marketing conversions'},
-  {label:'Meta (Influencer / Creator)', value:102, sub:'0.6% of marketing conversions'},
-  {label:'X (Twitter)', value:65, sub:'0.4% of marketing conversions'},
-  {label:'Meta Ads (Non-Influencer)', value:56, sub:'0.3% of marketing conversions'},
-  {label:'TikTok (Traffic)', value:53, sub:'0.3% of marketing conversions'},
-  {label:'Reddit (Traffic)', value:5, sub:'0.0% of marketing conversions'},
-  {label:'Venmo / Paypal', value:3, sub:'0.0% of marketing conversions'},
-  {label:'TikTok (Search)', value:2, sub:'0.0% of marketing conversions'}
+  {label:'Google Performance Max', value:8864, sub:'53.2% of paid media conversions'},
+  {label:'Paid Search (Google)', value:7517, sub:'45.1% of paid media conversions'},
+  {label:'Meta (Influencer / Creator)', value:102, sub:'0.6% of paid media conversions'},
+  {label:'X (Twitter)', value:65, sub:'0.4% of paid media conversions'},
+  {label:'Meta Ads (Non-Influencer)', value:56, sub:'0.3% of paid media conversions'},
+  {label:'TikTok (Traffic)', value:53, sub:'0.3% of paid media conversions'},
+  {label:'Reddit (Traffic)', value:5, sub:'0.0% of paid media conversions'},
+  {label:'Venmo / Paypal', value:3, sub:'0.0% of paid media conversions'},
+  {label:'TikTok (Search)', value:2, sub:'0.0% of paid media conversions'}
 ];
 
 function attributionDraftCustomRankRows(rows, metric='count') {
@@ -6115,7 +6115,7 @@ function attributionDraftDonutChart(isYtd) {
   const vals = isYtd ? attributionDraftTotals() : selectedMonth;
   const rows = [
     {key:'trials', label:'Trials', value:vals.trials, color:'#14395f', textColor:'#ffffff'},
-    {key:'marketing', label:'Marketing', value:vals.marketing, color:'#6f95bb', textColor:'#ffffff'},
+    {key:'marketing', label:'Paid Media', value:vals.marketing, color:'#6f95bb', textColor:'#ffffff'},
     {key:'organic', label:'Organic', value:vals.organic, color:'#a9bdd2', textColor:'#0f172a'}
   ];
   const total = rows.reduce((s,r) => s + r.value, 0);
@@ -6183,13 +6183,13 @@ function attributionDraftGrowthRows(isYtd) {
   const contributions = isYtd
     ? [
         {label:'GHIN Trials', value:5400},
-        {label:'Marketing', value:1700},
+        {label:'Paid Media', value:1700},
         {label:'Affiliate Program', value:900},
         {label:'Organic / Unknown', value:-200}
       ]
     : [
         {label:'GHIN Trials', value:1050},
-        {label:'Marketing', value:450},
+        {label:'Paid Media', value:450},
         {label:'Affiliate Program', value:225},
         {label:'Organic / Unknown', value:-400}
       ];
@@ -6474,7 +6474,7 @@ function toggleGhinTrialsAgaList() {
 function attributionPeriodKpi(label, value, sub, change, openTarget) {
   const openLabels = {
     ghin: "Open GHIN Trials",
-    marketing: "Open Marketing",
+    marketing: "Open Paid Media",
     affiliate: "Open Affiliate Marketing"
   };
   return `
@@ -6745,7 +6745,7 @@ function marketingMonthlyFunnelSpendSvg(){
   const legendX=m.l+120;
   const legendY=H-21;
   const legend=['awareness','consideration','conversion'].map((key,i)=>`<circle cx="${legendX+i*170}" cy="${legendY-5}" r="7.5" fill="${colors[key]}"></circle><text class="marketing-stack-legend" x="${legendX+16+i*170}" y="${legendY}">${labels[key]}</text>`).join('');
-  return `<div class="marketing-chart"><svg class="marketing-spend-stack-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly marketing spend by funnel stage">
+  return `<div class="marketing-chart"><svg class="marketing-spend-stack-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly paid media spend by funnel stage">
     ${grid}
     <line class="marketing-axis" x1="${m.l}" y1="${m.t+innerH}" x2="${W-m.r}" y2="${m.t+innerH}"></line>
     ${bars}
@@ -6789,7 +6789,7 @@ function marketingMonthlyPerformanceSvg(metric='conversions', mode='auto'){
     }).join('');
   }
 
-  return `<div class="marketing-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly marketing performance chart">
+  return `<div class="marketing-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly paid media performance chart">
     ${grid}
     <line class="marketing-axis" x1="${m.l}" y1="${m.t+innerH}" x2="${W-m.r}" y2="${m.t+innerH}"></line>
     ${marks}
@@ -7309,7 +7309,7 @@ function renderAcquisitionAttributionDraft() {
             ${attributionDetailKpi('Total Spend', marketingTotals.spend, `${periodLabel} media spend`, 'currency')}
             ${attributionDetailKpi('Impressions', marketingTotals.impressions, `${periodLabel} impressions`)}
             ${attributionDetailKpi('Clicks', marketingTotals.clicks, `${periodLabel} clicks`)}
-            ${attributionDetailKpi('Total Conversions', marketingTotals.conversions, `${periodLabel} marketing conversions`, null, 'marketing-kpi-highlight')}
+            ${attributionDetailKpi('Total Conversions', marketingTotals.conversions, `${periodLabel} paid media conversions`, null, 'marketing-kpi-highlight')}
           </div>
           <div class="marketing-kpi-row marketing-kpi-row-secondary">
             ${attributionDetailKpi('CVR', marketingCvr, 'Conversions / clicks', 'percent')}
@@ -7323,14 +7323,14 @@ function renderAcquisitionAttributionDraft() {
 
         <div class="attribution-draft-card marketing-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>Marketing-Attributed Conversions by Month</h3></div>
+            <div><h3>Paid Media-Attributed Conversions by Month</h3></div>
           </div>
           ${marketingMonthlyPerformanceSvg('conversions')}
         </div>
 
         <div class="attribution-draft-card marketing-chart-card">
           <div class="marketing-trend-head">
-            <div><h3>Monthly Marketing Trend</h3></div>
+            <div><h3>Monthly Paid Media Trend</h3></div>
             <div class="marketing-trend-select-wrap">
               <label for="marketingMonthlyMetricSelect">Metric</label>
               <select id="marketingMonthlyMetricSelect" class="marketing-trend-select" onchange="setMarketingMonthlyMetric(this.value)">
@@ -7343,7 +7343,7 @@ function renderAcquisitionAttributionDraft() {
 
         <div class="attribution-draft-card marketing-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>Marketing Spend Trend</h3></div>
+            <div><h3>Paid Media Spend Trend</h3></div>
           </div>
           ${marketingMonthlyFunnelSpendSvg()}
         </div>
@@ -7357,7 +7357,7 @@ function renderAcquisitionAttributionDraft() {
 
         <div class="attribution-draft-card marketing-chart-card full">
           <div class="attribution-draft-head">
-            <div><h3>Marketing Channel Performance</h3></div>
+            <div><h3>Paid Media Channel Performance</h3></div>
           </div>
           ${marketingChannelPerformanceTable()}
         </div>

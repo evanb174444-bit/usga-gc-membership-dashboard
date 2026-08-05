@@ -3,7 +3,7 @@
     "schemaVersion": 1,
     "definitionVersion": "active-status-date-v1",
     "reportMonth": "2026-08",
-    "reportDate": "2026-08-01",
+    "reportDate": "2026-08-02",
     "activityThrough": "2026-07-31",
     "periodStart": "2026-01-01",
     "periodEnd": "2026-07-31",
@@ -715,21 +715,21 @@
       "shareOfYTDRecoveries": 0.31837434449374746
     },
     {
-      "segment": "13–24 months",
+      "segment": "13\u201324 months",
       "minimumMonths": 13,
       "maximumMonths": 24,
       "recoveriesYTD": 9555,
       "shareOfYTDRecoveries": 0.2408985478015329
     },
     {
-      "segment": "25–36 months",
+      "segment": "25\u201336 months",
       "minimumMonths": 25,
       "maximumMonths": 36,
       "recoveriesYTD": 10327,
       "shareOfYTDRecoveries": 0.2603620411456232
     },
     {
-      "segment": "37–60 months",
+      "segment": "37\u201360 months",
       "minimumMonths": 37,
       "maximumMonths": 60,
       "recoveriesYTD": 7154,
