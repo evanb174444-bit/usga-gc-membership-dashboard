@@ -7491,7 +7491,7 @@ function renderAcquisitionAttributionDraft() {
             r.label,
             r.periodValue,
             isYtd && r.key === 'marketing' ? paidMediaCoverageLabel() : '',
-            isYtd ? `${pct(r.periodValue / ytdTotal)} of YTD acquisition` : `${pct(r.periodValue / selectedMonthTotal)} of monthly acquisition`,
+            isYtd ? `${pctPlain(r.periodValue / ytdTotal)} of YTD acquisition` : `${pctPlain(r.periodValue / selectedMonthTotal)} of monthly acquisition`,
             r.key === 'trials' ? 'ghin' : r.key === 'marketing' ? 'marketing' : null
           )).join('')}
           ${attributionAffiliateComingSoonKpi()}
