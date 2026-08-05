@@ -2828,23 +2828,6 @@ svg{height:100%;width:100%;overflow:visible}
   background:#14395f;
 }
 
-.ghin-aga-show-more{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  margin-top:14px;
-  border:1px solid #d7dee9;
-  background:#f8fafc;
-  color:#334155;
-  border-radius:999px;
-  padding:8px 13px;
-  font-size:12px;
-  font-weight:950;
-  cursor:pointer;
-}
-.ghin-aga-show-more:hover{
-  background:#eef3f8;
-}
 .ghin-trials-chart-card.ghin-aga-expanded-card{
   height:auto !important;
   min-height:520px !important;
@@ -2863,12 +2846,6 @@ svg{height:100%;width:100%;overflow:visible}
 .ghin-trials-chart-card:has(.ghin-aga-table) .attribution-draft-head{
   margin-bottom:26px !important;
 }
-.ghin-aga-show-more{
-  display:inline-flex !important;
-  align-self:flex-start;
-  margin:18px 0 0 0 !important;
-}
-
 @media(max-width:1100px){
   .ghin-trials-kpis{grid-template-columns:repeat(2,1fr)}
   .ghin-trials-chart-card{grid-column:span 12}
@@ -3440,6 +3417,9 @@ svg{height:100%;width:100%;overflow:visible}
   padding-top:16px !important;
   padding-bottom:14px !important;
 }
+.ghin-trials-dashboard > .ghin-trials-chart-card.full{
+  grid-column:span 12 !important;
+}
 .ghin-trials-dashboard > .ghin-trials-chart-card .attribution-draft-head{
   margin-bottom:0 !important;
 }
@@ -3448,6 +3428,14 @@ svg{height:100%;width:100%;overflow:visible}
   height:370px !important;
   min-height:370px !important;
   max-height:370px !important;
+}
+.ghin-trials-dashboard > .ghin-trials-chart-card.ghin-bucket-card .attribution-detail-panel{
+  flex:0 0 auto !important;
+  display:block !important;
+  margin-top:34px !important;
+}
+.ghin-trials-dashboard > .ghin-trials-chart-card.ghin-bucket-card .ghin-bucket-row{
+  margin:23px 0 !important;
 }
 .ghin-trials-dashboard > .ghin-trials-chart-card.ghin-aga-expanded-card{
   height:auto !important;
@@ -3469,13 +3457,6 @@ svg{height:100%;width:100%;overflow:visible}
   min-height:0 !important;
   max-height:none !important;
   flex:0 0 auto !important;
-}
-.ghin-trials-dashboard > .ghin-trials-chart-card:has(.ghin-aga-table) .ghin-aga-show-more{
-  display:inline-flex !important;
-  position:static !important;
-  margin:18px 0 0 0 !important;
-  align-self:flex-start !important;
-  z-index:1 !important;
 }
 
 
@@ -5189,6 +5170,7 @@ let RETENTION_COHORT_DATA = null;
 let RECOVERY_ANALYSIS_DATA = null;
 let GHIN_TRIALS_DRAFT = {};
 let GHIN_TRIALS_YEARLY_DRAFT = {};
+let GHIN_TRIALS_YEARLY_TOTALS_DRAFT = [];
 let GHIN_TRIALS_MONTHLY_DRAFT = [];
 let GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT = [];
 let GHIN_TRIALS_AGA_DRAFT = [];
@@ -5330,14 +5312,16 @@ async function loadGhinTrialsData() {
   const data = await response.json();
   if(!data?.metadata || data.metadata.schemaVersion !== 1
     || !data?.overview || !data?.summary
+    || !Array.isArray(data.yearlyTotals)
     || !Array.isArray(data.monthly)
     || !Array.isArray(data.conversionBuckets)
     || !Array.isArray(data.agaConversions)) {
-    throw new Error("GHIN Trials JSON does not contain the expected metadata, overview, summary, monthly, conversion bucket, and AGA records.");
+    throw new Error("GHIN Trials JSON does not contain the expected metadata, overview, summary, yearly total, monthly, conversion bucket, and AGA records.");
   }
 
   GHIN_TRIALS_DRAFT = data.overview;
   GHIN_TRIALS_YEARLY_DRAFT = data.summary;
+  GHIN_TRIALS_YEARLY_TOTALS_DRAFT = data.yearlyTotals;
   GHIN_TRIALS_MONTHLY_DRAFT = data.monthly;
   GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT = data.conversionBuckets;
   GHIN_TRIALS_AGA_DRAFT = data.agaConversions;
@@ -6359,7 +6343,6 @@ let MARKETING_CHANNEL_SORT = localStorage.getItem("pa_marketing_channel_sort") |
 let MARKETING_INFLUENCER_SORT = localStorage.getItem("pa_marketing_influencer_sort") || "conversions";
 let AFFILIATE_PARTNER_SORT = localStorage.getItem("pa_affiliate_partner_sort") || "conversions";
 let MARKETING_MONTHLY_METRIC = localStorage.getItem("pa_marketing_monthly_metric") || "cpa";
-let GHIN_TRIALS_AGA_EXPANDED = localStorage.getItem("pa_ghin_trials_aga_expanded") === "true";
 
 
 function attributionDraftMonthOptions() {
@@ -6462,12 +6445,6 @@ function setMarketingMonthlyMetric(metric){
   const allowed = ['cpa','clicks','ctr','cpc','impressions'];
   MARKETING_MONTHLY_METRIC = allowed.includes(metric) ? metric : 'cpa';
   localStorage.setItem('pa_marketing_monthly_metric', MARKETING_MONTHLY_METRIC);
-  renderAcquisitionAttributionDraft();
-}
-
-function toggleGhinTrialsAgaList() {
-  GHIN_TRIALS_AGA_EXPANDED = !GHIN_TRIALS_AGA_EXPANDED;
-  localStorage.setItem("pa_ghin_trials_aga_expanded", GHIN_TRIALS_AGA_EXPANDED ? "true" : "false");
   renderAcquisitionAttributionDraft();
 }
 
@@ -6605,6 +6582,49 @@ function ghinTrialCreatedConvertedSvg() {
 }
 
 
+function ghinTrialYearOverYearTotalsSvg() {
+  const rows = GHIN_TRIALS_YEARLY_TOTALS_DRAFT;
+  if(!rows.length) return '';
+  const w = 760, h = 370;
+  const m = {top:34,right:36,bottom:72,left:78};
+  const innerW = w - m.left - m.right;
+  const innerH = h - m.top - m.bottom;
+  const maxValue = Math.max(...rows.flatMap(r => [r.totalTrialsCreated, r.trialConversions]));
+  const max = Math.ceil(maxValue / 25000) * 25000;
+  const y = v => m.top + innerH - (v / max) * innerH;
+  const groupW = innerW / rows.length;
+  const barW = Math.min(70, groupW * 0.24);
+  const ticks = [0, max/2, max];
+  const bars = rows.map((r,i) => {
+    const cx = m.left + groupW * i + groupW/2;
+    const x1 = cx - barW - 6;
+    const x2 = cx + 6;
+    const h1 = m.top + innerH - y(r.totalTrialsCreated);
+    const h2 = m.top + innerH - y(r.trialConversions);
+    return `
+      <rect x="${x1.toFixed(1)}" y="${y(r.totalTrialsCreated).toFixed(1)}" width="${barW}" height="${h1.toFixed(1)}" rx="7" class="ghin-bar-created"></rect>
+      <rect x="${x2.toFixed(1)}" y="${y(r.trialConversions).toFixed(1)}" width="${barW}" height="${h2.toFixed(1)}" rx="7" class="ghin-bar-converted"></rect>
+      <text x="${(x1+barW/2).toFixed(1)}" y="${(y(r.totalTrialsCreated)-10).toFixed(1)}" text-anchor="middle" class="ghin-chart-value-red">${fmt(r.totalTrialsCreated)}</text>
+      <text x="${(x2+barW/2).toFixed(1)}" y="${(y(r.trialConversions)-10).toFixed(1)}" text-anchor="middle" class="ghin-chart-value-red">${fmt(r.trialConversions)}</text>
+      <text x="${cx.toFixed(1)}" y="${h-34}" text-anchor="middle" class="ghin-chart-small-label">${r.year}</text>
+    `;
+  }).join('');
+  return `
+    <div class="ghin-chart">
+      <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="GHIN trials year-over-year totals">
+        ${ticks.map(t => `<line x1="${m.left}" y1="${y(t).toFixed(1)}" x2="${w-m.right}" y2="${y(t).toFixed(1)}" class="ghin-chart-grid"></line><text x="${m.left-12}" y="${(y(t)+4).toFixed(1)}" text-anchor="end" class="ghin-chart-small-label">${fmt(Math.round(t))}</text>`).join('')}
+        <line x1="${m.left}" y1="${m.top+innerH}" x2="${w-m.right}" y2="${m.top+innerH}" class="ghin-chart-axis"></line>
+        ${bars}
+        <circle cx="${w/2-105}" cy="${h-12}" r="6" class="ghin-bar-created"></circle>
+        <text x="${w/2-91}" y="${h-8}" class="ghin-legend-text">Trials created</text>
+        <circle cx="${w/2+75}" cy="${h-12}" r="6" class="ghin-bar-converted"></circle>
+        <text x="${w/2+89}" y="${h-8}" class="ghin-legend-text">Conversions</text>
+      </svg>
+    </div>
+  `;
+}
+
+
 function ghinTrialConversionBucketRows() {
   const max = Math.max(...GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT.map(r => r.count));
   return GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT.map(r => `
@@ -6618,18 +6638,41 @@ function ghinTrialConversionBucketRows() {
 }
 
 function ghinTrialAgaRows() {
-  const max = Math.max(...GHIN_TRIALS_AGA_DRAFT.map(r => r.count));
-  const rows = GHIN_TRIALS_AGA_EXPANDED ? GHIN_TRIALS_AGA_DRAFT : GHIN_TRIALS_AGA_DRAFT.slice(0, 10);
-  const toggleLabel = GHIN_TRIALS_AGA_EXPANDED ? 'Show less ↑' : `Show full list (${GHIN_TRIALS_AGA_DRAFT.length}) ↓`;
-  return `<div class="ghin-aga-table">` + rows.map((r,i) => `
+  const nonUsAgaNames = new Set([
+    'ANAGOLF',
+    'Asociacion de Golf de Panama',
+    'Asociación Deportiva Nacional de Golf de Guatemala',
+    'Bahamas Golf Federation',
+    'Barbados Golf Association',
+    'Belize Golf Federation',
+    'Bermuda Golf Association',
+    'Brunei Darussalam Golf Association',
+    'Dominican Golf Federation',
+    'Emirates Golf Federation',
+    'Federacion Mexicana de Golf',
+    'Federacion Salvadoreña de Golf',
+    'Golf Association of Hong Kong, China Ltd',
+    'Golf PR',
+    'Golf Saint Lucia Inc',
+    'Guam National Golf Federation',
+    'Indian Golf Union',
+    'Mauritius Golf Federation',
+    'Nicaraguan Golf Federation',
+    'Oman Golf Association',
+    'Saint Kitts and Nevis Golf Association',
+    'Saudi Golf Federation',
+    'Trial Association'
+  ]);
+  const usaRows = GHIN_TRIALS_AGA_DRAFT.filter(r => !nonUsAgaNames.has(r.name));
+  const max = Math.max(...usaRows.map(r => r.count));
+  return `<div class="ghin-aga-table">` + usaRows.map((r,i) => `
     <div class="ghin-aga-row">
       <div class="ghin-aga-rank">#${i+1}</div>
       <div class="ghin-aga-name">${r.name}</div>
       <div class="ghin-aga-value">${fmt(r.count)}</div>
       <div class="ghin-aga-track"><div class="ghin-aga-fill" style="width:${100*r.count/max}%"></div></div>
     </div>
-  `).join('') + `</div>
-  <button type="button" class="ghin-aga-show-more" onclick="toggleGhinTrialsAgaList()">${toggleLabel}</button>`;
+  `).join('') + `</div>`;
 }
 
 
@@ -7267,19 +7310,19 @@ function renderAcquisitionAttributionDraft() {
         </div>
 <div class="attribution-draft-card ghin-trials-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>Created vs Converted</h3></div>
+            <div><h3>Created vs Converted 2026 YTD</h3></div>
           </div>
           ${ghinTrialCreatedConvertedSvg()}
         </div>
 
         <div class="attribution-draft-card ghin-trials-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>Conversion Rate Trend</h3></div>
+            <div><h3>Conversion Rate Trend 2026 YTD</h3></div>
           </div>
           ${ghinTrialConversionRateTrendSvg()}
         </div>
 
-        <div class="attribution-draft-card ghin-trials-chart-card">
+        <div class="attribution-draft-card ghin-trials-chart-card ghin-bucket-card">
           <div class="attribution-draft-head">
             <div><h3>Conversions by Days in Trial</h3></div>
           </div>
@@ -7288,9 +7331,16 @@ function renderAcquisitionAttributionDraft() {
           </div>
         </div>
 
-        <div class="attribution-draft-card ghin-trials-chart-card ${GHIN_TRIALS_AGA_EXPANDED ? 'ghin-aga-expanded-card' : ''}">
+        <div class="attribution-draft-card ghin-trials-chart-card ghin-yoy-card">
           <div class="attribution-draft-head">
-            <div><h3>AGA Trial Conversions</h3></div>
+            <div><h3>Year-over-Year Totals</h3></div>
+          </div>
+          ${ghinTrialYearOverYearTotalsSvg()}
+        </div>
+
+        <div class="attribution-draft-card ghin-trials-chart-card full">
+          <div class="attribution-draft-head">
+            <div><h3>AGA Trial Conversions (All Time)</h3></div>
           </div>
           ${ghinTrialAgaRows()}
         </div>

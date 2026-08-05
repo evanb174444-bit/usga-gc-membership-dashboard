@@ -2553,6 +2553,62 @@ def parse_ghin_yearly_statistics(path: Path, report_year: int) -> tuple[dict[str
     return found, {"rows": len(rows) - 1}
 
 
+def parse_ghin_yearly_totals(path: Path) -> list[dict[str, Any]]:
+    rows = read_tableau_rows(path)
+    if len(rows) < 6:
+        raise ValidationError("Yearly Statistics.csv must contain a header and 5 metric rows")
+    header = rows[0]
+    year_columns: list[tuple[int, int]] = []
+    for index, value in enumerate(header):
+        if re.fullmatch(r"\d{4}", value.strip()):
+            year_columns.append((index, int(value)))
+    if not year_columns:
+        raise ValidationError("Yearly Statistics.csv must contain at least one year column")
+
+    required_metrics = {
+        "(1) Total Trials Created": "totalTrialsCreated",
+        "(2) Trial Conversions": "trialConversions",
+        "(3) Conversion Rate": "conversionRate",
+        "(4) Active Trial Golfers": "activeTrialGolfers",
+        "(5) Inactive Trial Golfers": "inactiveTrialGolfers",
+    }
+    metric_rows = {
+        row[0].strip(): row
+        for row in rows[1:]
+        if row and row[0].strip() in required_metrics
+    }
+    missing = sorted(set(required_metrics) - set(metric_rows))
+    if missing:
+        raise ValidationError("Yearly Statistics.csv missing metrics: " + ", ".join(missing))
+
+    records: list[dict[str, Any]] = []
+    for index, year in year_columns:
+        record: dict[str, Any] = {"year": year}
+        for label, key in required_metrics.items():
+            row = metric_rows[label]
+            if len(row) <= index:
+                raise ValidationError(f"Yearly Statistics.csv row {label!r} is missing {year} value")
+            context = f"Yearly Statistics.csv {label} {year}"
+            record[key] = (
+                parse_tableau_percent(row[index], context)
+                if key == "conversionRate"
+                else parse_tableau_int(row[index], context)
+            )
+        expected_rate = (
+            record["trialConversions"] / record["totalTrialsCreated"]
+            if record["totalTrialsCreated"]
+            else None
+        )
+        if expected_rate is not None and not math.isclose(
+            record["conversionRate"], expected_rate, rel_tol=0.0, abs_tol=0.0001
+        ):
+            raise ValidationError(
+                f"Yearly Statistics.csv conversion rate does not match conversions / trials for {year}"
+            )
+        records.append(record)
+    return records
+
+
 def parse_ghin_daily_crosstab(path: Path, label: str) -> tuple[dict[date, int], tuple[str | None, str | None], int]:
     rows = read_tableau_rows(path)
     if len(rows) < 3:
@@ -2628,6 +2684,33 @@ GHIN_CONVERSION_BUCKET_LABELS = {
 }
 
 
+NON_US_GHIN_AGA_NAMES = {
+    "ANAGOLF",
+    "Asociacion de Golf de Panama",
+    "Asociación Deportiva Nacional de Golf de Guatemala",
+    "Bahamas Golf Federation",
+    "Barbados Golf Association",
+    "Belize Golf Federation",
+    "Bermuda Golf Association",
+    "Brunei Darussalam Golf Association",
+    "Dominican Golf Federation",
+    "Emirates Golf Federation",
+    "Federacion Mexicana de Golf",
+    "Federacion Salvadoreña de Golf",
+    "Golf Association of Hong Kong, China Ltd",
+    "Golf PR",
+    "Golf Saint Lucia Inc",
+    "Guam National Golf Federation",
+    "Indian Golf Union",
+    "Mauritius Golf Federation",
+    "Nicaraguan Golf Federation",
+    "Oman Golf Association",
+    "Saint Kitts and Nevis Golf Association",
+    "Saudi Golf Federation",
+    "Trial Association",
+}
+
+
 def parse_ghin_conversion_buckets(path: Path) -> tuple[list[dict[str, Any]], int]:
     rows = read_tableau_rows(path)
     if not rows or len(rows[0]) < 2 or rows[0][0] != "Group" or rows[0][1] != "Count":
@@ -2674,9 +2757,12 @@ def parse_ghin_aga_conversions(path: Path) -> tuple[list[dict[str, Any]], int]:
     for row_number, row in enumerate(rows[1:], start=2):
         if len(row) < 2 or not row[0].strip():
             continue
+        association_name = row[0].strip()
+        if association_name in NON_US_GHIN_AGA_NAMES:
+            continue
         records.append(
             {
-                "name": row[0].strip(),
+                "name": association_name,
                 "count": parse_tableau_int(
                     row[1], f"AGA Conversions.csv row {row_number} count"
                 ),
@@ -2733,6 +2819,7 @@ def generate_ghin_trials_output(
     summary, yearly_counts = parse_ghin_yearly_statistics(
         paths["yearly statistics"], report_year
     )
+    yearly_totals = parse_ghin_yearly_totals(paths["yearly statistics"])
     source_row_counts["Yearly Statistics.csv"] = yearly_counts["rows"]
     date_coverage["Yearly Statistics.csv"] = (str(report_year), str(report_year))
 
@@ -2778,6 +2865,7 @@ def generate_ghin_trials_output(
         },
         "overview": overview,
         "summary": summary,
+        "yearlyTotals": yearly_totals,
         "monthly": monthly,
         "conversionBuckets": conversion_buckets,
         "agaConversions": aga_conversions,
@@ -2804,7 +2892,7 @@ def generate_ghin_trials_output(
 
 
 def validate_ghin_trials_output(output: dict[str, Any]) -> None:
-    required = {"metadata", "overview", "summary", "monthly", "conversionBuckets", "agaConversions"}
+    required = {"metadata", "overview", "summary", "yearlyTotals", "monthly", "conversionBuckets", "agaConversions"}
     if set(output) != required:
         raise ValidationError("ghin_trials.json has an invalid top-level schema")
     if output["metadata"].get("schemaVersion") != 1:
@@ -2823,6 +2911,22 @@ def validate_ghin_trials_output(output: dict[str, Any]) -> None:
             raise ValidationError("ghin_trials.json summary.conversionRate must be null when denominator is zero")
     elif not math.isclose(summary.get("conversionRate"), expected_rate, rel_tol=0.0, abs_tol=0.0001):
         raise ValidationError("ghin_trials.json summary.conversionRate does not match conversions / trials")
+    if not isinstance(output["yearlyTotals"], list) or not output["yearlyTotals"]:
+        raise ValidationError("ghin_trials.json yearlyTotals must be a non-empty array")
+    for record in output["yearlyTotals"]:
+        for key in ("year", "totalTrialsCreated", "trialConversions", "activeTrialGolfers", "inactiveTrialGolfers"):
+            if not isinstance(record.get(key), int):
+                raise ValidationError(f"ghin_trials.json yearlyTotals.{key} must be an integer")
+        expected_year_rate = (
+            record["trialConversions"] / record["totalTrialsCreated"]
+            if record["totalTrialsCreated"]
+            else None
+        )
+        if expected_year_rate is None:
+            if record.get("conversionRate") is not None:
+                raise ValidationError("ghin_trials.json yearlyTotals.conversionRate must be null when denominator is zero")
+        elif not math.isclose(record.get("conversionRate"), expected_year_rate, rel_tol=0.0, abs_tol=0.0001):
+            raise ValidationError("ghin_trials.json yearlyTotals.conversionRate does not match conversions / trials")
     if not isinstance(output["monthly"], list) or not output["monthly"]:
         raise ValidationError("ghin_trials.json monthly must be a non-empty array")
     if len(output["conversionBuckets"]) != len(GHIN_CONVERSION_BUCKET_LABELS):
