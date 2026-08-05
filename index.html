@@ -1857,9 +1857,9 @@ svg{height:100%;width:100%;overflow:visible}
   border:1px solid #dbe4ef;
 }
 .attribution-seg-trials{background:#14395f}
-.attribution-seg-marketing{background:#6f95bb}
+.attribution-seg-marketing{background:#4f83b8}
 .attribution-seg-affiliate{background:#d85a32}
-.attribution-seg-organic{background:#a9bdd2}
+.attribution-seg-organic{background:#c6d4e2}
 .attribution-legend{
   display:flex;
   justify-content:center;
@@ -5955,8 +5955,8 @@ function attributionDraftStackedBars() {
 function attributionDraftTrendChart() {
   const sources = [
     {key:'trials', label:'GHIN Trials', color:'#14395f'},
-    {key:'marketing', label:'Paid Media', color:'#6f95bb'},
-    {key:'organic', label:'Organic / Unknown', color:'#a9bdd2'}
+    {key:'marketing', label:'Paid Media', color:'#4f83b8'},
+    {key:'organic', label:'Organic / Unknown', color:'#c6d4e2'}
   ];
   const rows = ATTRIBUTION_DRAFT_DATA;
   const w = 1040, h = 720;
@@ -6022,7 +6022,7 @@ function attributionDraftTrendChart() {
   const lineLabelConfig = {
     trials:{anchor:Math.max(0, rows.length - 1.25), dx:18, dy:-22, color:'#14395f'},
     organic:{anchor:Math.max(0, rows.length - 2), dx:18, dy:-22, color:'#64748b'},
-    marketing:{anchor:Math.max(0, rows.length - 2.35), dx:18, dy:34, color:'#6f95bb'}
+    marketing:{anchor:Math.max(0, rows.length - 2.35), dx:18, dy:34, color:'#4f83b8'}
   };
   const interpolatedLineValue = (key, position) => {
     const leftIndex = Math.max(0, Math.min(rows.length - 1, Math.floor(position)));
@@ -6112,8 +6112,8 @@ function attributionDraftDonutChart(isYtd) {
   const vals = isYtd ? attributionDraftTotals() : selectedMonth;
   const rows = [
     {key:'trials', label:'Trials', value:vals.trials, color:'#14395f', textColor:'#ffffff'},
-    {key:'marketing', label:'Paid Media', value:vals.marketing, color:'#6f95bb', textColor:'#ffffff'},
-    {key:'organic', label:'Organic', value:vals.organic, color:'#a9bdd2', textColor:'#0f172a'}
+    {key:'marketing', label:'Paid Media', value:vals.marketing, color:'#4f83b8', textColor:'#ffffff'},
+    {key:'organic', label:'Organic', value:vals.organic, color:'#c6d4e2', textColor:'#0f172a'}
   ];
   const total = rows.reduce((s,r) => s + r.value, 0);
 
