@@ -6119,11 +6119,11 @@ function attributionDraftDonutChart(isYtd) {
 
   const cx = 380;
   const cy = 250;
-  const outerR = 205;
-  const innerR = 78;
-  const labelR = 145;
+  const outerR = 230;
+  const innerR = 88;
+  const labelR = 162;
   const W = 760;
-  const H = 470;
+  const H = 510;
 
   function point(angleDeg, radius) {
     const rad = (angleDeg - 90) * Math.PI / 180;
@@ -12291,9 +12291,9 @@ initializeDashboard();
 /* v121: Match Summary tiles to Affiliate tile sizing and reduce excess padding */
 .attribution-mix-card,
 .attribution-trend-card{
-  min-height:520px !important;
-  max-height:520px !important;
-  height:520px !important;
+  min-height:590px !important;
+  max-height:590px !important;
+  height:590px !important;
   padding:18px 20px !important;
 }
 .attribution-mix-card .attribution-draft-head,
@@ -12301,11 +12301,12 @@ initializeDashboard();
   margin-bottom:4px !important;
 }
 .attribution-mix-card .summary-donut-svg{
-  height:410px !important;
+  height:500px !important;
 }
 .attribution-trend-card .attribution-trend-chart{
-  height:430px !important;
+  height:460px !important;
   margin-top:0 !important;
+  margin-bottom:18px !important;
 }
 .attribution-trend-card svg{
   height:100% !important;
