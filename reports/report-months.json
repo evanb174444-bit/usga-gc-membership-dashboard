@@ -1,0 +1,14 @@
+{
+  "current": "2026-08",
+  "months": {
+    "2026-08": {
+      "reportMonth": "August 2026",
+      "reportDate": "August 2, 2026",
+      "dataThrough": "July 31, 2026",
+      "status": "draft",
+      "copyPath": "reports/archive/2026-08/report-copy.json",
+      "htmlPath": "reports/archive/2026-08/executive-report.html",
+      "pdfPath": "reports/archive/2026-08/gc-membership-executive-report-august-2026.pdf"
+    }
+  }
+}

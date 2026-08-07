@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GC Membership Executive Report</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="report" id="report">
+    <section class="page">
+      <header class="masthead">
+        <div>
+          <p class="eyebrow" data-copy="eyebrow">GC Membership</p>
+          <h1 data-copy="page1Title">Executive Membership Report</h1>
+          <p class="dek" data-copy="page1Dek">Topline membership position, acquisition mix, and operating implications for leadership review.</p>
+        </div>
+        <div class="report-meta">
+          <span data-copy="reportMonth">August 2026</span>
+          <strong data-copy="reportDate">Report Date: August 2, 2026</strong>
+        </div>
+      </header>
+
+      <section class="summary-grid" aria-label="Topline summary">
+        <article class="kpi accent-blue">
+          <span data-copy="activeKpiLabel">Total Active Membership</span>
+          <strong id="activeMembers">--</strong>
+          <em id="activeSub">Current month</em>
+        </article>
+        <article class="kpi accent-teal">
+          <span data-copy="netKpiLabel">Net Membership Change</span>
+          <strong id="netChange">--</strong>
+          <em id="netSub">Month over month</em>
+        </article>
+        <article class="kpi accent-green">
+          <span data-copy="ytdKpiLabel">Year-to-Date Growth</span>
+          <strong id="ytdGrowth">--</strong>
+          <em id="ytdSub">Since December</em>
+        </article>
+        <article class="kpi accent-gold">
+          <span data-copy="annualKpiLabel">Twelve-Month Change</span>
+          <strong id="annualChange">--</strong>
+          <em id="annualSub">Year over year</em>
+        </article>
+      </section>
+
+      <section class="two-col">
+        <article class="panel trend-panel">
+          <div class="section-label" data-copy="trendLabel">Membership Trend</div>
+          <h2 data-copy="trendTitle">Total Active Members</h2>
+          <p class="panel-note" data-copy="trendNote">Rolling view of active membership through the latest completed report month.</p>
+          <svg id="membershipTrend" class="chart" viewBox="0 0 520 210" role="img" aria-label="Membership trend chart"></svg>
+        </article>
+
+        <article class="panel interpretation">
+          <div class="section-label" data-copy="interpretationLabel">Interpretation</div>
+          <h2 data-copy="interpretationTitle">What leadership should know</h2>
+          <ul id="interpretationList"></ul>
+        </article>
+      </section>
+
+      <section class="panel movement-panel">
+        <div class="section-label" data-copy="movementLabel">Membership Movement</div>
+        <h2 data-copy="movementTitle">July Operating Bridge</h2>
+        <p class="panel-note" data-copy="movementNote">Opening membership plus acquired and recovered golfers, net of losses, reconciles to closing active membership.</p>
+        <div class="bridge" id="bridge"></div>
+      </section>
+
+      <section class="two-col lower-row">
+        <article class="panel">
+          <div class="section-label" data-copy="mixLabel">Acquisition Mix</div>
+          <h2 data-copy="mixTitle">Where New Members Came From</h2>
+          <div class="donut-row">
+            <svg id="mixDonut" class="donut" viewBox="0 0 220 220" role="img" aria-label="YTD acquisition mix"></svg>
+            <div class="legend" id="mixLegend"></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="section-label" data-copy="retentionLabel">Retention + Recovery</div>
+          <h2 data-copy="retentionTitle">Preserving Membership</h2>
+          <div class="mini-kpi-row">
+            <div><span data-copy="renewalMiniLabel">Renewal Rate</span><strong id="renewalRate">--</strong></div>
+            <div><span data-copy="recoveredMiniLabel">Recovered</span><strong id="recoveredMembers">--</strong></div>
+          </div>
+          <div class="callout">
+            <strong data-copy="retentionReadoutLabel">Operating readout</strong>
+            <p id="retentionReadout">Loading current retention and recovery readout.</p>
+          </div>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <span data-copy="footerLeft">GC Membership Executive Report</span>
+        <span>Confidential | 1 of 5</span>
+      </footer>
+    </section>
+
+    <section class="page">
+      <header class="masthead compact">
+        <div>
+          <p class="eyebrow" data-copy="page2Eyebrow">Acquisition + Segmentation</p>
+          <h1 data-copy="page2Title">How Membership Is Growing</h1>
+          <p class="dek" data-copy="page2Dek">A focused view of gross additions, attribution momentum, and the source mix contributing most to current growth.</p>
+        </div>
+        <div class="report-meta"><span data-copy="reportMonth">August 2026</span><strong>2</strong></div>
+      </header>
+
+      <section class="summary-grid three">
+        <article class="kpi accent-blue"><span data-copy="newMembersLabel">New Members</span><strong id="newMembers">--</strong><em id="newMembersSub">Current period</em></article>
+        <article class="kpi accent-teal"><span data-copy="trialsLabel">GHIN Trial Conversions</span><strong id="trialConversions">--</strong><em>YTD</em></article>
+        <article class="kpi accent-gold"><span data-copy="paidLabel">Paid Media Conversions</span><strong id="paidConversions">--</strong><em>YTD source</em></article>
+      </section>
+
+      <section class="two-col page-grid">
+        <article class="panel">
+          <div class="section-label" data-copy="acqTrendLabel">Acquisition Trend</div>
+          <h2 data-copy="acqTrendTitle">Monthly New Members</h2>
+          <svg id="acquisitionBars" class="chart tall-chart" viewBox="0 0 520 250"></svg>
+        </article>
+        <article class="panel">
+          <div class="section-label" data-copy="acqMixPageLabel">Source Mix</div>
+          <h2 data-copy="acqMixPageTitle">YTD Acquisition Mix</h2>
+          <div class="donut-row compact-donut">
+            <svg id="mixDonutPage2" class="donut" viewBox="0 0 220 220"></svg>
+            <div class="legend" id="mixLegendPage2"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="section-label" data-copy="segmentLabel">Segment Performance</div>
+        <h2 data-copy="segmentTitle">Executive Source Readout</h2>
+        <table>
+          <thead><tr><th>Source</th><th>YTD Members</th><th>Share</th><th>Executive Note</th></tr></thead>
+          <tbody id="sourceTable"></tbody>
+        </table>
+      </section>
+
+      <section class="panel notes-panel">
+        <div class="section-label" data-copy="page2NotesLabel">Executive Takeaway</div>
+        <ul class="editable-list" id="page2Bullets"></ul>
+      </section>
+
+      <footer class="footer"><span data-copy="footerLeft">GC Membership Executive Report</span><span>Confidential | 2 of 5</span></footer>
+    </section>
+
+    <section class="page">
+      <header class="masthead compact">
+        <div>
+          <p class="eyebrow" data-copy="page3Eyebrow">Retention + Recovery</p>
+          <h1 data-copy="page3Title">How Membership Is Being Preserved</h1>
+          <p class="dek" data-copy="page3Dek">Retention and recovery indicators showing how effectively the member base is being protected.</p>
+        </div>
+        <div class="report-meta"><span data-copy="reportMonth">August 2026</span><strong>3</strong></div>
+      </header>
+
+      <section class="summary-grid three">
+        <article class="kpi accent-blue"><span data-copy="renewalPageLabel">Renewal Rate</span><strong id="renewalRatePage">--</strong><em>Latest month</em></article>
+        <article class="kpi accent-teal"><span data-copy="retainedPageLabel">Members Retained</span><strong id="membersRetained">--</strong><em>Renewed on time</em></article>
+        <article class="kpi accent-green"><span data-copy="recoveryPageLabel">Recovered Members</span><strong id="recoveryPageMembers">--</strong><em>Latest month</em></article>
+      </section>
+
+      <section class="two-col page-grid">
+        <article class="panel">
+          <div class="section-label" data-copy="retentionTrendLabel">Retention Trend</div>
+          <h2 data-copy="retentionTrendTitle">On-Time Renewal Rate</h2>
+          <svg id="retentionTrend" class="chart tall-chart" viewBox="0 0 520 250"></svg>
+        </article>
+        <article class="panel">
+          <div class="section-label" data-copy="recoveryTrendLabel">Recovery Trend</div>
+          <h2 data-copy="recoveryTrendTitle">Monthly Recoveries</h2>
+          <svg id="recoveryTrend" class="chart tall-chart" viewBox="0 0 520 250"></svg>
+        </article>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="section-label" data-copy="cohortLabel">Cohort View</div>
+        <h2 data-copy="cohortTitle">Retention by Member Tenure</h2>
+        <table>
+          <thead><tr><th>Metric</th><th>Value</th><th>Context</th></tr></thead>
+          <tbody id="cohortTable"></tbody>
+        </table>
+      </section>
+
+      <section class="panel notes-panel">
+        <div class="section-label" data-copy="page3NotesLabel">Executive Takeaway</div>
+        <ul class="editable-list" id="page3Bullets"></ul>
+      </section>
+
+      <footer class="footer"><span data-copy="footerLeft">GC Membership Executive Report</span><span>Confidential | 3 of 5</span></footer>
+    </section>
+
+    <section class="page">
+      <header class="masthead compact">
+        <div>
+          <p class="eyebrow" data-copy="page4Eyebrow">Engagement</p>
+          <h1 data-copy="page4Title">GHIN Challenges Momentum</h1>
+          <p class="dek" data-copy="page4Dek">Engagement indicators showing program scale, participating associations, and golfer activity.</p>
+        </div>
+        <div class="report-meta"><span data-copy="reportMonth">August 2026</span><strong>4</strong></div>
+      </header>
+
+      <section class="summary-grid four">
+        <article class="kpi accent-blue"><span data-copy="challengeTotalLabel">Total Challenges</span><strong id="totalChallenges">--</strong><em>Active + completed + upcoming</em></article>
+        <article class="kpi accent-teal"><span data-copy="challengeGolfersLabel">Total Golfers</span><strong id="challengeGolfers">--</strong><em>Participants</em></article>
+        <article class="kpi accent-green"><span data-copy="rankedGolfersLabel">Ranked Golfers</span><strong id="rankedGolfers">--</strong><em>Leaderboard participants</em></article>
+        <article class="kpi accent-gold"><span data-copy="scoresPostedLabel">Scores Posted</span><strong id="scoresPosted">--</strong><em>Challenge scores</em></article>
+      </section>
+
+      <section class="two-col page-grid">
+        <article class="panel">
+          <div class="section-label" data-copy="programTrendLabel">Program Trend</div>
+          <h2 data-copy="programTrendTitle">Growth Since May</h2>
+          <svg id="challengeGrowth" class="chart tall-chart" viewBox="0 0 520 250"></svg>
+        </article>
+        <article class="panel">
+          <div class="section-label" data-copy="challengeMixLabel">Participation</div>
+          <h2 data-copy="challengeMixTitle">Engagement Quality</h2>
+          <div class="metric-stack">
+            <div><span>Ranked Golfer Rate</span><strong id="rankedRate">--</strong></div>
+            <div><span>Scores / Golfer</span><strong id="scoresPerGolfer">--</strong></div>
+            <div><span>Participating AGAs</span><strong id="participatingAgas">--</strong></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="section-label" data-copy="agaLabel">AGA Performance</div>
+        <h2 data-copy="agaTitle">Top GHIN Challenge Associations</h2>
+        <table>
+          <thead><tr><th>Association</th><th>Challenges</th><th>Golfers</th><th>Ranked Rate</th></tr></thead>
+          <tbody id="agaTable"></tbody>
+        </table>
+      </section>
+
+      <section class="panel notes-panel">
+        <div class="section-label" data-copy="page4NotesLabel">Executive Takeaway</div>
+        <ul class="editable-list" id="page4Bullets"></ul>
+      </section>
+
+      <footer class="footer"><span data-copy="footerLeft">GC Membership Executive Report</span><span>Confidential | 4 of 5</span></footer>
+    </section>
+
+    <section class="page">
+      <header class="masthead compact">
+        <div>
+          <p class="eyebrow" data-copy="page5Eyebrow">Leadership Agenda</p>
+          <h1 data-copy="page5Title">Opportunities, Concerns & Actions</h1>
+          <p class="dek" data-copy="page5Dek">A final page that turns dashboard movement into clear priorities, risks, and decisions for leadership.</p>
+        </div>
+        <div class="report-meta"><span data-copy="reportMonth">August 2026</span><strong>5</strong></div>
+      </header>
+
+      <section class="two-col page-grid">
+        <article class="panel">
+          <div class="section-label" data-copy="opportunitiesLabel">Opportunities</div>
+          <h2 data-copy="opportunitiesTitle">Where momentum can be extended</h2>
+          <ul class="number-list" id="opportunityBullets"></ul>
+        </article>
+        <article class="panel">
+          <div class="section-label danger" data-copy="concernsLabel">Concerns</div>
+          <h2 data-copy="concernsTitle">Where leadership attention is needed</h2>
+          <ul class="number-list red" id="concernBullets"></ul>
+        </article>
+      </section>
+
+      <section class="panel table-panel action-panel">
+        <div class="section-label" data-copy="actionsLabel">Recommended Actions</div>
+        <h2 data-copy="actionsTitle">Near-Term Decisions and Follow-Ups</h2>
+        <table>
+          <thead><tr><th>Priority</th><th>Action</th><th>Owner</th><th>Timing</th></tr></thead>
+          <tbody id="actionsTable"></tbody>
+        </table>
+      </section>
+
+      <section class="panel decision-panel">
+        <div class="section-label" data-copy="decisionLabel">Leadership Decision Required</div>
+        <p data-copy="decisionText">Confirm which source categories and workstream decisions should be elevated into the monthly executive report archive.</p>
+      </section>
+
+      <footer class="footer"><span data-copy="footerLeft">GC Membership Executive Report</span><span>Confidential | 5 of 5</span></footer>
+    </section>
+  </main>
+
+  <script src="./report.js"></script>
+</body>
+</html>

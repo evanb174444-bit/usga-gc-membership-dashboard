@@ -1,0 +1,57 @@
+{
+  "eyebrow": "GC Membership",
+  "reportMonth": "August 2026",
+  "reportDate": "Report Date: August 2, 2026",
+  "page1Title": "Executive Membership Report",
+  "page1Dek": "Topline membership position, acquisition mix, and operating implications for leadership review.",
+  "footerLeft": "GC Membership Executive Report",
+  "page2Title": "How Membership Is Growing",
+  "page3Title": "How Membership Is Being Preserved",
+  "page4Title": "GHIN Challenges Momentum",
+  "page5Title": "Opportunities, Concerns & Actions",
+  "page2Bullets": [
+    "GHIN Trials remain the largest identified acquisition source and should be monitored as a conversion engine.",
+    "Paid Media is material but currently only covers the approved paid media attribution source.",
+    "Organic / Unknown remains large enough to require continued attribution cleanup."
+  ],
+  "page3Bullets": [
+    "Retention remains a meaningful counterweight to acquisition and should stay visible in the executive readout.",
+    "Recovery adds incremental lift to the active base and should reconcile to the dashboard recovery source.",
+    "Cohort health remains strongest in newer member years and should be watched as cohorts mature."
+  ],
+  "page4Bullets": [
+    "GHIN Challenges show strong program growth from the first available snapshot to the latest snapshot.",
+    "Participation and ranked golfer rates provide a clearer engagement read than challenge counts alone.",
+    "Top AGA performance can help identify repeatable engagement patterns."
+  ],
+  "opportunityBullets": [
+    "Trial conversion engine generated the largest identified acquisition contribution.",
+    "Membership momentum remains positive through the latest completed report month.",
+    "Engagement expansion creates a broader activation story beyond acquisition."
+  ],
+  "concernBullets": [
+    "Organic / Unknown acquisition remains large and limits source accountability.",
+    "Paid Media timing and coverage must be kept explicit in the executive report.",
+    "Manual workstream commentary still requires owner validation before publication."
+  ],
+  "actions": [
+    {
+      "priority": "1",
+      "action": "Validate source attribution categories for the monthly executive report.",
+      "owner": "Analytics",
+      "timing": "Before final PDF"
+    },
+    {
+      "priority": "2",
+      "action": "Confirm narrative commentary and leadership implications.",
+      "owner": "Leadership",
+      "timing": "Monthly review"
+    },
+    {
+      "priority": "3",
+      "action": "Archive approved PDF and HTML snapshot for the report month.",
+      "owner": "Reporting",
+      "timing": "After approval"
+    }
+  ]
+}
