@@ -336,7 +336,7 @@ async function render() {
   setText("retentionReadout", `${fmt.format(current.renewed)} golfers renewed on time in ${current.month}, while ${fmt.format(recovery.summary.recoveriesYTD)} recovered members have returned year to date.`);
 
   const trendRows = membership.filter(row => row.year === current.year && row.monthNum <= current.monthNum && row.activeGolfers != null);
-  drawLineChart($("membershipTrend"), trendRows.map(row => row.activeGolfers), trendRows.map(row => row.month.slice(0, 1)));
+  drawLineChart($("membershipTrend"), trendRows.map(row => row.activeGolfers), trendRows.map(row => row.month.slice(0, 3)));
   renderBridge({ opening: prior.activeGolfers, acquired: current.newGolfers, lost, recovered, closing: current.activeGolfers });
   renderInterpretation(narrative, current, recovered, lost, organic);
   renderMix(mix, ytdNew, "mixDonut", "mixLegend");
