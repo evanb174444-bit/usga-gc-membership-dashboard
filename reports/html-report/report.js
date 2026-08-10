@@ -26,9 +26,9 @@ const defaultNarrative = {
   netKpiLabel: "Net Membership Change",
   ytdKpiLabel: "Year-to-Date Growth",
   annualKpiLabel: "Twelve-Month Change",
-  trendLabel: "Membership Trend",
-  trendTitle: "Total Active Members",
-  trendNote: "Rolling view of active membership through the latest completed report month.",
+  trendLabel: "Year Over Year Growth",
+  trendTitle: "Active Members by Year",
+  trendNote: "Same month across years, back to 2022.",
   interpretationLabel: "Interpretation",
   interpretationTitle: "What leadership should know",
   movementLabel: "Membership Movement",
@@ -236,6 +236,37 @@ function drawBarChart(svg, values, labels, opts = {}) {
   `;
 }
 
+function drawYoYMembershipChart(svg, rows) {
+  if (!svg || !rows.length) return;
+  const w = 520, h = 210;
+  const pad = { left: 54, right: 20, top: 28, bottom: 36 };
+  const max = Math.max(...rows.map(row => row.activeGolfers)) * 1.15;
+  const y = v => pad.top + (1 - v / max) * (h - pad.top - pad.bottom);
+  const plotW = w - pad.left - pad.right;
+  const step = plotW / rows.length;
+  const barW = 48;
+  const ticks = [0, 100000, 200000, 300000, 400000, 500000];
+  svg.innerHTML = `
+    ${ticks.map(t => {
+      const ty = y(t);
+      return `<line x1="${pad.left}" y1="${ty}" x2="${w - pad.right}" y2="${ty}" stroke="${colors.grid}" stroke-width="1.5"/>
+        <text x="${pad.left - 8}" y="${ty + 4}" text-anchor="end" fill="#667791" font-size="11">${t ? `${Math.round(t / 1000)}K` : "0"}</text>`;
+    }).join("")}
+    ${rows.map((row, i) => {
+      const x = pad.left + i * step + step / 2 - barW / 2;
+      const barY = y(row.activeGolfers);
+      const isCurrent = i === rows.length - 1;
+      const prev = i ? rows[i - 1].activeGolfers : null;
+      const growth = prev ? pct((row.activeGolfers - prev) / prev) : "";
+      return `<rect x="${x}" y="${barY}" width="${barW}" height="${h - pad.bottom - barY}" rx="8" fill="${isCurrent ? colors.red : colors.paleBlue}"/>
+        <text x="${x + barW / 2}" y="${barY - 10}" text-anchor="middle" fill="${colors.text}" font-size="14">${Math.round(row.activeGolfers / 1000)}K</text>
+        ${growth ? `<rect x="${x + 4}" y="${barY + 15}" width="${barW - 8}" height="20" rx="10" fill="#fff" stroke="#c8d5e4" stroke-width="1.5"/>
+          <text x="${x + barW / 2}" y="${barY + 29}" text-anchor="middle" fill="#44546a" font-size="10">${growth}</text>` : ""}
+        <text x="${x + barW / 2}" y="${h - 10}" text-anchor="middle" fill="#667791" font-size="11">${row.month.slice(0, 3)} '${String(row.year).slice(2)}</text>`;
+    }).join("")}
+  `;
+}
+
 function drawDonut(svg, items) {
   if (!svg) return;
   const cx = 110, cy = 110, r = 78, stroke = 34;
@@ -335,8 +366,8 @@ async function render() {
   setText("recoveredMembers", fmt.format(recovered));
   setText("retentionReadout", `${fmt.format(current.renewed)} golfers renewed on time in ${current.month}, while ${fmt.format(recovery.summary.recoveriesYTD)} recovered members have returned year to date.`);
 
-  const trendRows = membership.filter(row => row.year === current.year && row.monthNum <= current.monthNum && row.activeGolfers != null);
-  drawLineChart($("membershipTrend"), trendRows.map(row => row.activeGolfers), trendRows.map(row => row.month.slice(0, 3)));
+  const trendRows = membership.filter(row => row.monthNum === current.monthNum && row.activeGolfers != null);
+  drawYoYMembershipChart($("membershipTrend"), trendRows);
   renderBridge({ opening: prior.activeGolfers, acquired: current.newGolfers, lost, recovered, closing: current.activeGolfers });
   renderInterpretation(narrative, current, recovered, lost, organic);
   renderMix(mix, ytdNew, "mixDonut", "mixLegend");
