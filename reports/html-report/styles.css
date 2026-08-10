@@ -182,14 +182,14 @@ h1 {
 }
 
 #membershipTrend {
-  height: 286px;
-  margin-top: 2px;
+  height: 330px;
+  margin-top: 8px;
 }
 
 .tall-chart { height: 250px; }
 
-.trend-panel { min-height: 304px; }
-.interpretation { min-height: 304px; }
+.trend-panel { min-height: 410px; }
+.interpretation { min-height: 410px; }
 .interpretation ul {
   margin: 15px 0 0;
   padding: 0;

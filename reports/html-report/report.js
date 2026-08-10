@@ -238,14 +238,14 @@ function drawBarChart(svg, values, labels, opts = {}) {
 
 function drawYoYMembershipChart(svg, rows) {
   if (!svg || !rows.length) return;
-  const w = 520, h = 280;
+  const w = 520, h = 340;
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  const pad = { left: 54, right: 20, top: 34, bottom: 42 };
-  const max = Math.max(...rows.map(row => row.activeGolfers)) * 1.15;
+  const pad = { left: 54, right: 20, top: 28, bottom: 40 };
+  const max = Math.max(...rows.map(row => row.activeGolfers)) * 1.04;
   const y = v => pad.top + (1 - v / max) * (h - pad.top - pad.bottom);
   const plotW = w - pad.left - pad.right;
   const step = plotW / rows.length;
-  const barW = 56;
+  const barW = 62;
   const ticks = [0, 100000, 200000, 300000, 400000, 500000];
   svg.innerHTML = `
     ${ticks.map(t => {
