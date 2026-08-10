@@ -140,6 +140,16 @@
     }
     button.primary { border-color: var(--navy); background: var(--navy); color: white; }
     .status { align-self: center; color: var(--muted); font-size: 12px; margin-left: auto; }
+    .save-note {
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      border-left: 4px solid #6ca0d3;
+      border-radius: 9px;
+      background: #eef6ff;
+      color: #40516a;
+      font-size: 12px;
+      line-height: 1.35;
+    }
   </style>
 </head>
 <body>
@@ -158,11 +168,14 @@
     <section class="editor">
       <h2>Monthly Report Copy</h2>
       <p class="hint">This test version saves each report key in browser storage. Production should save the approved copy to a monthly archive file.</p>
+      <p class="save-note" id="saveNote">Drafts autosave in this browser. For durable storage, use <strong>Save Draft File</strong> or <strong>Download Backup</strong>.</p>
       <div id="form"></div>
       <div class="actions">
         <button class="primary" id="saveBtn" type="button">Save + Preview</button>
         <button id="printBtn" type="button">Export PDF</button>
-        <button id="copyBtn" type="button">Download Copy JSON</button>
+        <button id="loadFileBtn" type="button">Load Copy File</button>
+        <button id="saveFileBtn" type="button">Save Draft File</button>
+        <button id="copyBtn" type="button">Download Backup</button>
         <button id="newMonthBtn" type="button">Start New Month</button>
         <button id="resetBtn" type="button">Reset This Month</button>
         <a class="button" id="openReport" href="./executive-report.html?report=2026-08" target="_blank">Open Report</a>
@@ -307,9 +320,11 @@
     const form = document.getElementById("form");
     const reportKey = document.getElementById("reportKey");
     const status = document.getElementById("status");
+    const saveNote = document.getElementById("saveNote");
     const frame = document.getElementById("previewFrame");
     const openReport = document.getElementById("openReport");
     let current = {};
+    let draftFileHandle = null;
 
     function labelize(key) {
       return key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase());
@@ -325,6 +340,7 @@
       current = raw ? { ...defaults, ...JSON.parse(raw) } : structuredClone(defaults);
       renderForm();
       syncLinks();
+      updateSaveNote();
     }
 
     function renderForm() {
@@ -389,12 +405,24 @@
       openReport.href = url;
     }
 
-    document.getElementById("saveBtn").addEventListener("click", () => {
+    function persistBrowserDraft(message = "Saved") {
       current = collect();
       localStorage.setItem(`gcExecutiveReportNarrative:${reportKey.value}`, JSON.stringify(current));
       syncLinks();
       frame.contentWindow.location.reload();
-      status.textContent = `Saved ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+      status.textContent = message;
+    }
+
+    function updateSaveNote() {
+      if (draftFileHandle) {
+        saveNote.innerHTML = `Drafts autosave in this browser. Connected draft file: <strong>${draftFileHandle.name}</strong>. Use <strong>Save Draft File</strong> to write changes to disk.`;
+      } else {
+        saveNote.innerHTML = `Drafts autosave in this browser. For durable storage, use <strong>Save Draft File</strong> or <strong>Download Backup</strong>.`;
+      }
+    }
+
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      persistBrowserDraft(`Saved ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`);
     });
 
     document.getElementById("printBtn").addEventListener("click", () => {
@@ -420,8 +448,7 @@
     });
 
     document.getElementById("copyBtn").addEventListener("click", () => {
-      current = collect();
-      localStorage.setItem(`gcExecutiveReportNarrative:${reportKey.value}`, JSON.stringify(current));
+      persistBrowserDraft("Saved browser draft");
       const blob = new Blob([JSON.stringify(current, null, 2) + "\n"], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -429,6 +456,58 @@
       a.click();
       URL.revokeObjectURL(a.href);
       status.textContent = "Downloaded copy JSON";
+    });
+
+    document.getElementById("loadFileBtn").addEventListener("click", async () => {
+      try {
+        if (!window.showOpenFilePicker) {
+          alert("This browser does not support direct file loading here. Use Download Backup, then import the file locally.");
+          return;
+        }
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: "Report copy JSON", accept: { "application/json": [".json"] } }],
+          multiple: false
+        });
+        const file = await handle.getFile();
+        const text = await file.text();
+        current = { ...defaults, ...JSON.parse(text) };
+        draftFileHandle = handle;
+        localStorage.setItem(`gcExecutiveReportNarrative:${reportKey.value}`, JSON.stringify(current));
+        renderForm();
+        syncLinks();
+        frame.contentWindow.location.reload();
+        updateSaveNote();
+        status.textContent = `Loaded ${file.name}`;
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          alert(`Unable to load copy file: ${error.message}`);
+        }
+      }
+    });
+
+    document.getElementById("saveFileBtn").addEventListener("click", async () => {
+      try {
+        persistBrowserDraft("Saved browser draft");
+        if (!window.showSaveFilePicker) {
+          document.getElementById("copyBtn").click();
+          return;
+        }
+        if (!draftFileHandle) {
+          draftFileHandle = await window.showSaveFilePicker({
+            suggestedName: `${reportKey.value}-report-copy.json`,
+            types: [{ description: "Report copy JSON", accept: { "application/json": [".json"] } }]
+          });
+        }
+        const writable = await draftFileHandle.createWritable();
+        await writable.write(JSON.stringify(current, null, 2) + "\n");
+        await writable.close();
+        updateSaveNote();
+        status.textContent = `Saved ${draftFileHandle.name}`;
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          alert(`Unable to save draft file: ${error.message}`);
+        }
+      }
     });
 
     document.getElementById("resetBtn").addEventListener("click", () => {
