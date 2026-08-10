@@ -238,9 +238,9 @@ function drawBarChart(svg, values, labels, opts = {}) {
 
 function drawYoYMembershipChart(svg, rows) {
   if (!svg || !rows.length) return;
-  const w = 520, h = 430;
+  const w = 520, h = 360;
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  const pad = { left: 54, right: 20, top: 20, bottom: 40 };
+  const pad = { left: 54, right: 20, top: 24, bottom: 40 };
   const max = Math.max(...rows.map(row => row.activeGolfers)) * 1.04;
   const y = v => pad.top + (1 - v / max) * (h - pad.top - pad.bottom);
   const plotW = w - pad.left - pad.right;

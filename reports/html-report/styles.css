@@ -182,7 +182,7 @@ h1 {
 }
 
 #membershipTrend {
-  height: 318px;
+  height: 286px;
   margin-top: 0;
 }
 
@@ -190,7 +190,7 @@ h1 {
 
 .trend-panel {
   min-height: 410px;
-  padding-bottom: 18px;
+  padding-bottom: 24px;
   display: flex;
   flex-direction: column;
 }
