@@ -181,6 +181,11 @@ h1 {
   margin-top: 6px;
 }
 
+#membershipTrend {
+  height: 286px;
+  margin-top: 2px;
+}
+
 .tall-chart { height: 250px; }
 
 .trend-panel { min-height: 304px; }
@@ -499,6 +504,9 @@ svg text {
   .chart {
     height: 134px;
     margin-top: 0;
+  }
+  #membershipTrend {
+    height: 178px;
   }
   .interpretation ul { margin-top: 10px; }
   .interpretation li {
