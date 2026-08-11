@@ -5932,7 +5932,7 @@ function attributionDraftSourceRows() {
     {key:'trials', label:'GC Trial Conversions', value:t.trials, cls:'attribution-seg-trials'},
     {key:'marketing', label:'Paid Media', value:t.marketing, cls:'attribution-seg-marketing'},
     {key:'affiliate', label:'Affiliate Program', value:t.affiliate, cls:'attribution-seg-affiliate'},
-    {key:'organic', label:'Organic / Unknown', value:t.organic, cls:'attribution-seg-organic'}
+    {key:'organic', label:'Organic / Untagged', value:t.organic, cls:'attribution-seg-organic'}
   ];
 }
 
@@ -5967,7 +5967,7 @@ function attributionDraftTrendChart(view = ACQUISITION_ATTRIBUTION_TREND_VIEW) {
   const sources = [
     {key:'trials', label:'GC Trials', color:'#14395f'},
     {key:'marketing', label:'Paid Media', color:'#4f83b8'},
-    {key:'organic', label:'Organic / Unknown', color:'#c6d4e2'}
+    {key:'organic', label:'Organic / Untagged', color:'#c6d4e2'}
   ];
   const rows = ATTRIBUTION_DRAFT_DATA;
   const w = 1040, h = 720;
@@ -6134,7 +6134,7 @@ function attributionDraftDonutChart(isYtd) {
   const rows = [
     {key:'trials', label:'Trials', value:vals.trials, color:'#14395f', textColor:'#ffffff'},
     {key:'marketing', label:'Paid Media', value:vals.marketing, color:'#4f83b8', textColor:'#ffffff'},
-    {key:'organic', label:'Organic', value:vals.organic, color:'#c6d4e2', textColor:'#0f172a'}
+    {key:'organic', label:'Organic / Untagged', value:vals.organic, color:'#c6d4e2', textColor:'#0f172a'}
   ];
   const total = rows.reduce((s,r) => s + r.value, 0);
 
@@ -6203,13 +6203,13 @@ function attributionDraftGrowthRows(isYtd) {
         {label:'GHIN Trials', value:5400},
         {label:'Paid Media', value:1700},
         {label:'Affiliate Program', value:900},
-        {label:'Organic / Unknown', value:-200}
+        {label:'Organic / Untagged', value:-200}
       ]
     : [
         {label:'GHIN Trials', value:1050},
         {label:'Paid Media', value:450},
         {label:'Affiliate Program', value:225},
-        {label:'Organic / Unknown', value:-400}
+        {label:'Organic / Untagged', value:-400}
       ];
   const maxAbs = Math.max(...contributions.map(r => Math.abs(r.value)), 1);
   return contributions.map(r => {
