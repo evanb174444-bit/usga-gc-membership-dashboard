@@ -6179,9 +6179,16 @@ function attributionDraftDonutChart(isYtd) {
     const labelPoint = point(midAngle, labelR);
     const share = total ? r.value / total : 0;
     const fontColor = r.textColor;
+    const labelText = r.key === 'organic'
+      ? `<text x="${labelPoint.x}" y="${labelPoint.y-12}" text-anchor="middle" class="summary-donut-inside-label" fill="${fontColor}">
+           <tspan x="${labelPoint.x}" dy="0">Organic /</tspan>
+           <tspan x="${labelPoint.x}" dy="22">Untagged</tspan>
+         </text>`
+      : `<text x="${labelPoint.x}" y="${labelPoint.y-4}" text-anchor="middle" class="summary-donut-inside-label" fill="${fontColor}">${r.label}</text>`;
+    const valueY = r.key === 'organic' ? labelPoint.y + 40 : labelPoint.y + 24;
     const label = share >= 0.075
-      ? `<text x="${labelPoint.x}" y="${labelPoint.y-4}" text-anchor="middle" class="summary-donut-inside-label" fill="${fontColor}">${r.label}</text>
-         <text x="${labelPoint.x}" y="${labelPoint.y+24}" text-anchor="middle" class="summary-donut-inside-value" fill="${fontColor}">${Math.round(share*100)}%</text>`
+      ? `${labelText}
+         <text x="${labelPoint.x}" y="${valueY}" text-anchor="middle" class="summary-donut-inside-value" fill="${fontColor}">${Math.round(share*100)}%</text>`
       : '';
     return `<path class="attribution-donut-segment tiptarget" data-tip="${r.label}<br><strong>${fmt(r.value)} new golfers</strong>" d="${donutSlice(startAngle, endAngle, outerR, innerR)}" fill="${r.color}"></path>${label}`;
   }).join('');
