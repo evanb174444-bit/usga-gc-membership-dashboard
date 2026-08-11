@@ -61,33 +61,20 @@
 
       <section class="panel movement-panel">
         <div class="section-label" data-copy="movementLabel">Membership Movement</div>
-        <h2 data-copy="movementTitle">July Operating Bridge</h2>
+        <h2 data-copy="movementTitle">July Membership Reconciliation</h2>
         <p class="panel-note" data-copy="movementNote">Opening membership plus acquired and recovered golfers, net of losses, reconciles to closing active membership.</p>
         <div class="bridge" id="bridge"></div>
       </section>
 
-      <section class="two-col lower-row">
-        <article class="panel">
-          <div class="section-label" data-copy="mixLabel">Acquisition Mix</div>
-          <h2 data-copy="mixTitle">Where New Members Came From</h2>
-          <div class="donut-row">
-            <svg id="mixDonut" class="donut" viewBox="0 0 220 220" role="img" aria-label="YTD acquisition mix"></svg>
-            <div class="legend" id="mixLegend"></div>
-          </div>
-        </article>
-
-        <article class="panel">
-          <div class="section-label" data-copy="retentionLabel">Retention + Recovery</div>
-          <h2 data-copy="retentionTitle">Preserving Membership</h2>
-          <div class="mini-kpi-row">
-            <div><span data-copy="renewalMiniLabel">Renewal Rate</span><strong id="renewalRate">--</strong></div>
-            <div><span data-copy="recoveredMiniLabel">Recovered</span><strong id="recoveredMembers">--</strong></div>
-          </div>
-          <div class="callout">
-            <strong data-copy="retentionReadoutLabel">Operating readout</strong>
-            <p id="retentionReadout">Loading current retention and recovery readout.</p>
-          </div>
-        </article>
+      <section class="panel projection-panel">
+        <div class="projection-copy">
+          <div class="section-label" data-copy="projectionLabel">Year-End Outlook</div>
+          <h2 data-copy="projectionTitle">2026 Year-End Projection</h2>
+          <p class="panel-note" id="projectionNote">Projected December active membership using the current July YoY growth scenario.</p>
+          <strong id="projectionValue">--</strong>
+          <span id="projectionSub">Projected by EOY</span>
+        </div>
+        <svg id="projectionChart" class="projection-chart" viewBox="0 0 680 260" role="img" aria-label="2026 year-end projection chart"></svg>
       </section>
 
       <footer class="footer">
@@ -107,39 +94,35 @@
       </header>
 
       <section class="summary-grid three">
-        <article class="kpi accent-blue"><span data-copy="newMembersLabel">New Members</span><strong id="newMembers">--</strong><em id="newMembersSub">Current period</em></article>
-        <article class="kpi accent-teal"><span data-copy="trialsLabel">GHIN Trial Conversions</span><strong id="trialConversions">--</strong><em>YTD</em></article>
-        <article class="kpi accent-gold"><span data-copy="paidLabel">Paid Media Conversions</span><strong id="paidConversions">--</strong><em>YTD source</em></article>
+        <article class="kpi accent-blue"><span data-copy="newMembersLabel">New Golfers</span><strong id="newMembers">--</strong><b class="delta down" id="newMembersDelta">--</b><em id="newMembersSub">Current month</em></article>
+        <article class="kpi accent-teal"><span>New Golfers YTD</span><strong id="newMembersYtd">--</strong><b class="delta down" id="newMembersYtdDelta">--</b><em>Jan through July</em></article>
+        <article class="kpi accent-gold"><span>YTD as % of Active</span><strong id="newMembersActiveShare">--</strong><b class="delta down" id="newMembersActiveShareDelta">--</b><em>Current active base</em></article>
       </section>
 
-      <section class="two-col page-grid">
-        <article class="panel">
-          <div class="section-label" data-copy="acqTrendLabel">Acquisition Trend</div>
-          <h2 data-copy="acqTrendTitle">Monthly New Members</h2>
-          <svg id="acquisitionBars" class="chart tall-chart" viewBox="0 0 520 250"></svg>
+      <section class="two-col page-grid acquisition-hero-grid">
+        <article class="panel acq-yoy-panel">
+          <div class="section-label">New Golfers Cumulative YoY</div>
+          <h2>New Golfers Cumulative YoY (Jan-July)</h2>
+          <svg id="acqYoyBars" class="feature-chart" viewBox="0 0 680 320" role="img" aria-label="New golfers cumulative year over year chart"></svg>
         </article>
-        <article class="panel">
+        <article class="panel page-summary-panel page2-takeaways">
+          <div class="section-label">What Leadership Should Know</div>
+          <h2>Key Takeaways</h2>
+          <ul class="summary-bullets" id="page2Summary"></ul>
+        </article>
+      </section>
+
+      <section class="panel source-mix-strip">
           <div class="section-label" data-copy="acqMixPageLabel">Source Mix</div>
           <h2 data-copy="acqMixPageTitle">YTD Acquisition Mix</h2>
-          <div class="donut-row compact-donut">
-            <svg id="mixDonutPage2" class="donut" viewBox="0 0 220 220"></svg>
-            <div class="legend" id="mixLegendPage2"></div>
-          </div>
-        </article>
+          <div class="source-mix-cards" id="sourceMixCards"></div>
       </section>
 
-      <section class="panel table-panel">
-        <div class="section-label" data-copy="segmentLabel">Segment Performance</div>
-        <h2 data-copy="segmentTitle">Executive Source Readout</h2>
-        <table>
-          <thead><tr><th>Source</th><th>YTD Members</th><th>Share</th><th>Executive Note</th></tr></thead>
-          <tbody id="sourceTable"></tbody>
-        </table>
-      </section>
-
-      <section class="panel notes-panel">
-        <div class="section-label" data-copy="page2NotesLabel">Executive Takeaway</div>
-        <ul class="editable-list" id="page2Bullets"></ul>
+      <section class="panel source-trend-panel">
+          <div class="section-label">Monthly Source Mix</div>
+          <h2>Monthly Trend by Source</h2>
+          <svg id="sourceTrendBars" class="chart source-trend-chart" viewBox="0 0 680 280" role="img" aria-label="Monthly trend by source"></svg>
+          <div class="legend horizontal" id="sourceTrendLegend"></div>
       </section>
 
       <footer class="footer"><span data-copy="footerLeft">GC Membership Executive Report</span><span>Confidential | 2 of 5</span></footer>
@@ -148,44 +131,39 @@
     <section class="page">
       <header class="masthead compact">
         <div>
-          <p class="eyebrow" data-copy="page3Eyebrow">Retention + Recovery</p>
-          <h1 data-copy="page3Title">How Membership Is Being Preserved</h1>
-          <p class="dek" data-copy="page3Dek">Retention and recovery indicators showing how effectively the member base is being protected.</p>
+          <p class="eyebrow" data-copy="page3Eyebrow">How Membership Is Being Retained</p>
+          <h1 data-copy="page3Title">GC Retention</h1>
+          <p class="dek" data-copy="page3Dek">Retention measures renewal performance and durability across the active membership base.</p>
         </div>
         <div class="report-meta"><span data-copy="reportMonth">August 2026</span><strong>3</strong></div>
       </header>
 
-      <section class="summary-grid three">
-        <article class="kpi accent-blue"><span data-copy="renewalPageLabel">Renewal Rate</span><strong id="renewalRatePage">--</strong><em>Latest month</em></article>
-        <article class="kpi accent-teal"><span data-copy="retainedPageLabel">Members Retained</span><strong id="membersRetained">--</strong><em>Renewed on time</em></article>
-        <article class="kpi accent-green"><span data-copy="recoveryPageLabel">Recovered Members</span><strong id="recoveryPageMembers">--</strong><em>Latest month</em></article>
+      <section class="summary-grid four">
+        <article class="kpi accent-blue"><span data-copy="renewalPageLabel">July On-Time Renewal Rate</span><strong id="renewalRatePage">--</strong><em id="renewalRateSub">Current month</em></article>
+        <article class="kpi accent-teal"><span>July 12M Rolling Retention</span><strong id="rollingRetentionPage">--</strong><em id="rollingRetentionSub">Rolling rate</em></article>
+        <article class="kpi accent-green"><span>Active Today</span><strong id="activeTodayPage">--</strong><em id="activeTodaySub">Current active base</em></article>
+        <article class="kpi accent-gold"><span>Inactive Today</span><strong id="inactiveTodayPage">--</strong><em id="inactiveTodaySub">Current inactive base</em></article>
       </section>
 
-      <section class="two-col page-grid">
-        <article class="panel">
+      <section class="panel retention-takeaways">
+        <div class="section-label" data-copy="page3NotesLabel">What Leadership Should Know</div>
+        <h2>Key Takeaways</h2>
+        <p id="page3TakeawayText" class="takeaway-copy">Retention remains the central support for membership growth.</p>
+      </section>
+
+      <section class="retention-chart-stack">
+        <article class="panel retention-story-panel">
           <div class="section-label" data-copy="retentionTrendLabel">Retention Trend</div>
-          <h2 data-copy="retentionTrendTitle">On-Time Renewal Rate</h2>
-          <svg id="retentionTrend" class="chart tall-chart" viewBox="0 0 520 250"></svg>
+          <h2 data-copy="retentionTrendTitle">On-Time Renewal Rate by Month</h2>
+          <p class="panel-note">Share of golfers up for renewal in the month who renewed on time.</p>
+          <svg id="retentionTrend" class="retention-wide-chart" viewBox="0 0 760 260" role="img" aria-label="On-time renewal rate by month"></svg>
         </article>
-        <article class="panel">
-          <div class="section-label" data-copy="recoveryTrendLabel">Recovery Trend</div>
-          <h2 data-copy="recoveryTrendTitle">Monthly Recoveries</h2>
-          <svg id="recoveryTrend" class="chart tall-chart" viewBox="0 0 520 250"></svg>
+        <article class="panel retention-story-panel">
+          <div class="section-label">Rolling Retention</div>
+          <h2>12-Month Rolling Retention</h2>
+          <p class="panel-note">Share of golfers active 12 months prior to the report date who are still active as of the report date.</p>
+          <svg id="rollingRetentionTrend" class="retention-wide-chart" viewBox="0 0 760 260" role="img" aria-label="12-month rolling retention by month"></svg>
         </article>
-      </section>
-
-      <section class="panel table-panel">
-        <div class="section-label" data-copy="cohortLabel">Cohort View</div>
-        <h2 data-copy="cohortTitle">Retention by Member Tenure</h2>
-        <table>
-          <thead><tr><th>Metric</th><th>Value</th><th>Context</th></tr></thead>
-          <tbody id="cohortTable"></tbody>
-        </table>
-      </section>
-
-      <section class="panel notes-panel">
-        <div class="section-label" data-copy="page3NotesLabel">Executive Takeaway</div>
-        <ul class="editable-list" id="page3Bullets"></ul>
       </section>
 
       <footer class="footer"><span data-copy="footerLeft">GC Membership Executive Report</span><span>Confidential | 3 of 5</span></footer>
@@ -194,49 +172,43 @@
     <section class="page">
       <header class="masthead compact">
         <div>
-          <p class="eyebrow" data-copy="page4Eyebrow">Engagement</p>
-          <h1 data-copy="page4Title">GHIN Challenges Momentum</h1>
-          <p class="dek" data-copy="page4Dek">Engagement indicators showing program scale, participating associations, and golfer activity.</p>
+          <p class="eyebrow" data-copy="page4Eyebrow">How Membership Is Being Recovered</p>
+          <h1 data-copy="page4Title">GC Recovery</h1>
+          <p class="dek" data-copy="page4Dek">Recovery measures inactive golfers who returned to active membership during the reporting period.</p>
         </div>
         <div class="report-meta"><span data-copy="reportMonth">August 2026</span><strong>4</strong></div>
       </header>
 
       <section class="summary-grid four">
-        <article class="kpi accent-blue"><span data-copy="challengeTotalLabel">Total Challenges</span><strong id="totalChallenges">--</strong><em>Active + completed + upcoming</em></article>
-        <article class="kpi accent-teal"><span data-copy="challengeGolfersLabel">Total Golfers</span><strong id="challengeGolfers">--</strong><em>Participants</em></article>
-        <article class="kpi accent-green"><span data-copy="rankedGolfersLabel">Ranked Golfers</span><strong id="rankedGolfers">--</strong><em>Leaderboard participants</em></article>
-        <article class="kpi accent-gold"><span data-copy="scoresPostedLabel">Scores Posted</span><strong id="scoresPosted">--</strong><em>Challenge scores</em></article>
+        <article class="kpi accent-blue"><span>Reactivations</span><strong id="recoveryLatest">--</strong><b class="delta down" id="recoveryLatestDelta">--</b><em>July 2026</em></article>
+        <article class="kpi accent-teal"><span>Reactivations YTD</span><strong id="recoveryYtd">--</strong><b class="delta up" id="recoveryYtdDelta">--</b><em>Jan through July</em></article>
+        <article class="kpi accent-green"><span>YTD as % of Active</span><strong id="recoveryShare">--</strong><b class="delta up" id="recoveryShareDelta">--</b><em>Current active base</em></article>
+        <article class="kpi accent-gold"><span>Monthly as % of Active</span><strong id="recoveryMonthlyShare">--</strong><b class="delta down" id="recoveryMonthlyShareDelta">--</b><em>Selected month share</em></article>
       </section>
 
-      <section class="two-col page-grid">
-        <article class="panel">
-          <div class="section-label" data-copy="programTrendLabel">Program Trend</div>
-          <h2 data-copy="programTrendTitle">Growth Since May</h2>
-          <svg id="challengeGrowth" class="chart tall-chart" viewBox="0 0 520 250"></svg>
-        </article>
-        <article class="panel">
-          <div class="section-label" data-copy="challengeMixLabel">Participation</div>
-          <h2 data-copy="challengeMixTitle">Engagement Quality</h2>
-          <div class="metric-stack">
-            <div><span>Ranked Golfer Rate</span><strong id="rankedRate">--</strong></div>
-            <div><span>Scores / Golfer</span><strong id="scoresPerGolfer">--</strong></div>
-            <div><span>Participating AGAs</span><strong id="participatingAgas">--</strong></div>
+      <section class="recovery-feature">
+        <article class="panel recovery-story-panel">
+          <div class="recovery-chart-head">
+            <div>
+              <h2>Reactivations YTD Cumulative</h2>
+              <div class="chart-stat"><strong id="recoveryYtdHeadline">--</strong><span>Reactivations YTD</span></div>
+              <p class="panel-note" id="recoveryYtdNote">Loading comparison.</p>
+            </div>
           </div>
+          <svg id="recoveryCumulativeTrend" class="recovery-comparison-chart cumulative feature" viewBox="0 0 760 340" role="img" aria-label="Cumulative reactivations comparison"></svg>
         </article>
       </section>
 
-      <section class="panel table-panel">
-        <div class="section-label" data-copy="agaLabel">AGA Performance</div>
-        <h2 data-copy="agaTitle">Top GHIN Challenge Associations</h2>
-        <table>
-          <thead><tr><th>Association</th><th>Challenges</th><th>Golfers</th><th>Ranked Rate</th></tr></thead>
-          <tbody id="agaTable"></tbody>
-        </table>
-      </section>
-
-      <section class="panel notes-panel">
-        <div class="section-label" data-copy="page4NotesLabel">Executive Takeaway</div>
-        <ul class="editable-list" id="page4Bullets"></ul>
+      <section class="recovery-bottom-grid">
+        <article class="panel recovery-mini-panel">
+          <h3>2026 Recoveries by Membership Creation Year</h3>
+          <div id="recoveryCreationBars" class="mini-bars"></div>
+        </article>
+        <article class="panel recovery-takeaway-panel">
+          <div class="section-label" data-copy="page4NotesLabel">What Leadership Should Know</div>
+          <h2>Key Takeaways</h2>
+          <ul class="summary-bullets" id="page4Takeaways"></ul>
+        </article>
       </section>
 
       <footer class="footer"><span data-copy="footerLeft">GC Membership Executive Report</span><span>Confidential | 4 of 5</span></footer>
@@ -245,38 +217,66 @@
     <section class="page">
       <header class="masthead compact">
         <div>
-          <p class="eyebrow" data-copy="page5Eyebrow">Leadership Agenda</p>
-          <h1 data-copy="page5Title">Opportunities, Concerns & Actions</h1>
-          <p class="dek" data-copy="page5Dek">A final page that turns dashboard movement into clear priorities, risks, and decisions for leadership.</p>
+          <p class="eyebrow" data-copy="page5Eyebrow">Analysis</p>
+          <h1 data-copy="page5Title">What the Results Suggest</h1>
         </div>
         <div class="report-meta"><span data-copy="reportMonth">August 2026</span><strong>5</strong></div>
       </header>
 
-      <section class="two-col page-grid">
-        <article class="panel">
-          <div class="section-label" data-copy="opportunitiesLabel">Opportunities</div>
-          <h2 data-copy="opportunitiesTitle">Where momentum can be extended</h2>
-          <ul class="number-list" id="opportunityBullets"></ul>
-        </article>
-        <article class="panel">
-          <div class="section-label danger" data-copy="concernsLabel">Concerns</div>
-          <h2 data-copy="concernsTitle">Where leadership attention is needed</h2>
-          <ul class="number-list red" id="concernBullets"></ul>
-        </article>
+      <section class="panel strategic-readout">
+        <h2>Active membership is strong, but new golfer acquisition is down.</h2>
+        <p>Active membership remains well ahead of last year. That is good news. But new golfer acquisition is down versus 2025, while retention is materially stronger. The current results are being supported by retention, not by stronger new golfer growth.</p>
+      </section>
+
+      <section class="panel implication-panel">
+        <div class="implication-list">
+          <article>
+            <h2>Acquisition needs the most attention.</h2>
+            <p>Year-to-date new golfers are down versus 2025, and July new golfers were also down year over year. Retention is helping offset the decline, but the bigger opportunity is getting more new golfers.</p>
+          </article>
+          <article>
+            <h2>Retention is already doing its job.</h2>
+            <p>July on-time renewal was well above last July, and 12-month rolling retention is also ahead. There may be small gains left, but retention is not the main problem in the current data.</p>
+          </article>
+          <article>
+            <h2>The acquisition story may benefit from a new perspective.</h2>
+            <p>If new golfer acquisition is down, the question is not only how many conversions paid media produced. The bigger question is whether we are telling the right story, to the right golfers, in a way that makes a Handicap Index feel relevant, useful, and worth having.</p>
+          </article>
+          <article>
+            <h2>Paid conversions may not equal new demand.</h2>
+            <p>Some paid conversions may come from golfers who were already likely to sign up. Leadership should look beyond conversion totals and ask whether marketing is creating new interest, or mostly paying to capture demand that already exists.</p>
+          </article>
+          <article>
+            <h2>Win-back is a practical secondary opportunity.</h2>
+            <p>Recovery is ahead year to date, and members from older creation years are still returning. Automated expired-member outreach is worth testing as a way to bring back lapsed members.</p>
+          </article>
+        </div>
       </section>
 
       <section class="panel table-panel action-panel">
-        <div class="section-label" data-copy="actionsLabel">Recommended Actions</div>
-        <h2 data-copy="actionsTitle">Near-Term Decisions and Follow-Ups</h2>
+        <div class="section-label" data-copy="actionsLabel">Leadership Questions</div>
+        <h2 data-copy="actionsTitle">Questions for the Next Review</h2>
         <table>
-          <thead><tr><th>Priority</th><th>Action</th><th>Owner</th><th>Timing</th></tr></thead>
+          <thead><tr><th>Topic</th><th>Question</th><th>Owner</th><th>Timing</th></tr></thead>
           <tbody id="actionsTable"></tbody>
         </table>
       </section>
 
-      <section class="panel decision-panel">
-        <div class="section-label" data-copy="decisionLabel">Leadership Decision Required</div>
-        <p data-copy="decisionText">Confirm which source categories and workstream decisions should be elevated into the monthly executive report archive.</p>
+      <section class="decision-grid">
+        <article class="panel decision-panel">
+          <div class="section-label" data-copy="decisionLabel">Near-Term Watchout</div>
+          <p data-copy="decisionText">Do not let strong total membership hide the acquisition slowdown. The report is positive overall, but new golfer growth needs attention.</p>
+        </article>
+        <article class="panel cadence-panel">
+          <div class="section-label">Next Report Should Clarify</div>
+          <ol>
+            <li>July paid media results and attribution timing</li>
+            <li>Affiliate marketing launch readiness</li>
+            <li>Win-back test results and scale criteria</li>
+            <li>Whether paid media is creating new interest or capturing existing demand</li>
+            <li>What larger acquisition story leadership wants to tell</li>
+          </ol>
+        </article>
       </section>
 
       <footer class="footer"><span data-copy="footerLeft">GC Membership Executive Report</span><span>Confidential | 5 of 5</span></footer>

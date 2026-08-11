@@ -198,7 +198,7 @@
       reportMonth: "August 2026",
       reportDate: "Report Date: August 2, 2026",
       page1Title: "Executive Membership Report",
-      page1Dek: "Topline membership position, acquisition mix, and operating implications for leadership review.",
+      page1Dek: "Monthly executive report summarizing GC membership performance, acquisition, retention, and recovery through the latest reporting period.",
       activeKpiLabel: "Total Active Membership",
       netKpiLabel: "Net Membership Change",
       ytdKpiLabel: "Year-to-Date Growth",
@@ -209,7 +209,7 @@
       interpretationLabel: "Interpretation",
       interpretationTitle: "What leadership should know",
       movementLabel: "Membership Movement",
-      movementTitle: "July Operating Bridge",
+      movementTitle: "July Membership Reconciliation",
       movementNote: "Opening membership plus acquired and recovered golfers, net of losses, reconciles to closing active membership.",
       mixLabel: "Acquisition Mix",
       mixTitle: "Where New Members Came From",
@@ -219,8 +219,8 @@
       recoveredMiniLabel: "Recovered",
       retentionReadoutLabel: "Operating readout",
       footerLeft: "GC Membership Executive Report",
-      page2Eyebrow: "Acquisition + Segmentation",
-      page2Title: "How Membership Is Growing",
+      page2Eyebrow: "How Membership Is Growing",
+      page2Title: "GC Acquisition",
       page2Dek: "A focused view of gross additions, attribution momentum, and the source mix contributing most to current growth.",
       newMembersLabel: "New Members",
       trialsLabel: "GHIN Trial Conversions",
@@ -232,22 +232,22 @@
       segmentLabel: "Segment Performance",
       segmentTitle: "Executive Source Readout",
       page2NotesLabel: "Executive Takeaway",
-      page3Eyebrow: "Retention + Recovery",
-      page3Title: "How Membership Is Being Preserved",
-      page3Dek: "Retention and recovery indicators showing how effectively the member base is being protected.",
-      renewalPageLabel: "Renewal Rate",
-      retainedPageLabel: "Members Retained",
+      page3Eyebrow: "How Membership Is Being Retained",
+      page3Title: "GC Retention",
+      page3Dek: "Retention measures renewal performance and durability across the active membership base.",
+      renewalPageLabel: "July On-Time Renewal Rate",
+      retainedPageLabel: "Members Renewed",
       recoveryPageLabel: "Recovered Members",
       retentionTrendLabel: "Retention Trend",
-      retentionTrendTitle: "On-Time Renewal Rate",
+      retentionTrendTitle: "On-Time Renewal Rate by Month",
       recoveryTrendLabel: "Recovery Trend",
       recoveryTrendTitle: "Monthly Recoveries",
       cohortLabel: "Cohort View",
       cohortTitle: "Retention by Member Tenure",
-      page3NotesLabel: "Executive Takeaway",
-      page4Eyebrow: "Engagement",
-      page4Title: "GHIN Challenges Momentum",
-      page4Dek: "Engagement indicators showing program scale, participating associations, and golfer activity.",
+      page3NotesLabel: "What Leadership Should Know",
+      page4Eyebrow: "How Membership Is Being Recovered",
+      page4Title: "GC Recovery",
+      page4Dek: "Recovery measures inactive golfers who returned to active membership during the reporting period.",
       challengeTotalLabel: "Total Challenges",
       challengeGolfersLabel: "Total Golfers",
       rankedGolfersLabel: "Ranked Golfers",
@@ -258,18 +258,18 @@
       challengeMixTitle: "Engagement Quality",
       agaLabel: "AGA Performance",
       agaTitle: "Top GHIN Challenge Associations",
-      page4NotesLabel: "Executive Takeaway",
-      page5Eyebrow: "Leadership Agenda",
-      page5Title: "Opportunities, Concerns & Actions",
-      page5Dek: "A final page that turns dashboard movement into clear priorities, risks, and decisions for leadership.",
+      page4NotesLabel: "What Leadership Should Know",
+      page5Eyebrow: "Analysis",
+      page5Title: "What the Results Suggest",
+      page5Dek: "",
       opportunitiesLabel: "Opportunities",
       opportunitiesTitle: "Where momentum can be extended",
       concernsLabel: "Concerns",
       concernsTitle: "Where leadership attention is needed",
-      actionsLabel: "Recommended Actions",
-      actionsTitle: "Near-Term Decisions and Follow-Ups",
-      decisionLabel: "Leadership Decision Required",
-      decisionText: "Confirm which source categories and workstream decisions should be elevated into the monthly executive report archive.",
+      actionsLabel: "Leadership Questions",
+      actionsTitle: "Questions for the Next Review",
+      decisionLabel: "Near-Term Watchout",
+      decisionText: "Do not let strong total membership hide the acquisition slowdown. The report is positive overall, but new golfer growth needs attention.",
       interpretation: [
         { title: "Current state", body: "" },
         { title: "Primary driver", body: "" },
@@ -278,7 +278,7 @@
       page2Bullets: [
         "GHIN Trials remain the largest identified acquisition source and should be monitored as a conversion engine.",
         "Paid Media is material but currently only covers the approved paid media attribution source.",
-        "Organic / Unknown remains large enough to require continued attribution cleanup."
+        "Organic / Untagged remains large enough to require continued attribution cleanup."
       ],
       page3Bullets: [
         "Retention remains a meaningful counterweight to acquisition and should stay visible in the executive readout.",
@@ -286,9 +286,9 @@
         "Cohort health remains strongest in newer member years and should be watched as cohorts mature."
       ],
       page4Bullets: [
-        "GHIN Challenges show strong program growth from the first available snapshot to the latest snapshot.",
-        "Participation and ranked golfer rates provide a clearer engagement read than challenge counts alone.",
-        "Top AGA performance can help identify repeatable engagement patterns."
+        "Recovery remains a meaningful secondary growth lever, adding recovered members back into the active base while acquisition softens.",
+        "July recovery volume was below the March peak but still provided incremental lift to total membership.",
+        "Club-level recovery performance can help identify repeatable reactivation patterns."
       ],
       opportunityBullets: [
         "Trial conversion engine generated the largest identified acquisition contribution.",
@@ -296,14 +296,15 @@
         "Engagement expansion creates a broader activation story beyond acquisition."
       ],
       concernBullets: [
-        "Organic / Unknown acquisition remains large and limits source accountability.",
+        "Organic / Untagged acquisition remains large and limits source accountability.",
         "Paid Media timing and coverage must be kept explicit in the executive report.",
         "Manual workstream commentary still requires owner validation before publication."
       ],
       actions: [
-        { priority: "1", action: "Validate source attribution categories for the monthly executive report.", owner: "Analytics", timing: "Before final PDF" },
-        { priority: "2", action: "Confirm narrative commentary and leadership implications.", owner: "Leadership", timing: "Monthly review" },
-        { priority: "3", action: "Archive approved PDF and HTML snapshot for the report month.", owner: "Reporting", timing: "After approval" }
+        { priority: "Acquisition", action: "Who owns the plan to address softer new golfer creation versus 2025?", owner: "Leadership", timing: "Next review" },
+        { priority: "Story", action: "Are we telling the right story, to the right golfers, with a message that makes a Handicap Index feel worth having?", owner: "Marketing", timing: "Fall planning" },
+        { priority: "Paid Media", action: "Are paid campaigns creating new interest, or mostly capturing golfers who were already likely to sign up?", owner: "Marketing / Analytics", timing: "Before budget review" },
+        { priority: "Win-back", action: "What results would justify scaling expired-member outreach nationally?", owner: "Retention", timing: "After test" }
       ]
     };
 
@@ -314,7 +315,7 @@
       { title: "Page 2: Acquisition", fields: ["page2Eyebrow", "page2Title", "page2Dek", "newMembersLabel", "trialsLabel", "paidLabel", "acqTrendLabel", "acqTrendTitle", "acqMixPageLabel", "acqMixPageTitle", "segmentLabel", "segmentTitle", "page2NotesLabel"], list: "page2Bullets" },
       { title: "Page 3: Retention + Recovery", fields: ["page3Eyebrow", "page3Title", "page3Dek", "renewalPageLabel", "retainedPageLabel", "recoveryPageLabel", "retentionTrendLabel", "retentionTrendTitle", "recoveryTrendLabel", "recoveryTrendTitle", "cohortLabel", "cohortTitle", "page3NotesLabel"], list: "page3Bullets" },
       { title: "Page 4: Engagement", fields: ["page4Eyebrow", "page4Title", "page4Dek", "challengeTotalLabel", "challengeGolfersLabel", "rankedGolfersLabel", "scoresPostedLabel", "programTrendLabel", "programTrendTitle", "challengeMixLabel", "challengeMixTitle", "agaLabel", "agaTitle", "page4NotesLabel"], list: "page4Bullets" },
-      { title: "Page 5: Leadership Agenda", fields: ["page5Eyebrow", "page5Title", "page5Dek", "opportunitiesLabel", "opportunitiesTitle", "concernsLabel", "concernsTitle", "actionsLabel", "actionsTitle", "decisionLabel", "decisionText"], list: "opportunityBullets", list2: "concernBullets", actions: true }
+      { title: "Page 5: Analysis", fields: ["page5Eyebrow", "page5Title", "page5Dek", "opportunitiesLabel", "opportunitiesTitle", "concernsLabel", "concernsTitle", "actionsLabel", "actionsTitle", "decisionLabel", "decisionText"], list: "opportunityBullets", list2: "concernBullets", actions: true }
     ];
 
     const form = document.getElementById("form");

@@ -1,9 +1,9 @@
 {
   "metadata": {
     "schemaVersion": 1,
-    "source": "marketing_workbook.xlsx",
-    "reportMonth": "2026-07",
-    "activityThrough": "2026-06-30",
+    "source": "USGA 2026 Accelerate - Media Report - Thru 08.02.26(Tactic Report YTD Thru 08.csv",
+    "reportMonth": "2026-08",
+    "activityThrough": "2026-08-02",
     "status": "generated"
   },
   "monthlyPerformance": [
@@ -74,15 +74,26 @@
       "cvr": 0.012411861041922285
     },
     {
+      "spend": 76000.69999999995,
+      "conversions": 4337,
+      "impressions": 12317434,
+      "clicks": 246115,
+      "month": "Jul",
+      "cpa": 17.52379525017292,
+      "ctr": 0.019981028516166597,
+      "cpc": 0.30880157649879103,
+      "cvr": 0.017621843447169005
+    },
+    {
       "month": "YTD",
-      "spend": 493544.0,
-      "conversions": 21567,
-      "cpa": 22.8842212639681,
-      "impressions": 71620724,
-      "clicks": 1642621,
-      "ctr": 0.02293499574229381,
-      "cpc": 0.3004612749989194,
-      "cvr": 0.013129626371512357
+      "spend": 569544.7,
+      "conversions": 25904,
+      "impressions": 83938158,
+      "clicks": 1888736,
+      "cpa": 21.986747220506484,
+      "ctr": 0.022501518320189966,
+      "cpc": 0.30154807236162173,
+      "cvr": 0.01371499246056622
     }
   ],
   "monthlyFunnelSpend": [
@@ -123,279 +134,303 @@
       "conversion": 76549
     },
     {
+      "month": "Jul",
+      "awareness": 13567.0,
+      "consideration": 28327.309999999998,
+      "conversion": 34106.390000000014
+    },
+    {
       "month": "YTD",
-      "awareness": 96131,
-      "consideration": 236105.0,
-      "conversion": 161308.0
+      "awareness": 109698.0,
+      "consideration": 264432.31,
+      "conversion": 195414.39
     }
   ],
   "funnel": [
     {
       "stage": "Awareness",
       "objective": "Drive reach and introduce the brand to new audiences.",
-      "spend": 96131,
+      "spend": 109698.0,
       "conversions": 0,
+      "impressions": 8122166,
+      "clicks": 5417,
       "cpa": null,
-      "impressions": 7207338,
-      "clicks": 5069,
-      "ctr": 0.0007033109866638695,
-      "cpc": 18.964490037482737
+      "ctr": 0.0006669403210916891,
+      "cpc": 20.25069226509138,
+      "cvr": 0.0
     },
     {
       "stage": "Interest / Consideration",
       "objective": "Drive engagement and traffic from interested audiences.",
-      "spend": 236105.0,
-      "conversions": 363,
-      "cpa": 650.4269972451791,
-      "impressions": 57994228,
-      "clicks": 1432800,
-      "ctr": 0.02470590693956647,
-      "cpc": 0.164785734226689
+      "spend": 264432.31,
+      "conversions": 406,
+      "impressions": 69204273,
+      "clicks": 1649565,
+      "cpa": 651.3111083743843,
+      "ctr": 0.023836172659454136,
+      "cpc": 0.160304268094922,
+      "cvr": 0.0002461254936907609
     },
     {
       "stage": "Conversion",
       "objective": "Capture demand and drive registrations.",
-      "spend": 161308.0,
-      "conversions": 21204,
-      "cpa": 7.6074325598943595,
-      "impressions": 6419158,
-      "clicks": 204752,
-      "ctr": 0.03189701826937427,
-      "cpc": 0.7878213643822771
+      "spend": 195414.39,
+      "conversions": 25498,
+      "impressions": 6611719,
+      "clicks": 233754,
+      "cpa": 7.663910502784533,
+      "ctr": 0.03535449706800909,
+      "cpc": 0.8359830847814369,
+      "cvr": 0.1090804863232287
     }
   ],
   "channels": [
     {
       "channel": "Cable / CTV",
       "funnelRole": "Awareness",
-      "spend": 30583,
+      "spend": 35000.0,
       "conversions": 0,
-      "cpa": null,
-      "impressions": 1485460,
+      "impressions": 1700000,
       "clicks": 0,
-      "ctr": 0.0,
-      "cpc": null
-    },
-    {
-      "channel": "GolfTec / Skytrak Email",
-      "funnelRole": "Conversion",
-      "spend": 18000,
-      "conversions": 66,
-      "cpa": 272.72727272727275,
-      "impressions": 1238968,
-      "clicks": 2694,
-      "ctr": 0.002174390299023058,
-      "cpc": 6.6815144766147
-    },
-    {
-      "channel": "GolfTec SMS",
-      "funnelRole": "Conversion",
-      "spend": 2000,
-      "conversions": 0,
       "cpa": null,
-      "impressions": 92041,
-      "clicks": 0,
       "ctr": 0.0,
-      "cpc": null
-    },
-    {
-      "channel": "Google Performance Max",
-      "funnelRole": "Conversion",
-      "spend": 47915.0,
-      "conversions": 11118,
-      "cpa": 4.309677999640223,
-      "impressions": 263167,
-      "clicks": 49729,
-      "ctr": 0.18896366185729974,
-      "cpc": 0.963522290816224
-    },
-    {
-      "channel": "Meta (Influencer / Creator)",
-      "funnelRole": "Interest",
-      "spend": 55140,
-      "conversions": 139,
-      "cpa": 396.6906474820144,
-      "impressions": 6568747,
-      "clicks": 412125,
-      "ctr": 0.06274027603742388,
-      "cpc": 0.1337943585077343
-    },
-    {
-      "channel": "Meta Ads (Non-Influencer)",
-      "funnelRole": "Interest",
-      "spend": 54412.0,
-      "conversions": 77,
-      "cpa": 706.6493506493506,
-      "impressions": 8611754,
-      "clicks": 596738,
-      "ctr": 0.06929343313801115,
-      "cpc": 0.09118239495389936
-    },
-    {
-      "channel": "Paid Search (Google)",
-      "funnelRole": "Conversion",
-      "spend": 59332.0,
-      "conversions": 10020,
-      "cpa": 5.921357285429142,
-      "impressions": 757354,
-      "clicks": 94384,
-      "ctr": 0.12462335974986598,
-      "cpc": 0.6286234955077131
-    },
-    {
-      "channel": "Reddit",
-      "funnelRole": "Awareness",
-      "spend": 8750,
-      "conversions": 0,
-      "cpa": null,
-      "impressions": 1741680,
-      "clicks": 2786,
-      "ctr": 0.0015996049791006384,
-      "cpc": 3.14070351758794
-    },
-    {
-      "channel": "Reddit (Traffic)",
-      "funnelRole": "Interest",
-      "spend": 12659,
-      "conversions": 5,
-      "cpa": 2531.8,
-      "impressions": 1375224,
-      "clicks": 9574,
-      "ctr": 0.006961774954480143,
-      "cpc": 1.322226864424483
+      "cpc": null,
+      "cvr": 0.0
     },
     {
       "channel": "Streaming",
       "funnelRole": "Awareness",
-      "spend": 43915,
+      "spend": 50000.0,
       "conversions": 0,
-      "cpa": null,
-      "impressions": 930998,
+      "impressions": 1060000,
       "clicks": 0,
+      "cpa": null,
       "ctr": 0.0,
-      "cpc": null
-    },
-    {
-      "channel": "TikTok (Search)",
-      "funnelRole": "Interest",
-      "spend": 5279,
-      "conversions": 2,
-      "cpa": 2639.5,
-      "impressions": 669482,
-      "clicks": 10565,
-      "ctr": 0.015780857439034957,
-      "cpc": 0.4996687174633223
-    },
-    {
-      "channel": "TikTok (Traffic)",
-      "funnelRole": "Interest",
-      "spend": 41450,
-      "conversions": 60,
-      "cpa": 690.8333333333334,
-      "impressions": 13432276,
-      "clicks": 116431,
-      "ctr": 0.00866800235492481,
-      "cpc": 0.3560048440707372
-    },
-    {
-      "channel": "Venmo / Paypal",
-      "funnelRole": "Interest",
-      "spend": 15000,
-      "conversions": 3,
-      "cpa": 5000.0,
-      "impressions": 1535807,
-      "clicks": 2607,
-      "ctr": 0.0016974789149938761,
-      "cpc": 5.7537399309551205
-    },
-    {
-      "channel": "WRX Emails",
-      "funnelRole": "Conversion",
-      "spend": 15000,
-      "conversions": 4,
-      "cpa": 3750.0,
-      "impressions": 218006,
-      "clicks": 413,
-      "ctr": 0.0018944432722035173,
-      "cpc": 36.31961259079903
-    },
-    {
-      "channel": "X (Twitter)",
-      "funnelRole": "Interest",
-      "spend": 28060,
-      "conversions": 77,
-      "cpa": 364.4155844155844,
-      "impressions": 14073137,
-      "clicks": 74053,
-      "ctr": 0.005262010879308572,
-      "cpc": 0.3789178021147016
+      "cpc": null,
+      "cvr": 0.0
     },
     {
       "channel": "YouTube (Awareness)",
       "funnelRole": "Awareness",
-      "spend": 12883,
+      "spend": 15948.0,
       "conversions": 0,
+      "impressions": 3620486,
+      "clicks": 2631,
       "cpa": null,
-      "impressions": 3049200,
-      "clicks": 2283,
-      "ctr": 0.0007487209759937033,
-      "cpc": 5.6430135786246165
+      "ctr": 0.0007266980178904158,
+      "cpc": 6.06157354618016,
+      "cvr": 0.0
+    },
+    {
+      "channel": "Reddit",
+      "funnelRole": "Awareness",
+      "spend": 8750.0,
+      "conversions": 0,
+      "impressions": 1741680,
+      "clicks": 2786,
+      "cpa": null,
+      "ctr": 0.0015996049791006384,
+      "cpc": 3.14070351758794,
+      "cvr": 0.0
+    },
+    {
+      "channel": "Meta Ads (Non-Influencer)",
+      "funnelRole": "Interest / Consideration",
+      "spend": 58784.0,
+      "conversions": 87,
+      "impressions": 9185281,
+      "clicks": 623105,
+      "cpa": 675.6781609195402,
+      "ctr": 0.06783733671294324,
+      "cpc": 0.09434044021473106,
+      "cvr": 0.00013962333796069682
+    },
+    {
+      "channel": "Meta (Influencer / Creator)",
+      "funnelRole": "Interest / Consideration",
+      "spend": 63216.0,
+      "conversions": 155,
+      "impressions": 7606780,
+      "clicks": 498256,
+      "cpa": 407.8451612903226,
+      "ctr": 0.06550156570848638,
+      "cpc": 0.12687453838990398,
+      "cvr": 0.00031108506470569345
+    },
+    {
+      "channel": "Venmo / Paypal",
+      "funnelRole": "Interest / Consideration",
+      "spend": 15000.0,
+      "conversions": 2,
+      "impressions": 1535807,
+      "clicks": 2607,
+      "cpa": 7500.0,
+      "ctr": 0.0016974789149938761,
+      "cpc": 5.7537399309551205,
+      "cvr": 0.0007671653241273494
+    },
+    {
+      "channel": "Youtube (For Action)",
+      "funnelRole": "Interest / Consideration",
+      "spend": 31235.0,
+      "conversions": 0,
+      "impressions": 15414944,
+      "clicks": 281560,
+      "cpa": null,
+      "ctr": 0.018265392336164178,
+      "cpc": 0.11093550220201734,
+      "cvr": 0.0
+    },
+    {
+      "channel": "Reddit (Traffic)",
+      "funnelRole": "Interest / Consideration",
+      "spend": 12658.71,
+      "conversions": 9,
+      "impressions": 1375224,
+      "clicks": 9574,
+      "cpa": 1406.5233333333333,
+      "ctr": 0.006961774954480143,
+      "cpc": 1.3221965740547315,
+      "cvr": 0.0009400459578023815
+    },
+    {
+      "channel": "TikTok (Traffic)",
+      "funnelRole": "Interest / Consideration",
+      "spend": 41449.7,
+      "conversions": 59,
+      "impressions": 13432276,
+      "clicks": 116431,
+      "cpa": 702.5372881355931,
+      "ctr": 0.00866800235492481,
+      "cpc": 0.3560022674373663,
+      "cvr": 0.0005067378962647405
+    },
+    {
+      "channel": "TikTok (Search)",
+      "funnelRole": "Interest / Consideration",
+      "spend": 5278.85,
+      "conversions": 2,
+      "impressions": 669482,
+      "clicks": 10565,
+      "cpa": 2639.425,
+      "ctr": 0.015780857439034957,
+      "cpc": 0.49965451964032187,
+      "cvr": 0.0001893043066729768
+    },
+    {
+      "channel": "X (Twitter)",
+      "funnelRole": "Interest / Consideration",
+      "spend": 36810.05,
+      "conversions": 92,
+      "impressions": 19984479,
+      "clicks": 107467,
+      "cpa": 400.1092391304348,
+      "ctr": 0.005377523226900236,
+      "cpc": 0.34252421673630046,
+      "cvr": 0.000856076749141597
+    },
+    {
+      "channel": "WRX Emails",
+      "funnelRole": "Conversion",
+      "spend": 15000.0,
+      "conversions": 6,
+      "impressions": 218006,
+      "clicks": 413,
+      "cpa": 2500.0,
+      "ctr": 0.0018944432722035173,
+      "cpc": 36.31961259079903,
+      "cvr": 0.014527845036319613
     },
     {
       "channel": "YouTube (Demand Gen)",
       "funnelRole": "Conversion",
-      "spend": 19061,
+      "spend": 19671.39,
       "conversions": 0,
-      "cpa": null,
       "impressions": 3849622,
       "clicks": 57532,
+      "cpa": null,
       "ctr": 0.014944843935326637,
-      "cpc": 0.3313112702496002
+      "cpc": 0.34192084405200585,
+      "cvr": 0.0
     },
     {
-      "channel": "Youtube (For Action)",
-      "funnelRole": "Interest",
-      "spend": 24105,
+      "channel": "Paid Search (Google)",
+      "funnelRole": "Conversion",
+      "spend": 76631.0,
+      "conversions": 12722,
+      "impressions": 886214,
+      "clicks": 114629,
+      "cpa": 6.023502593931772,
+      "ctr": 0.12934686204460774,
+      "cpc": 0.6685132034650917,
+      "cvr": 0.11098413141526141
+    },
+    {
+      "channel": "Google Performance Max",
+      "funnelRole": "Conversion",
+      "spend": 64112.0,
+      "conversions": 12701,
+      "impressions": 326868,
+      "clicks": 58486,
+      "cpa": 5.047791512479332,
+      "ctr": 0.17892849713034006,
+      "cpc": 1.0961939609479192,
+      "cvr": 0.217163081763157
+    },
+    {
+      "channel": "GolfTec / Skytrak Email",
+      "funnelRole": "Conversion",
+      "spend": 18000.0,
+      "conversions": 69,
+      "impressions": 1238968,
+      "clicks": 2694,
+      "cpa": 260.8695652173913,
+      "ctr": 0.002174390299023058,
+      "cpc": 6.6815144766147,
+      "cvr": 0.025612472160356347
+    },
+    {
+      "channel": "GolfTec SMS",
+      "funnelRole": "Conversion",
+      "spend": 2000.0,
       "conversions": 0,
+      "impressions": 92041,
+      "clicks": 0,
       "cpa": null,
-      "impressions": 11727801,
-      "clicks": 210707,
-      "ctr": 0.017966454239801647,
-      "cpc": 0.11440056571447556
+      "ctr": 0.0,
+      "cpc": null,
+      "cvr": 0.0
     }
   ],
   "influencers": [
     {
-      "channel": "Meta (Influencer / Creator)",
-      "funnelRole": "Interest",
-      "spend": 55140,
-      "conversions": 139,
-      "cpa": 396.6906474820144,
-      "impressions": 6568747,
-      "clicks": 412125,
-      "ctr": 0.06274027603742388,
-      "cpc": 0.1337943585077343
+      "channel": "Meta Ads (Non-Influencer)",
+      "funnelRole": "Interest / Consideration",
+      "spend": 58784.0,
+      "conversions": 87,
+      "impressions": 9185281,
+      "clicks": 623105,
+      "cpa": 675.6781609195402,
+      "ctr": 0.06783733671294324,
+      "cpc": 0.09434044021473106,
+      "cvr": 0.00013962333796069682
     },
     {
-      "channel": "Meta Ads (Non-Influencer)",
-      "funnelRole": "Interest",
-      "spend": 54412.0,
-      "conversions": 77,
-      "cpa": 706.6493506493506,
-      "impressions": 8611754,
-      "clicks": 596738,
-      "ctr": 0.06929343313801115,
-      "cpc": 0.09118239495389936
+      "channel": "Meta (Influencer / Creator)",
+      "funnelRole": "Interest / Consideration",
+      "spend": 63216.0,
+      "conversions": 155,
+      "impressions": 7606780,
+      "clicks": 498256,
+      "cpa": 407.8451612903226,
+      "ctr": 0.06550156570848638,
+      "cpc": 0.12687453838990398,
+      "cvr": 0.00031108506470569345
     }
   ],
   "qa": {
     "worksheetsRead": [
-      "January Accelerate Report",
-      "February Accelerate Report",
-      "March Accelerate Report",
-      "April Accelerate Report",
-      "May Accelerate Report ",
-      "June Accelerate Report "
+      "Tactic Report YTD Thru 08"
     ],
     "subtotalRows": {
       "January Accelerate Report": {
@@ -437,12 +472,10 @@
       "May Accelerate Report ": 30,
       "June Accelerate Report ": 32
     },
-    "formulaCellsUsedAsCachedValues": 501,
-    "excelErrorCellsSeen": 13,
-    "sectionSubtotalReconciliationsPassed": false,
+    "formulaCellsUsedAsCachedValues": 0,
+    "excelErrorCellsSeen": 2,
+    "sectionSubtotalReconciliationsPassed": true,
     "blendedTotalReconciliationsPassed": true,
-    "warnings": [
-      "1 marketing section subtotal reconciliation checks failed."
-    ]
+    "warnings": []
   }
 }

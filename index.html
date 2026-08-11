@@ -2673,11 +2673,18 @@ svg{height:100%;width:100%;overflow:visible}
 .ghin-trials-kpis{
   grid-column:span 12;
   display:grid;
-  grid-template-columns:repeat(5,1fr);
+  grid-template-columns:repeat(6,1fr);
   gap:10px;
 }
 .ghin-trials-kpis .attribution-detail-kpi{
   background:#ffffff;
+}
+.ghin-trials-kpis .ghin-gc-kpi{
+  background:#eefaf3;
+  border-color:#bde5ca;
+}
+.ghin-trials-kpis .ghin-gc-kpi .attribution-detail-kpi-label{
+  color:#246b43;
 }
 .ghin-trials-chart-card{
   grid-column:span 6;
@@ -2871,7 +2878,7 @@ svg{height:100%;width:100%;overflow:visible}
 }
 .ghin-trials-kpis{
   grid-column:span 12 !important;
-  grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+  grid-template-columns:repeat(6,minmax(0,1fr)) !important;
 }
 .ghin-trials-chart-card{
   grid-column:span 6 !important;
@@ -5174,6 +5181,8 @@ let GHIN_TRIALS_DRAFT = {};
 let GHIN_TRIALS_YEARLY_DRAFT = {};
 let GHIN_TRIALS_YEARLY_TOTALS_DRAFT = [];
 let GHIN_TRIALS_MONTHLY_DRAFT = [];
+let GHIN_TRIALS_GC_SUMMARY_DRAFT = {};
+let GHIN_TRIALS_GC_MONTHLY_DRAFT = [];
 let GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT = [];
 let GHIN_TRIALS_AGA_DRAFT = [];
 let MARKETING_MONTHLY_PERFORMANCE_DRAFT = [];
@@ -5331,6 +5340,8 @@ async function loadGhinTrialsData() {
     inactiveTrialGolfers: data.summary.inactiveTrialGolfers
   }];
   GHIN_TRIALS_MONTHLY_DRAFT = data.monthly;
+  GHIN_TRIALS_GC_SUMMARY_DRAFT = data.gcSummary || {};
+  GHIN_TRIALS_GC_MONTHLY_DRAFT = Array.isArray(data.gcMonthly) ? data.gcMonthly : [];
   GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT = data.conversionBuckets;
   GHIN_TRIALS_AGA_DRAFT = data.agaConversions;
 }
@@ -5824,7 +5835,7 @@ function rebuildAttributionSummaryData() {
   const ref = enrich(latestActiveRow());
   const refYear = Number(ref?.year || DEFAULT_REF?.year || new Date().getFullYear());
   const refMonth = Number(ref ? monthNum(ref.month) : DEFAULT_REF?.month || 12);
-  const ghinByMonth = Object.fromEntries((GHIN_TRIALS_MONTHLY_DRAFT || []).map(row => [String(row.label), Number(row.conversions || 0)]));
+  const ghinByMonth = Object.fromEntries((GHIN_TRIALS_GC_MONTHLY_DRAFT || []).map(row => [String(row.label), Number(row.conversions || 0)]));
   const marketingByMonth = Object.fromEntries((MARKETING_MONTHLY_PERFORMANCE_DRAFT || [])
     .filter(row => row.month && row.month !== "YTD")
     .map(row => [String(row.month), Number(row.conversions || 0)]));
@@ -5854,7 +5865,7 @@ function rebuildAttributionSummaryData() {
     .filter(row => row.totalNewGolfers || row.trials || row.marketing || row.organic);
 
   if(!ATTRIBUTION_DRAFT_DATA.length) {
-    ATTRIBUTION_DRAFT_DATA = (GHIN_TRIALS_MONTHLY_DRAFT || []).map(row => ({
+    ATTRIBUTION_DRAFT_DATA = (GHIN_TRIALS_GC_MONTHLY_DRAFT || []).map(row => ({
       month: monthName(MONTH_LOOKUP[Object.keys(MONTH_LOOKUP).find(name => name.slice(0,3) === row.label)] || 1) || row.label,
       label: row.label,
       trials: Number(row.conversions || 0),
@@ -5899,7 +5910,7 @@ function validateAttributionSummaryConsistency() {
 
 function attributionDraftTotals() {
   const officialTotal = attributionOfficialYtdTotal();
-  const trials = Number(GHIN_TRIALS_YEARLY_DRAFT?.trialConversions ?? 0);
+  const trials = Number(GHIN_TRIALS_GC_SUMMARY_DRAFT?.trialConversions ?? GHIN_TRIALS_YEARLY_DRAFT?.trialConversions ?? 0);
   const marketing = Number(marketingYtdPerformance()?.conversions || 0);
   const affiliate = 0;
   const monthlyResidualOrganic = ATTRIBUTION_DRAFT_DATA.reduce((sum, r) => sum + Number(r.organic || 0), 0);
@@ -5918,7 +5929,7 @@ function paidMediaCoverageLabel() {
 function attributionDraftSourceRows() {
   const t = attributionDraftTotals();
   return [
-    {key:'trials', label:'GHIN Trials', value:t.trials, cls:'attribution-seg-trials'},
+    {key:'trials', label:'GC Trial Conversions', value:t.trials, cls:'attribution-seg-trials'},
     {key:'marketing', label:'Paid Media', value:t.marketing, cls:'attribution-seg-marketing'},
     {key:'affiliate', label:'Affiliate Program', value:t.affiliate, cls:'attribution-seg-affiliate'},
     {key:'organic', label:'Organic / Unknown', value:t.organic, cls:'attribution-seg-organic'}
@@ -5952,15 +5963,15 @@ function attributionDraftStackedBars() {
 }
 
 
-function attributionDraftTrendChart() {
+function attributionDraftTrendChart(view = ACQUISITION_ATTRIBUTION_TREND_VIEW) {
   const sources = [
-    {key:'trials', label:'GHIN Trials', color:'#14395f'},
+    {key:'trials', label:'GC Trials', color:'#14395f'},
     {key:'marketing', label:'Paid Media', color:'#4f83b8'},
     {key:'organic', label:'Organic / Unknown', color:'#c6d4e2'}
   ];
   const rows = ATTRIBUTION_DRAFT_DATA;
   const w = 1040, h = 720;
-  const m = {top:44, right:42, bottom:78, left:92};
+  const m = {top:44, right:24, bottom:78, left:72};
   const innerW = w - m.left - m.right;
   const innerH = h - m.top - m.bottom;
   const totals = rows.map(r => sources.reduce((sum, src) => sum + r[src.key], 0));
@@ -5968,11 +5979,11 @@ function attributionDraftTrendChart() {
   const niceMax = Math.ceil(maxTotal / 5000) * 5000;
   const y = v => m.top + innerH - (v / niceMax) * innerH;
   const x = i => m.left + (innerW * i / Math.max(rows.length - 1, 1));
-  const yTicks = [0, niceMax / 2, niceMax];
+  const yTicks = [0, 5000, 10000, 15000, 20000, 25000, niceMax].filter((value, index, arr) => value <= niceMax && arr.indexOf(value) === index);
 
-  if (ACQUISITION_ATTRIBUTION_TREND_VIEW === "bar") {
+  if (view === "bar") {
     const groupW = innerW / rows.length;
-    const barW = Math.min(132, Math.max(82, groupW * 0.68));
+    const barW = Math.min(150, Math.max(90, groupW * 0.72));
     const bars = rows.map((row, i) => {
       const ordered = sources
         .map(src => ({...src, value:row[src.key]}));
@@ -6000,6 +6011,7 @@ function attributionDraftTrendChart() {
       <div class="attribution-trend-chart">
         <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Monthly attribution stacked bar chart">
           ${yTicks.map(t => `<line x1="${m.left}" y1="${y(t).toFixed(1)}" x2="${w - m.right}" y2="${y(t).toFixed(1)}" class="attribution-trend-grid"></line><text x="${m.left - 12}" y="${(y(t)+4).toFixed(1)}" text-anchor="end" class="attribution-trend-ylabel">${fmt(Math.round(t))}</text>`).join('')}
+          <line x1="${m.left}" y1="${m.top}" x2="${m.left}" y2="${m.top + innerH}" class="attribution-trend-axis"></line>
           <line x1="${m.left}" y1="${m.top + innerH}" x2="${w - m.right}" y2="${m.top + innerH}" class="attribution-trend-axis"></line>
           ${bars}
           ${totalLabels}
@@ -6010,19 +6022,27 @@ function attributionDraftTrendChart() {
     `;
   }
 
+  const lineW = 1040;
+  const lineM = {top:62, right:58, bottom:m.bottom, left:92};
+  const lineInnerW = lineW - lineM.left - lineM.right;
+  const lineInnerH = h - lineM.top - lineM.bottom;
+  const lineX = i => lineM.left + (lineInnerW * i / Math.max(rows.length - 1, 1));
   const maxVal = Math.max(...rows.flatMap(r => sources.map(s => r[s.key])));
   const niceLineMax = Math.ceil(maxVal / 2000) * 2000;
-  const yLine = v => m.top + innerH - (v / niceLineMax) * innerH;
-  const yLineTicks = [0, niceLineMax / 2, niceLineMax];
+  const yLine = v => lineM.top + lineInnerH - (v / niceLineMax) * lineInnerH;
+  const yLineTicks = Array.from(
+    {length: Math.floor(niceLineMax / 2000) + 1},
+    (_, i) => i * 2000
+  ).filter((value, index, arr) => value <= niceLineMax && arr.indexOf(value) === index);
   const lines = sources.map(s => {
-    const pts = rows.map((r,i) => `${x(i).toFixed(1)},${yLine(r[s.key]).toFixed(1)}`).join(' ');
-    const dots = rows.map((r,i) => `<circle cx="${x(i).toFixed(1)}" cy="${yLine(r[s.key]).toFixed(1)}" r="8" stroke="${s.color}" class="attribution-trend-dot"></circle>`).join('');
+    const pts = rows.map((r,i) => `${lineX(i).toFixed(1)},${yLine(r[s.key]).toFixed(1)}`).join(' ');
+    const dots = rows.map((r,i) => `<circle cx="${lineX(i).toFixed(1)}" cy="${yLine(r[s.key]).toFixed(1)}" r="8" stroke="${s.color}" class="attribution-trend-dot"></circle>`).join('');
     return `<polyline points="${pts}" stroke="${s.color}" class="attribution-trend-line"></polyline>${dots}`;
   }).join('');
   const lineLabelConfig = {
-    trials:{anchor:Math.max(0, rows.length - 1.25), dx:18, dy:-22, color:'#14395f'},
-    organic:{anchor:Math.max(0, rows.length - 2), dx:18, dy:-22, color:'#64748b'},
-    marketing:{anchor:Math.max(0, rows.length - 2.35), dx:18, dy:34, color:'#4f83b8'}
+    trials:{anchor:Math.min(rows.length - 1, 4.15), dx:20, dy:28, color:'#14395f'},
+    organic:{anchor:Math.min(rows.length - 1, 3.15), dx:18, dy:-28, color:'#64748b'},
+    marketing:{anchor:Math.min(rows.length - 1, 5), dx:-44, dy:58, color:'#4f83b8'}
   };
   const interpolatedLineValue = (key, position) => {
     const leftIndex = Math.max(0, Math.min(rows.length - 1, Math.floor(position)));
@@ -6034,22 +6054,23 @@ function attributionDraftTrendChart() {
   const inlineLabels = sources.map(s => {
     const config = lineLabelConfig[s.key];
     const anchor = Math.max(0, Math.min(rows.length - 1, config.anchor));
-    const lx = x(anchor) + config.dx;
+    const lx = lineX(anchor) + config.dx;
     const ly = yLine(interpolatedLineValue(s.key, anchor)) + config.dy;
     return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" class="attribution-trend-label attribution-trend-inline-label" style="fill:${config.color}">${s.label}</text>`;
   }).join('');
-  const xlabels = rows.map((r,i) => `<text x="${x(i).toFixed(1)}" y="${h - 30}" text-anchor="middle" class="attribution-trend-xlabel">${r.label}</text>`).join('');
+  const xlabels = rows.map((r,i) => `<text x="${lineX(i).toFixed(1)}" y="${h - 30}" text-anchor="middle" class="attribution-trend-xlabel">${r.label}</text>`).join('');
   return `
     <div class="attribution-trend-chart">
-      <svg viewBox="0 0 ${w + 150} ${h}" role="img" aria-label="Monthly attribution line chart">
-        ${yLineTicks.map(t => `<line x1="${m.left}" y1="${yLine(t).toFixed(1)}" x2="${w - m.right}" y2="${yLine(t).toFixed(1)}" class="attribution-trend-grid"></line><text x="${m.left - 12}" y="${(yLine(t)+4).toFixed(1)}" text-anchor="end" class="attribution-trend-ylabel">${fmt(Math.round(t))}</text>`).join('')}
-        <line x1="${m.left}" y1="${m.top + innerH}" x2="${w - m.right}" y2="${m.top + innerH}" class="attribution-trend-axis"></line>
+      <svg viewBox="0 0 ${lineW} ${h}" role="img" aria-label="Monthly attribution line chart">
+        ${yLineTicks.map(t => `<line x1="${lineM.left}" y1="${yLine(t).toFixed(1)}" x2="${lineW - lineM.right}" y2="${yLine(t).toFixed(1)}" class="attribution-trend-grid"></line><text x="${lineM.left - 12}" y="${(yLine(t)+4).toFixed(1)}" text-anchor="end" class="attribution-trend-ylabel">${fmt(Math.round(t))}</text>`).join('')}
+        <line x1="${lineM.left}" y1="${lineM.top}" x2="${lineM.left}" y2="${lineM.top + lineInnerH}" class="attribution-trend-axis"></line>
+        <line x1="${lineM.left}" y1="${lineM.top + lineInnerH}" x2="${lineW - lineM.right}" y2="${lineM.top + lineInnerH}" class="attribution-trend-axis"></line>
         ${xlabels}
         ${lines}
         ${inlineLabels}
       </svg>
     </div>
-    <div class="attribution-legend">${attributionDraftLegend()}</div>
+    <div class="attribution-legend attribution-line-side-legend">${attributionDraftLegend()}</div>
   `;
 }
 
@@ -6228,7 +6249,7 @@ function attributionDetailKpi(label, value, sub, format='count', variant='') {
     ? '<span class="affiliate-mock-kpi-badge">MOCK</span>'
     : '';
   return `
-    <div class="attribution-detail-kpi ${variant === 'affiliate-mock-kpi' ? 'affiliate-mock-kpi' : ''}">
+    <div class="attribution-detail-kpi ${variant === 'affiliate-mock-kpi' ? 'affiliate-mock-kpi' : variant}">
       <div class="attribution-detail-kpi-label">${label}${mockBadge}</div>
       <div class="attribution-detail-kpi-value">${v}</div>
       <div class="attribution-detail-kpi-sub">${sub}</div>
@@ -6632,6 +6653,39 @@ function ghinTrialYearOverYearTotalsSvg() {
         <text x="${w/2-91}" y="${h-8}" class="ghin-legend-text">Trials created</text>
         <circle cx="${w/2+75}" cy="${h-12}" r="6" class="ghin-bar-converted"></circle>
         <text x="${w/2+89}" y="${h-8}" class="ghin-legend-text">Conversions</text>
+      </svg>
+    </div>
+  `;
+}
+
+function ghinGcTrialConversionsSvg() {
+  const rows = GHIN_TRIALS_GC_MONTHLY_DRAFT;
+  if(!rows.length) return '';
+  const w = 760, h = 370;
+  const m = {top:34,right:36,bottom:62,left:70};
+  const innerW = w - m.left - m.right;
+  const innerH = h - m.top - m.bottom;
+  const max = Math.ceil(Math.max(...rows.map(r => r.conversions)) / 2500) * 2500;
+  const y = v => m.top + innerH - (v / max) * innerH;
+  const groupW = innerW / rows.length;
+  const barW = Math.min(58, groupW * 0.5);
+  const ticks = [0, max/2, max];
+  const bars = rows.map((r,i) => {
+    const cx = m.left + groupW * i + groupW/2;
+    const x = cx - barW/2;
+    const barH = m.top + innerH - y(r.conversions);
+    return `
+      <rect x="${x.toFixed(1)}" y="${y(r.conversions).toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" rx="7" class="ghin-bar-converted"></rect>
+      <text x="${cx.toFixed(1)}" y="${(y(r.conversions)-10).toFixed(1)}" text-anchor="middle" class="ghin-chart-value-red">${fmt(r.conversions)}</text>
+      <text x="${cx.toFixed(1)}" y="${h-24}" text-anchor="middle" class="ghin-chart-small-label">${r.label}</text>
+    `;
+  }).join('');
+  return `
+    <div class="ghin-chart">
+      <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="GC trial conversions monthly trend">
+        ${ticks.map(t => `<line x1="${m.left}" y1="${y(t).toFixed(1)}" x2="${w-m.right}" y2="${y(t).toFixed(1)}" class="ghin-chart-grid"></line><text x="${m.left-12}" y="${(y(t)+4).toFixed(1)}" text-anchor="end" class="ghin-chart-small-label">${fmt(Math.round(t))}</text>`).join('')}
+        <line x1="${m.left}" y1="${m.top+innerH}" x2="${w-m.right}" y2="${m.top+innerH}" class="ghin-chart-axis"></line>
+        ${bars}
       </svg>
     </div>
   `;
@@ -7315,29 +7369,36 @@ function renderAcquisitionAttributionDraft() {
   const ghinSection = `
       <div class="ghin-trials-dashboard">
         <div class="ghin-trials-kpis">
-          ${attributionDetailKpi('Total Trials Created', ghinKpiValues.totalTrialsCreated, `${periodLabel} trial starts`)}
-          ${attributionDetailKpi('Trial Conversions', ghinKpiValues.trialConversions, `${periodLabel} converted golfers`)}
-          ${attributionDetailKpi('Conversion Rate', ghinKpiValues.conversionRate, 'Conversions / trials created', 'percent')}
-          ${attributionDetailKpi('Active Trial Golfers', ghinKpiValues.activeTrialGolfers, 'Current active trial pool')}
-          ${attributionDetailKpi('Inactive Trial Golfers', ghinKpiValues.inactiveTrialGolfers, 'Current inactive trial pool')}
+          ${attributionDetailKpi('GC Trial Conversions', GHIN_TRIALS_GC_SUMMARY_DRAFT.trialConversions || 0, 'Jan–July', 'count', 'ghin-gc-kpi')}
+          ${attributionDetailKpi('ALL Trials Created', ghinKpiValues.totalTrialsCreated, `${periodLabel} trial starts`)}
+          ${attributionDetailKpi('ALL Trial Conversions', ghinKpiValues.trialConversions, `${periodLabel} converted golfers`)}
+          ${attributionDetailKpi('ALL Conversion Rate', ghinKpiValues.conversionRate, 'Conversions / trials created', 'percent')}
+          ${attributionDetailKpi('ALL Active Trial Golfers', ghinKpiValues.activeTrialGolfers, 'Current active trial pool')}
+          ${attributionDetailKpi('ALL Inactive Trial Golfers', ghinKpiValues.inactiveTrialGolfers, 'Current inactive trial pool')}
+        </div>
+        <div class="attribution-draft-card ghin-trials-chart-card">
+          <div class="attribution-draft-head">
+            <div><h3>GC Trial Conversions by Month</h3></div>
+          </div>
+          ${ghinGcTrialConversionsSvg()}
         </div>
 <div class="attribution-draft-card ghin-trials-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>Created vs Converted 2026 YTD</h3></div>
+            <div><h3>All Created vs Converted 2026 YTD</h3></div>
           </div>
           ${ghinTrialCreatedConvertedSvg()}
         </div>
 
         <div class="attribution-draft-card ghin-trials-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>Conversion Rate Trend 2026 YTD</h3></div>
+            <div><h3>All Conversion Rate Trend 2026 YTD</h3></div>
           </div>
           ${ghinTrialConversionRateTrendSvg()}
         </div>
 
         <div class="attribution-draft-card ghin-trials-chart-card ghin-bucket-card">
           <div class="attribution-draft-head">
-            <div><h3>Conversions by Days in Trial</h3></div>
+            <div><h3>All Conversions by Days in Trial</h3></div>
           </div>
           <div class="attribution-detail-panel" style="background:#ffffff;border:0;padding:0;">
             ${ghinTrialConversionBucketRows()}
@@ -7346,14 +7407,14 @@ function renderAcquisitionAttributionDraft() {
 
         <div class="attribution-draft-card ghin-trials-chart-card ghin-yoy-card">
           <div class="attribution-draft-head">
-            <div><h3>Year-over-Year Totals</h3></div>
+            <div><h3>All Year-over-Year Totals</h3></div>
           </div>
           ${ghinTrialYearOverYearTotalsSvg()}
         </div>
 
         <div class="attribution-draft-card ghin-trials-chart-card full">
           <div class="attribution-draft-head">
-            <div><h3>AGA Trial Conversions (All Time)</h3></div>
+            <div><h3>All AGA Trial Conversions (All Time)</h3></div>
           </div>
           ${ghinTrialAgaRows()}
         </div>
@@ -7486,7 +7547,7 @@ function renderAcquisitionAttributionDraft() {
   const summarySection = `
       <div class="attribution-draft-card attribution-draft-full attribution-kpi-card">
         <div class="attribution-draft-kpis">
-          ${attributionPeriodKpi('Total New Golfers', periodTotal, periodLabel, isYtd ? 'YTD total' : 'Monthly total')}
+          ${attributionPeriodKpi('Total New GC Golfers', periodTotal, periodLabel, isYtd ? 'YTD total' : 'Monthly total')}
           ${periodRows.map(r => attributionPeriodKpi(
             r.label,
             r.periodValue,
@@ -7523,7 +7584,7 @@ function renderAcquisitionAttributionDraft() {
 
   wrap.innerHTML = `
     <div class="attribution-draft-grid">
-      ${ACQUISITION_ATTRIBUTION_SECTION === 'ghin' ? `<div class="engagement-info-callout attribution-info-callout"><span class="engagement-info-callout-icon" aria-hidden="true">ⓘ</span>Note: GHIN Trials metrics include golfers from all participating clubs, not just USGA GC members.</div>` : ``}
+      ${ACQUISITION_ATTRIBUTION_SECTION === 'ghin' ? `<div class="engagement-info-callout attribution-info-callout"><span class="engagement-info-callout-icon" aria-hidden="true">ⓘ</span>Note: Metrics labeled “All” include golfers from all participating clubs, not just USGA GC members.</div>` : ``}
       ${ACQUISITION_ATTRIBUTION_SECTION === 'summary' ? summarySection : selectedDetail}
     </div>
   `;
@@ -13033,6 +13094,50 @@ initializeDashboard();
   color:#64748b;
   font-size:12px;
   line-height:1.35;
+}
+
+/* Acquisition summary: give the monthly source chart more room while keeping donut size unchanged */
+.attribution-mix-card{
+  grid-column:span 5 !important;
+}
+.attribution-trend-card{
+  grid-column:span 7 !important;
+}
+.attribution-mix-card .summary-donut-layout{
+  overflow:visible !important;
+}
+.attribution-mix-card .summary-donut-svg{
+  width:680px !important;
+  max-width:none !important;
+}
+.attribution-trend-card .attribution-trend-chart svg{
+  width:100% !important;
+}
+.attribution-trend-card .attribution-trend-ylabel{
+  font-size:17px !important;
+}
+.attribution-trend-card .attribution-trend-xlabel{
+  font-size:19px !important;
+}
+.attribution-trend-card .attribution-stacked-bar-text{
+  font-size:16px !important;
+}
+.attribution-trend-card .attribution-trend-total-label{
+  font-size:19px !important;
+}
+.attribution-trend-card .attribution-trend-axis{
+  stroke:#94a3b8 !important;
+  stroke-width:2.2px !important;
+}
+@media (max-width: 900px){
+  .attribution-mix-card,
+  .attribution-trend-card{
+    grid-column:span 12 !important;
+  }
+  .attribution-mix-card .summary-donut-svg{
+    width:100% !important;
+    max-width:100% !important;
+  }
 }
 
 </style>

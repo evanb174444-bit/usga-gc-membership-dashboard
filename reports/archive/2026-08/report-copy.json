@@ -2,27 +2,55 @@
   "eyebrow": "GC Membership",
   "reportMonth": "August 2026",
   "reportDate": "Report Date: August 2, 2026",
-  "page1Title": "Executive Membership Report",
-  "page1Dek": "Topline membership position, acquisition mix, and operating implications for leadership review.",
+  "page1Title": "August Membership Report",
+  "page1Dek": "Monthly executive report summarizing GC membership performance, acquisition, retention, and recovery through the latest reporting period.",
   "footerLeft": "GC Membership Executive Report",
-  "page2Title": "How Membership Is Growing",
-  "page3Title": "How Membership Is Being Preserved",
-  "page4Title": "GHIN Challenges Momentum",
-  "page5Title": "Opportunities, Concerns & Actions",
+  "page2Title": "GC Acquisition",
+  "page2Dek": "New Golfers measures newly created GHIN numbers by source.",
+  "page3Title": "GC Retention",
+  "page4Title": "GC Recovery",
+  "page5Title": "What the Results Suggest",
+  "interpretationLabel": "What Leadership Should Know",
+  "interpretationTitle": "Key Takeaways",
+  "movementTitle": "July Membership Reconciliation",
+  "movementNote": "What changed in July to reach the current membership total.",
+  "projectionLabel": "Year-End Outlook",
+  "projectionTitle": "2026 Year-End Projection",
+  "page2Eyebrow": "How Membership Is Growing",
+  "page3Eyebrow": "How Membership Is Being Retained",
+  "page3Dek": "Retention measures renewal performance and durability across the active membership base.",
+  "page4Eyebrow": "How Membership Is Being Recovered",
+  "page4Dek": "Recovery measures inactive golfers who returned to active membership during the reporting period.",
+  "page5Dek": "",
+  "page5Eyebrow": "Analysis",
+  "interpretation": [
+    {
+      "title": "Overall membership is strong",
+      "body": "Active membership remains well ahead of last year, but the lift is being driven by stronger retention, not higher acquisition."
+    },
+    {
+      "title": "Acquisition is softer year over year",
+      "body": "Year-to-date new golfers are down versus 2025, making renewal performance more important to overall membership growth."
+    },
+    {
+      "title": "Retention is sustaining momentum",
+      "body": "On-time renewal reached 83.4% in July, well above 66.0% last July. The cohort view also shows 69.2% active beyond 13 months across eligible cohorts."
+    }
+  ],
   "page2Bullets": [
     "GHIN Trials remain the largest identified acquisition source and should be monitored as a conversion engine.",
     "Paid Media is material but currently only covers the approved paid media attribution source.",
-    "Organic / Unknown remains large enough to require continued attribution cleanup."
+    "Organic / Untagged remains large enough to require continued attribution cleanup."
   ],
   "page3Bullets": [
-    "Retention remains a meaningful counterweight to acquisition and should stay visible in the executive readout.",
-    "Recovery adds incremental lift to the active base and should reconcile to the dashboard recovery source.",
+    "Retention is the primary reason total membership remains strong despite softer acquisition.",
+    "On-time renewal reached 83.4% in July, materially above last July's 66.0% rate.",
     "Cohort health remains strongest in newer member years and should be watched as cohorts mature."
   ],
   "page4Bullets": [
-    "GHIN Challenges show strong program growth from the first available snapshot to the latest snapshot.",
-    "Participation and ranked golfer rates provide a clearer engagement read than challenge counts alone.",
-    "Top AGA performance can help identify repeatable engagement patterns."
+    "Recovery added 39,664 members year to date and remains a visible contributor to active membership.",
+    "July recoveries were lower than the March peak but still added 4,934 members to the active base.",
+    "Club-level recovery performance can help identify repeatable reactivation patterns."
   ],
   "opportunityBullets": [
     "Trial conversion engine generated the largest identified acquisition contribution.",
@@ -30,28 +58,34 @@
     "Engagement expansion creates a broader activation story beyond acquisition."
   ],
   "concernBullets": [
-    "Organic / Unknown acquisition remains large and limits source accountability.",
+    "Organic / Untagged acquisition remains large and limits source accountability.",
     "Paid Media timing and coverage must be kept explicit in the executive report.",
     "Manual workstream commentary still requires owner validation before publication."
   ],
   "actions": [
     {
-      "priority": "1",
-      "action": "Validate source attribution categories for the monthly executive report.",
-      "owner": "Analytics",
-      "timing": "Before final PDF"
-    },
-    {
-      "priority": "2",
-      "action": "Confirm narrative commentary and leadership implications.",
+      "priority": "Acquisition",
+      "action": "Who owns the plan to address softer new golfer creation versus 2025?",
       "owner": "Leadership",
-      "timing": "Monthly review"
+      "timing": "Next review"
     },
     {
-      "priority": "3",
-      "action": "Archive approved PDF and HTML snapshot for the report month.",
-      "owner": "Reporting",
-      "timing": "After approval"
+      "priority": "Story",
+      "action": "Are we telling the right story, to the right golfers, with a message that makes a Handicap Index feel worth having?",
+      "owner": "Marketing",
+      "timing": "Fall planning"
+    },
+    {
+      "priority": "Paid Media",
+      "action": "Are paid campaigns creating new interest, or mostly capturing golfers who were already likely to sign up?",
+      "owner": "Marketing / Analytics",
+      "timing": "Before budget review"
+    },
+    {
+      "priority": "Win-back",
+      "action": "What results would justify scaling expired-member outreach nationally?",
+      "owner": "Retention",
+      "timing": "After test"
     }
   ]
 }

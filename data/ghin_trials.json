@@ -57,6 +57,39 @@
     "activeTrialGolfers": 55095,
     "inactiveTrialGolfers": 21765
   },
+  "gcSummary": {
+    "trialConversions": 48732
+  },
+  "gcMonthly": [
+    {
+      "label": "Jan",
+      "conversions": 2445
+    },
+    {
+      "label": "Feb",
+      "conversions": 2707
+    },
+    {
+      "label": "Mar",
+      "conversions": 4791
+    },
+    {
+      "label": "Apr",
+      "conversions": 9694
+    },
+    {
+      "label": "May",
+      "conversions": 10199
+    },
+    {
+      "label": "Jun",
+      "conversions": 9716
+    },
+    {
+      "label": "Jul",
+      "conversions": 9180
+    }
+  ],
   "yearlyTotals": [
     {
       "year": 2024,
