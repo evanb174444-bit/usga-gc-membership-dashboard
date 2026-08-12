@@ -260,7 +260,7 @@
       agaTitle: "Top GHIN Challenge Associations",
       page4NotesLabel: "What Leadership Should Know",
       page5Eyebrow: "Analysis",
-      page5Title: "What the Results Suggest",
+      page5Title: "What the Numbers Are Telling Us",
       page5Dek: "",
       opportunitiesLabel: "Opportunities",
       opportunitiesTitle: "Where momentum can be extended",
@@ -339,6 +339,7 @@
     function load() {
       const raw = localStorage.getItem(`gcExecutiveReportNarrative:${reportKey.value}`) || localStorage.getItem("gcExecutiveReportNarrative");
       current = raw ? { ...defaults, ...JSON.parse(raw) } : structuredClone(defaults);
+      if (current.page5Title === "What the Results Suggest") current.page5Title = "What the Numbers Are Telling Us";
       renderForm();
       syncLinks();
       updateSaveNote();

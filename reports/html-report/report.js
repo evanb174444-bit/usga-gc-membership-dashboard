@@ -90,7 +90,7 @@ const defaultNarrative = {
   page4NotesLabel: "What Leadership Should Know",
 
   page5Eyebrow: "Analysis",
-  page5Title: "What the Results Suggest",
+  page5Title: "What the Numbers Are Telling Us",
   page5Dek: "",
   opportunitiesLabel: "Opportunities",
   opportunitiesTitle: "Where momentum can be extended",
@@ -141,7 +141,11 @@ async function loadNarrative() {
     const archived = await loadArchivedCopy(key);
     const raw = localStorage.getItem(`gcExecutiveReportNarrative:${key}`) || localStorage.getItem("gcExecutiveReportNarrative");
     const draft = raw ? JSON.parse(raw) : {};
-    return deepMerge(deepMerge(defaultNarrative, archived), draft);
+    const narrative = deepMerge(deepMerge(defaultNarrative, archived), draft);
+    if (narrative.page5Title === "What the Results Suggest") {
+      narrative.page5Title = "What the Numbers Are Telling Us";
+    }
+    return narrative;
   } catch {
     return defaultNarrative;
   }
@@ -174,6 +178,10 @@ function deepMerge(base, override) {
 function applyCopy(narrative) {
   document.querySelectorAll("[data-copy]").forEach(el => {
     const key = el.dataset.copy;
+    if (key === "page5Title") {
+      el.textContent = "What the Numbers Are Telling Us";
+      return;
+    }
     if (narrative[key]) el.textContent = narrative[key];
   });
 }
