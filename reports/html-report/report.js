@@ -645,6 +645,7 @@ function renderNumberList(id, items) {
 }
 
 function renderActions(items) {
+  if (!$("actionsTable")) return;
   $("actionsTable").innerHTML = items.map(row => `<tr><td>${row.priority}</td><td>${row.action}</td><td>${row.owner}</td><td>${row.timing}</td></tr>`).join("");
 }
 

@@ -1553,7 +1553,8 @@ svg{height:100%;width:100%;overflow:visible}
   text-transform:uppercase;
   letter-spacing:.06em;
 }
-.yoy-compare-pill span{
+.yoy-compare-pill span,
+.yoy-compare-pill select{
   color:#0f172a;
   background:#ffffff;
   border:1px solid #d7dee9;
@@ -1562,6 +1563,13 @@ svg{height:100%;width:100%;overflow:visible}
   text-transform:none;
   letter-spacing:0;
   font-size:13px;
+}
+.yoy-compare-pill select{
+  appearance:none;
+  min-width:76px;
+  cursor:pointer;
+  font-weight:850;
+  font-family:inherit;
 }
 .yoy-bar-label{
   fill:#334155;
@@ -6384,6 +6392,7 @@ let MARKETING_CHANNEL_SORT = localStorage.getItem("pa_marketing_channel_sort") |
 let MARKETING_INFLUENCER_SORT = localStorage.getItem("pa_marketing_influencer_sort") || "conversions";
 let AFFILIATE_PARTNER_SORT = localStorage.getItem("pa_affiliate_partner_sort") || "conversions";
 let MARKETING_MONTHLY_METRIC = localStorage.getItem("pa_marketing_monthly_metric") || "cpa";
+let ACQUISITION_YOY_REF = JSON.parse(localStorage.getItem("pa_acquisition_yoy_ref") || "null");
 
 
 function attributionDraftMonthOptions() {
@@ -7634,8 +7643,9 @@ function renderAcquisitionSection() {
   `;
 
   if(monthlyYoyBarCard) {
+    const yoyRef = acquisitionYoySelectedRef(ref);
     monthlyYoyBarCard.className = 'card full acquisition-card acquisition-yoy-card';
-    monthlyYoyBarCard.innerHTML = acquisitionMonthlyYoyBarCard(ref);
+    monthlyYoyBarCard.innerHTML = acquisitionMonthlyYoyBarCard(yoyRef);
   }
 
   pacingCard.innerHTML = `
@@ -7644,8 +7654,9 @@ function renderAcquisitionSection() {
   `;
 
   if(yoyBarCard) {
+    const yoyRef = acquisitionYoySelectedRef(ref);
     yoyBarCard.className = 'card full acquisition-card acquisition-yoy-card';
-    yoyBarCard.innerHTML = acquisitionYoyBarCard(ref);
+    yoyBarCard.innerHTML = acquisitionYoyBarCard(yoyRef);
   }
 
   renderAcquisitionAttributionDraft();
@@ -7667,6 +7678,57 @@ function acquisitionYoyMonthlyData(ref) {
   return out;
 }
 
+function validAcquisitionYoyRow(monthNumValue, yearValue) {
+  const row = BY_YEAR_MONTH[Number(yearValue) + '-' + Number(monthNumValue)];
+  const prior = BY_YEAR_MONTH[(Number(yearValue) - 1) + '-' + Number(monthNumValue)];
+  return row && prior && row.newGolfers != null && prior.newGolfers != null;
+}
+
+function normalizeAcquisitionYoyRef(defaultRef) {
+  if(!ACQUISITION_YOY_REF) {
+    ACQUISITION_YOY_REF = {month: monthNum(defaultRef.month), year: defaultRef.year};
+  }
+  if(validAcquisitionYoyRow(ACQUISITION_YOY_REF.month, ACQUISITION_YOY_REF.year)) return;
+  const candidates = DATA
+    .filter(r => r.newGolfers != null && validAcquisitionYoyRow(monthNum(r.month), r.year))
+    .sort((a,b) => rowIdx(a) - rowIdx(b));
+  const latest = candidates[candidates.length - 1];
+  ACQUISITION_YOY_REF = latest
+    ? {month: monthNum(latest.month), year: latest.year}
+    : {month: monthNum(defaultRef.month), year: defaultRef.year};
+}
+
+function acquisitionYoySelectedRef(defaultRef) {
+  normalizeAcquisitionYoyRef(defaultRef);
+  const row = BY_YEAR_MONTH[ACQUISITION_YOY_REF.year + '-' + ACQUISITION_YOY_REF.month] || BY_YEAR_MONTH[defaultRef.year + '-' + monthNum(defaultRef.month)];
+  return enrich(row || defaultRef);
+}
+
+function setAcquisitionYoyRef(key, value) {
+  if(!ACQUISITION_YOY_REF) ACQUISITION_YOY_REF = {...DEFAULT_REF};
+  ACQUISITION_YOY_REF[key] = Number(value);
+  normalizeAcquisitionYoyRef(enrich(latestActiveRow()));
+  localStorage.setItem("pa_acquisition_yoy_ref", JSON.stringify(ACQUISITION_YOY_REF));
+  renderAcquisitionSection();
+}
+
+function acquisitionYoyControls(ref) {
+  normalizeAcquisitionYoyRef(ref);
+  const monthOptions = MONTHS.map(([name,num]) => {
+    const valid = validAcquisitionYoyRow(num, ACQUISITION_YOY_REF.year);
+    return `<option value="${num}" ${Number(ACQUISITION_YOY_REF.month) === num ? "selected" : ""} ${valid ? "" : "disabled"}>${name}</option>`;
+  }).join("");
+  const years = Array.from(new Set(DATA.map(r => r.year))).sort().filter(y => y >= 2023);
+  const yearOptions = years.map(y => {
+    const hasAnyValidMonth = MONTHS.some(([,m]) => validAcquisitionYoyRow(m, y));
+    return `<option value="${y}" ${Number(ACQUISITION_YOY_REF.year) === Number(y) ? "selected" : ""} ${hasAnyValidMonth ? "" : "disabled"}>${y}</option>`;
+  }).join("");
+  return `<div class="yoy-compare-pill">View
+    <select aria-label="Acquisition YoY month" onchange="setAcquisitionYoyRef('month', this.value)">${monthOptions}</select>
+    <select aria-label="Acquisition YoY year" onchange="setAcquisitionYoyRef('year', this.value)">${yearOptions}</select>
+  </div>`;
+}
+
 function acquisitionMonthlyYoyBarCard(ref) {
   const rows = acquisitionYoyMonthlyData(ref);
   const prior = rows.length > 1 ? rows[rows.length - 2] : null;
@@ -7685,7 +7747,7 @@ function acquisitionMonthlyYoyBarCard(ref) {
         <h3 class="yoy-chart-title">New Golfers — ${monthLabel} YoY</h3>
         <p class="yoy-chart-sub">Same month across years, back to 2022.</p>
       </div>
-      <div class="yoy-compare-pill">Compare <span>${monthLabel}</span><span>${yearLabel}</span></div>
+      ${acquisitionYoyControls(ref)}
     </div>
     <div class="yoy-story">
       <div class="yoy-story-main">
@@ -7734,7 +7796,7 @@ function acquisitionYoyBarCard(ref) {
         <h3 class="yoy-chart-title">New Golfers Cumulative YoY (Jan–${monthLabel})</h3>
         <p class="yoy-chart-sub">Year-over-year cumulative acquisition through ${monthLabel}.</p>
       </div>
-      <div class="yoy-compare-pill">Compare <span>${monthLabel}</span><span>${yearLabel}</span></div>
+      ${acquisitionYoyControls(ref)}
     </div>
     <div class="yoy-story">
       <div class="yoy-story-main">
@@ -8058,6 +8120,7 @@ function genericChart(rows, field, type, format) {
     svg += `<text class="axis-label" x="${xMonth(m)}" y="${h-20}" text-anchor="middle" style="font-size:${axisFont}px">${monthName(m).slice(0,3)}</text>`;
   }
 
+  let highlightedPoint = null;
   years.forEach((year, yi) => {
     const pts = rows.filter(r => r.year === year).map(r => [xMonth(monthNum(r.month)), yVal(r[field]), r]);
     const path = pts.map((pt, i) => `${i ? 'L' : 'M'} ${pt[0]} ${pt[1]}`).join(" ");
@@ -8066,11 +8129,22 @@ function genericChart(rows, field, type, format) {
     pts.forEach(pt => {
       const isHighlight = highlight && pt[2].year === highlight.year && pt[2].month === highlight.month;
       if(isHighlight){
+        highlightedPoint = {x:pt[0], y:pt[1], row:pt[2], color};
         svg += `<circle cx="${pt[0]}" cy="${pt[1]}" r="14" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="6 5"></circle>`;
       }
       svg += `<circle class="dot tiptarget" data-tip="${tooltip(['Value','<strong>'+fmt(pt[2][field],format)+'</strong>',pt[2].label, 'Year: '+pt[2].year, isHighlight ? 'Current point' : null])}" cx="${pt[0]}" cy="${pt[1]}" r="4.25" style="stroke:${color}"></circle>`;
     });
   });
+
+  if(field === 'reactivations' && highlightedPoint) {
+    const calloutX = Math.min(w - right - 148, highlightedPoint.x + 28);
+    const calloutY = Math.min(h - bottom - 22, highlightedPoint.y + 58);
+    const leaderStartX = calloutX + 6;
+    const leaderStartY = calloutY - 12;
+    const labelText = `${highlightedPoint.row.year} ${highlightedPoint.row.month} - ${fmtShort(highlightedPoint.row[field]).toLowerCase()}`;
+    svg += `<path d="M ${leaderStartX} ${leaderStartY} L ${highlightedPoint.x+10} ${highlightedPoint.y+12}" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"></path>`;
+    svg += `<text class="legend" x="${calloutX}" y="${calloutY}" text-anchor="start" style="font-size:15px;font-weight:950;fill:#ef4444">${labelText}</text>`;
+  }
 
   years.forEach((year, yi) => {
     const color = colorMap[year] || "#64748b";

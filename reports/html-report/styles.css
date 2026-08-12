@@ -910,6 +910,64 @@ td:last-child, th:last-child { text-align: left; }
   line-height: 1.42;
 }
 
+.plain-readout {
+  margin-top: 18px;
+  padding: 20px 24px;
+}
+
+.plain-readout-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.plain-readout-list article {
+  position: relative;
+  padding: 13px 0 13px 22px;
+  border-top: 1px solid #e2ebf4;
+}
+
+.plain-readout-list article:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.plain-readout-list h2 {
+  margin: 0 0 6px;
+  color: #172235;
+  font-size: 17px;
+  font-weight: 850;
+  line-height: 1.15;
+}
+
+.plain-readout-list p {
+  margin: 4px 0 0;
+  color: #34445b;
+  font-size: 11.4px;
+  line-height: 1.38;
+}
+
+.plain-readout-list strong {
+  color: #172235;
+  font-weight: 900;
+}
+
+.plain-readout-list article::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 19px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--blue);
+}
+
+.plain-readout-list article:first-child::before {
+  top: 6px;
+}
+
 .number-list {
   display: grid;
   gap: 16px;
