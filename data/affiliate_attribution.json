@@ -1,88 +1,58 @@
 {
   "metadata": {
     "schemaVersion": 1,
-    "status": "placeholder",
-    "source": "placeholder data pending affiliate reporting source"
+    "status": "pilot",
+    "source": "affiliate marketing pilot summary"
   },
   "marketing": [
     {
-      "label": "DICK'S Sporting Goods",
-      "value": 1125,
-      "sub": "38.8% of affiliate"
+      "label": "RapidTee Golf",
+      "value": 8,
+      "sub": "80.0% of pilot registrations"
     },
     {
-      "label": "Golf.com",
-      "value": 740,
-      "sub": "25.5% of affiliate"
+      "label": "Flighting",
+      "value": 2,
+      "sub": "20.0% of pilot registrations"
     },
     {
-      "label": "Arccos Golf",
-      "value": 565,
-      "sub": "19.5% of affiliate"
+      "label": "Arccos",
+      "value": 0,
+      "sub": "No registrations"
     },
     {
-      "label": "Influencer",
-      "value": 470,
-      "sub": "16.2% of affiliate"
+      "label": "Leaderboard",
+      "value": 0,
+      "sub": "No registrations"
     }
   ],
   "monthlyPerformance": [
     {
-      "month": "Jan",
-      "traffic": 4200,
-      "conversions": 310
-    },
-    {
-      "month": "Feb",
-      "traffic": 4550,
-      "conversions": 345
-    },
-    {
-      "month": "Mar",
-      "traffic": 5200,
-      "conversions": 430
-    },
-    {
-      "month": "Apr",
-      "traffic": 6100,
-      "conversions": 520
-    },
-    {
-      "month": "May",
-      "traffic": 7350,
-      "conversions": 650
+      "month": "Pilot",
+      "registrations": 10,
+      "conversions": 10
     }
   ],
   "partnerPerformance": [
     {
-      "partner": "DICK'S Sporting Goods",
-      "traffic": 8200,
-      "conversions": 1125
+      "partner": "RapidTee Golf",
+      "activations": "Weekly email; live banner at bottom of site",
+      "conversions": 8
     },
     {
-      "partner": "Golf.com",
-      "traffic": 6100,
-      "conversions": 740
+      "partner": "Flighting",
+      "activations": "Email distribution",
+      "conversions": 2
     },
     {
-      "partner": "Arccos Golf",
-      "traffic": 4300,
-      "conversions": 565
+      "partner": "Arccos",
+      "activations": "No planned activations at the moment",
+      "conversions": 0
     },
     {
-      "partner": "Influencer",
-      "traffic": 3900,
-      "conversions": 470
-    },
-    {
-      "partner": "GolfNow",
-      "traffic": 2850,
-      "conversions": 315
-    },
-    {
-      "partner": "Partner Email",
-      "traffic": 2050,
-      "conversions": 210
+      "partner": "Leaderboard",
+      "activations": "In-app messaging; email send to customers",
+      "conversions": 0
     }
   ]
 }

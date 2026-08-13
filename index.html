@@ -3018,7 +3018,10 @@ svg{height:100%;width:100%;overflow:visible}
 .marketing-stack-segment{cursor:pointer;transition:filter .14s ease,opacity .14s ease;}
 .marketing-stack-segment:hover{filter:drop-shadow(0 4px 7px rgba(15,23,42,.22));opacity:.94;}
 .marketing-stack-total{fill:#334155;font-size:13px;font-weight:950;}
-.marketing-stack-legend{fill:#475569;font-size:12px;font-weight:900;}
+.marketing-stack-legend{fill:#475569;font-size:14px;font-weight:950;}
+.marketing-year-toggle{cursor:pointer;}
+.marketing-year-toggle.is-muted{opacity:.35;}
+.marketing-toggle-note{fill:#64748b;font-size:12px;font-weight:850;}
 .marketing-line{
   fill:none;
   stroke:#d85a32;
@@ -3033,21 +3036,69 @@ svg{height:100%;width:100%;overflow:visible}
   stroke:#e8eef6;
   stroke-width:1.2;
 }
+.marketing-month-guide{
+  stroke:#eef3f9;
+  stroke-width:1;
+}
 .marketing-axis{
   stroke:#cbd5e1;
   stroke-width:2;
+}
+.marketing-axis-tick{
+  stroke:#94a3b8;
+  stroke-width:1.4;
 }
 .marketing-label{
   fill:#334155;
   font-size:13px;
   font-weight:900;
 }
-.marketing-small-label{
-  fill:#64748b;
-  font-size:12px;
-  font-weight:800;
+.marketing-year-total-label{
+  fill:#334155;
+  font-size:16px;
+  font-weight:950;
 }
 
+/* v126: make Paid Media metric selectors read as an intentional chart feature. */
+.marketing-trend-select-wrap{
+  background:#dbeafe !important;
+  border:1.5px solid #60a5fa !important;
+  border-radius:14px !important;
+  box-shadow:0 8px 18px rgba(37,99,235,.16) !important;
+  padding:8px 10px !important;
+  border-left:5px solid #2563eb !important;
+}
+.marketing-trend-select-wrap label{
+  color:#1d4ed8 !important;
+  font-size:10.5px !important;
+  font-weight:950 !important;
+  letter-spacing:.08em !important;
+}
+.marketing-trend-select{
+  border:1.5px solid #2563eb !important;
+  color:#0f172a !important;
+  font-size:14px !important;
+  min-width:142px !important;
+  background:#ffffff !important;
+  box-shadow:0 2px 8px rgba(37,99,235,.12) !important;
+}
+.marketing-compact-label{
+  fill:#334155;
+  font-size:9.5px;
+  font-weight:950;
+}
+.marketing-change-label{
+  font-size:14px;
+  font-weight:950;
+}
+.marketing-change-label.positive{fill:#15803d;}
+.marketing-change-label.negative{fill:#b91c1c;}
+.marketing-change-label.inside{fill:#ffffff;}
+.marketing-small-label{
+  fill:#64748b;
+  font-size:14px;
+  font-weight:900;
+}
 .marketing-channel-performance-head{
   display:flex;
   justify-content:space-between;
@@ -3251,6 +3302,13 @@ svg{height:100%;width:100%;overflow:visible}
   gap:14px;
   flex-wrap:wrap;
   margin-bottom:8px;
+}
+.marketing-trend-controls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
 }
 .marketing-trend-select-wrap{
   display:flex;
@@ -4938,17 +4996,6 @@ svg{height:100%;width:100%;overflow:visible}
         <button class="active" data-acq-subtab="totals" onclick="setAcquisitionSubtab('totals')">Totals</button>
         <button data-acq-subtab="attribution" onclick="setAcquisitionSubtab('attribution')">Attribution</button>
       </div>
-      <div class="attribution-view-control attribution-period-tabs" id="attributionPeriodTabs" aria-label="Attribution reporting view">
-        <label for="attributionViewSelect">View</label>
-        <select id="attributionViewSelect" onchange="setAcquisitionAttributionView(this.value)">
-          <option value="ytd">YTD</option>
-          <option value="Jan">January</option>
-          <option value="Feb">February</option>
-          <option value="Mar">March</option>
-          <option value="Apr">April</option>
-          <option value="May">May</option>
-        </select>
-      </div>
     </div>
 
     <div class="acquisition-subpanel active" id="acquisitionTotalsPanel">
@@ -5194,6 +5241,30 @@ let GHIN_TRIALS_GC_MONTHLY_DRAFT = [];
 let GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT = [];
 let GHIN_TRIALS_AGA_DRAFT = [];
 let MARKETING_MONTHLY_PERFORMANCE_DRAFT = [];
+const MARKETING_HISTORICAL_PERFORMANCE_DRAFT = {
+  "2024": [
+    {month:"Jan", spend:8481, conversions:2573, cpa:3.30, cvr:0.1424, impressions:113575, clicks:18066, ctr:0.1591, cpc:0.47},
+    {month:"Feb", spend:5134, conversions:1557, cpa:3.30, cvr:0.1424, impressions:68753, clicks:10937, ctr:0.1591, cpc:0.47},
+    {month:"Mar", spend:5838, conversions:1771, cpa:3.30, cvr:0.1424, impressions:78181, clicks:12436, ctr:0.1591, cpc:0.47},
+    {month:"Apr", spend:6045, conversions:2615, cpa:2.31, cvr:0.1170, impressions:385371, clicks:22356, ctr:0.0580, cpc:0.27},
+    {month:"May", spend:8800, conversions:3422, cpa:2.57, cvr:0.0700, impressions:533973, clicks:48915, ctr:0.0916, cpc:0.18},
+    {month:"Jun", spend:14932, conversions:3683, cpa:4.05, cvr:0.1043, impressions:1106300, clicks:35313, ctr:0.0319, cpc:0.42},
+    {month:"Jul", spend:8424, conversions:1083, cpa:7.78, cvr:0.0370, impressions:1012851, clicks:29239, ctr:0.0289, cpc:0.29},
+    {month:"Aug", spend:14917, conversions:2484, cpa:6.01, cvr:0.0667, impressions:725955, clicks:37263, ctr:0.0513, cpc:0.40},
+    {month:"Sep", spend:9694, conversions:1109, cpa:8.74, cvr:0.0354, impressions:699736, clicks:31284, ctr:0.0447, cpc:0.31},
+    {month:"Oct", spend:5970, conversions:323, cpa:18.48, cvr:0.0253, impressions:321676, clicks:12765, ctr:0.0397, cpc:0.47},
+    {month:"Nov", spend:8474, conversions:458, cpa:18.50, cvr:0.0253, impressions:456597, clicks:18119, ctr:0.0397, cpc:0.47},
+    {month:"Dec", spend:8485, conversions:460, cpa:18.45, cvr:0.0254, impressions:457189, clicks:18143, ctr:0.0397, cpc:0.47}
+  ],
+  "2025": [
+    {month:"Apr", spend:49858, conversions:1589, cpa:31.38, cvr:0.0299, impressions:4560156, clicks:53090, ctr:0.0116, cpc:0.94},
+    {month:"May", spend:129548, conversions:3854, cpa:33.61, cvr:0.0153, impressions:20647169, clicks:252359, ctr:0.0122, cpc:0.51},
+    {month:"Jun", spend:139729, conversions:7217, cpa:19.36, cvr:0.0203, impressions:16295288, clicks:354764, ctr:0.0218, cpc:0.39},
+    {month:"Jul", spend:179049, conversions:4734, cpa:37.82, cvr:0.0111, impressions:21804712, clicks:426573, ctr:0.0196, cpc:0.42},
+    {month:"Aug", spend:90103, conversions:3678, cpa:24.50, cvr:0.0140, impressions:14594324, clicks:263556, ctr:0.0181, cpc:0.34},
+    {month:"Sep", spend:54434, conversions:2454, cpa:22.18, cvr:0.0221, impressions:7321709, clicks:111139, ctr:0.0152, cpc:0.49}
+  ]
+};
 let MARKETING_MONTHLY_FUNNEL_SPEND_DRAFT = [];
 let MARKETING_FUNNEL_DRAFT = [];
 let MARKETING_CHANNEL_PERFORMANCE_DRAFT = [];
@@ -5278,19 +5349,17 @@ async function loadAgaMasterData() {
 }
 
 async function loadAffiliateAttributionData() {
-  const response = await fetch("./data/affiliate_attribution.json");
+  const response = await fetch("./data/affiliate_attribution.json?v=20260813-affiliate-pilot");
   if(!response.ok) {
     throw new Error(`Unable to load Affiliate Attribution data: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
   if(!data?.metadata || data.metadata.schemaVersion !== 1
-    || data.metadata.status !== "placeholder"
-    || data.metadata.source !== "placeholder data pending affiliate reporting source"
     || !Array.isArray(data.marketing)
     || !Array.isArray(data.monthlyPerformance)
     || !Array.isArray(data.partnerPerformance)) {
-    throw new Error("Affiliate Attribution JSON does not contain the expected placeholder metadata, marketing, monthly performance, and partner performance records.");
+    throw new Error("Affiliate Attribution JSON does not contain the expected metadata, marketing, monthly performance, and partner performance records.");
   }
 
   AFFILIATE_MARKETING_DRAFT = data.marketing;
@@ -6217,13 +6286,11 @@ function attributionDraftGrowthRows(isYtd) {
     ? [
         {label:'GHIN Trials', value:5400},
         {label:'Paid Media', value:1700},
-        {label:'Affiliate Program', value:900},
         {label:'Organic / Untagged', value:-200}
       ]
     : [
         {label:'GHIN Trials', value:1050},
         {label:'Paid Media', value:450},
-        {label:'Affiliate Program', value:225},
         {label:'Organic / Untagged', value:-400}
       ];
   const maxAbs = Math.max(...contributions.map(r => Math.abs(r.value)), 1);
@@ -6260,12 +6327,9 @@ function attributionDraftFunnelRows() {
 
 function attributionDetailKpi(label, value, sub, format='count', variant='') {
   const v = format === 'percent' ? pctPlain(value) : format === 'currency' ? moneyShort(value) : fmt(value);
-  const mockBadge = variant === 'affiliate-mock-kpi'
-    ? '<span class="affiliate-mock-kpi-badge">MOCK</span>'
-    : '';
   return `
-    <div class="attribution-detail-kpi ${variant === 'affiliate-mock-kpi' ? 'affiliate-mock-kpi' : variant}">
-      <div class="attribution-detail-kpi-label">${label}${mockBadge}</div>
+    <div class="attribution-detail-kpi ${variant}">
+      <div class="attribution-detail-kpi-label">${label}</div>
       <div class="attribution-detail-kpi-value">${v}</div>
       <div class="attribution-detail-kpi-sub">${sub}</div>
     </div>
@@ -6304,12 +6368,7 @@ function marketingMonthRows() {
 }
 
 function affiliateMonthRows() {
-  return [
-    {label:"DICK'S Sporting Goods", value:1125},
-    {label:'Golf.com', value:740},
-    {label:'Arccos Golf', value:565},
-    {label:'Influencer', value:470}
-  ];
+  return AFFILIATE_MARKETING_DRAFT;
 }
 
 
@@ -6371,14 +6430,14 @@ function setAcquisitionSubtab(subtab) {
   });
   const totals = document.getElementById("acquisitionTotalsPanel");
   const attribution = document.getElementById("acquisitionAttributionPanel");
-  const periodTabs = document.getElementById("attributionPeriodTabs");
   if(totals) totals.classList.toggle("active", subtab === "totals");
   if(attribution) attribution.classList.toggle("active", subtab === "attribution");
-  if(periodTabs) periodTabs.classList.toggle("active", subtab === "attribution");
   localStorage.setItem("pa_acquisition_subtab", subtab);
 }
 
 function initAcquisitionSubtab() {
+  ACQUISITION_ATTRIBUTION_PERIOD = "ytd";
+  localStorage.setItem("pa_acquisition_attribution_period", ACQUISITION_ATTRIBUTION_PERIOD);
   const saved = localStorage.getItem("pa_acquisition_subtab") || "totals";
   setAcquisitionSubtab(saved);
 }
@@ -6391,7 +6450,10 @@ let ACQUISITION_ATTRIBUTION_MIX_MONTH = localStorage.getItem("pa_acquisition_att
 let MARKETING_CHANNEL_SORT = localStorage.getItem("pa_marketing_channel_sort") || "spend";
 let MARKETING_INFLUENCER_SORT = localStorage.getItem("pa_marketing_influencer_sort") || "conversions";
 let AFFILIATE_PARTNER_SORT = localStorage.getItem("pa_affiliate_partner_sort") || "conversions";
-let MARKETING_MONTHLY_METRIC = localStorage.getItem("pa_marketing_monthly_metric") || "cpa";
+let MARKETING_MONTHLY_METRIC = localStorage.getItem("pa_marketing_monthly_metric_v2") || "conversions";
+let MARKETING_MONTHLY_CHART_VIEW = localStorage.getItem("pa_marketing_monthly_chart_view") || "line";
+let MARKETING_YEARLY_METRIC = localStorage.getItem("pa_marketing_yearly_metric") || "spend";
+let MARKETING_HIDDEN_YEARS = JSON.parse(localStorage.getItem("pa_marketing_hidden_years") || "[]");
 let ACQUISITION_YOY_REF = JSON.parse(localStorage.getItem("pa_acquisition_yoy_ref") || "null");
 
 
@@ -6477,6 +6539,8 @@ function setMarketingChannelSort(metric) {
 
 function marketingMonthlyMetricOptions(){
   const options = [
+    ['spend','Spend'],
+    ['conversions','Conversions'],
     ['cpa','CPA'],
     ['clicks','Clicks'],
     ['ctr','CTR'],
@@ -6486,15 +6550,54 @@ function marketingMonthlyMetricOptions(){
   return options.map(([value,label]) => `<option value="${value}" ${MARKETING_MONTHLY_METRIC === value ? 'selected' : ''}>${label}</option>`).join('');
 }
 
+function marketingYearlyMetricOptions(){
+  const options = [
+    ['spend','Spend'],
+    ['cpa','CPA'],
+    ['clicks','Clicks'],
+    ['ctr','CTR'],
+    ['cpc','CPC'],
+    ['impressions','Impressions']
+  ];
+  return options.map(([value,label]) => `<option value="${value}" ${MARKETING_YEARLY_METRIC === value ? 'selected' : ''}>${label}</option>`).join('');
+}
+
 function marketingMonthlyMetricLabel(metric){
-  const labels = {cpa:'CPA', clicks:'Clicks', ctr:'CTR', cpc:'CPC', impressions:'Impressions'};
+  const labels = {spend:'Spend', conversions:'Conversions', cpa:'CPA', clicks:'Clicks', ctr:'CTR', cpc:'CPC', impressions:'Impressions'};
   return labels[metric] || 'CPA';
 }
 
 function setMarketingMonthlyMetric(metric){
-  const allowed = ['cpa','clicks','ctr','cpc','impressions'];
-  MARKETING_MONTHLY_METRIC = allowed.includes(metric) ? metric : 'cpa';
-  localStorage.setItem('pa_marketing_monthly_metric', MARKETING_MONTHLY_METRIC);
+  const allowed = ['spend','conversions','cpa','clicks','ctr','cpc','impressions'];
+  MARKETING_MONTHLY_METRIC = allowed.includes(metric) ? metric : 'conversions';
+  localStorage.setItem('pa_marketing_monthly_metric_v2', MARKETING_MONTHLY_METRIC);
+  renderAcquisitionAttributionDraft();
+}
+
+function setMarketingMonthlyChartView(view){
+  MARKETING_MONTHLY_CHART_VIEW = view === 'bar' ? 'bar' : 'line';
+  localStorage.setItem('pa_marketing_monthly_chart_view', MARKETING_MONTHLY_CHART_VIEW);
+  renderAcquisitionAttributionDraft();
+}
+
+function setMarketingYearlyMetric(metric){
+  const allowed = ['spend','cpa','clicks','ctr','cpc','impressions'];
+  MARKETING_YEARLY_METRIC = allowed.includes(metric) ? metric : 'spend';
+  localStorage.setItem('pa_marketing_yearly_metric', MARKETING_YEARLY_METRIC);
+  renderAcquisitionAttributionDraft();
+}
+
+function toggleMarketingHistoricalYear(year){
+  const yearLabel = String(year);
+  const available = marketingHistoricalSeriesForMetric(MARKETING_MONTHLY_METRIC).map(series => String(series.year));
+  const hidden = new Set(MARKETING_HIDDEN_YEARS.map(String));
+  if(hidden.has(yearLabel)) {
+    hidden.delete(yearLabel);
+  } else if(available.filter(y => !hidden.has(y)).length > 1) {
+    hidden.add(yearLabel);
+  }
+  MARKETING_HIDDEN_YEARS = Array.from(hidden);
+  localStorage.setItem('pa_marketing_hidden_years', JSON.stringify(MARKETING_HIDDEN_YEARS));
   renderAcquisitionAttributionDraft();
 }
 
@@ -6515,13 +6618,13 @@ function attributionPeriodKpi(label, value, sub, change, openTarget) {
   `;
 }
 
-function attributionAffiliateComingSoonKpi() {
+function attributionAffiliatePilotKpi(total=0) {
   return `
-    <div class="attribution-draft-kpi attribution-coming-soon-kpi">
-      <div class="attribution-draft-kpi-label">Affiliate Program <span class="attribution-mock-data-badge">Mock Data</span></div>
-      <div class="attribution-draft-kpi-value attribution-coming-soon-value">Coming Soon</div>
-      <div class="attribution-draft-kpi-sub">Affiliate attribution is not yet integrated</div>
-      <button type="button" class="dashboard-summary-link attribution-open-link attribution-open-link-disabled" disabled aria-disabled="true">Coming Soon</button>
+    <div class="attribution-draft-kpi attribution-coming-soon-kpi ghin-gc-kpi">
+      <div class="attribution-draft-kpi-label">Affiliate Pilot</div>
+      <div class="attribution-draft-kpi-value">${fmt(total)}</div>
+      <div class="attribution-draft-kpi-sub">Pilot registrations</div>
+      <button type="button" class="dashboard-summary-link attribution-open-link" onclick="setAcquisitionAttributionSection('affiliate')">Open Affiliate Marketing →</button>
     </div>
   `;
 }
@@ -6812,6 +6915,30 @@ function marketingMetricValue(key, val){
   return fmt(val);
 }
 
+function marketingMetricLabel(key) {
+  return ({
+    spend:"Spend",
+    conversions:"Conversions",
+    impressions:"Impressions",
+    clicks:"Clicks",
+    cpa:"CPA",
+    cpc:"CPC",
+    ctr:"CTR",
+    cvr:"CVR"
+  })[key] || key;
+}
+
+function marketingHistoricalSeriesForMetric(metric) {
+  const currentYearRows = marketingMonthlyRows(MARKETING_MONTHLY_PERFORMANCE_DRAFT)
+    .filter(row => row.month && row.month !== "YTD")
+    .map(row => ({...row, value:Number(row[metric] || 0)}));
+  return [
+    {year:"2024", color:"#9fb8cf", rows:(MARKETING_HISTORICAL_PERFORMANCE_DRAFT["2024"] || []).map(row => ({...row, value:Number(row[metric] || 0)}))},
+    {year:"2025", color:"#d85a32", rows:(MARKETING_HISTORICAL_PERFORMANCE_DRAFT["2025"] || []).map(row => ({...row, value:Number(row[metric] || 0)}))},
+    {year:"2026", color:"#14395f", rows:currentYearRows}
+  ].filter(series => series.rows.some(row => Number.isFinite(row.value) && row.value > 0));
+}
+
 function marketingFunnelCards(){
   return `<div class="marketing-funnel-row">
     ${MARKETING_FUNNEL_DRAFT.map(f => {
@@ -6879,46 +7006,237 @@ function marketingMonthlyFunnelSpendSvg(){
   </svg></div>`;
 }
 
-function marketingMonthlyPerformanceSvg(metric='conversions', mode='auto'){
-  const data = marketingMonthlyRows(MARKETING_MONTHLY_PERFORMANCE_DRAFT);
-  const W=760,H=410;
-  const m={l:62,r:36,t:28,b:58};
+function marketingMonthlyPerformanceSvg(metric='conversions', mode='line'){
+  const W=1160,H=470;
+  const m={l:72,r:44,t:34,b:88};
   const innerW=W-m.l-m.r, innerH=H-m.t-m.b;
-  const vals=data.map(d=>d[metric]);
-  const max=Math.max(...vals)*1.18;
+  const allSeries = marketingHistoricalSeriesForMetric(metric);
+  const visibleSeries = allSeries.filter(series => !MARKETING_HIDDEN_YEARS.map(String).includes(String(series.year)));
+  const series = visibleSeries.length ? visibleSeries : allSeries.slice(-1);
+  const vals = series.flatMap(s => s.rows.map(d => d.value));
+  const max=Math.max(...vals, 1)*1.18;
   const y=v=>m.t+innerH-(v/max)*innerH;
-  const step=innerW/data.length;
-  const barW=step*0.54;
-  const x=i=>m.l+i*step+(step-barW)/2;
-  const pointX=i=>m.l+i*step+(step/2);
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const chartMonths = months.filter(month => series.some(s => s.rows.some(row => row.month === month)));
+  const lineStep=innerW/Math.max(chartMonths.length - 1, 1);
+  const pointX=i=>m.l+i*lineStep;
+  const groupW=innerW/chartMonths.length;
+  const barW=Math.min(24, groupW/(series.length+1.1));
+  const groupX=i=>m.l+i*groupW;
+  const barX=(i,j)=>groupX(i)+(groupW-(barW*series.length))/2+(j*barW);
   const valueFormatter=v=>metric==='spend'||metric==='cpa'||metric==='cpc' ? moneyShort(v) : metric==='ctr'||metric==='cvr' ? pct(v) : fmt(v);
   const grid=[0,.25,.5,.75,1].map(g=> {
     const yy=m.t+innerH-(g*innerH);
     const label=valueFormatter(max*g);
     return `<line class="marketing-gridline" x1="${m.l}" y1="${yy}" x2="${W-m.r}" y2="${yy}"></line><text class="marketing-small-label" x="${m.l-10}" y="${yy+4}" text-anchor="end">${label}</text>`;
   }).join('');
+  const verticalGuides = series.length
+    ? chartMonths.map((month,i)=>{
+      const xx = mode === 'bar' ? groupX(i)+groupW/2 : pointX(i);
+      return `<line class="marketing-month-guide" x1="${xx}" y1="${m.t}" x2="${xx}" y2="${m.t+innerH}"></line><line class="marketing-axis-tick" x1="${xx}" y1="${m.t+innerH}" x2="${xx}" y2="${m.t+innerH+6}"></line>`;
+    }).join('')
+    : '';
 
   let marks='';
-  if(mode === 'line' || metric === 'cpa'){
-    const points=data.map((d,i)=>`${pointX(i)},${y(d[metric])}`).join(' ');
-    const dots=data.map((d,i)=>`
-      <circle class="marketing-dot" cx="${pointX(i)}" cy="${y(d[metric])}" r="5"></circle>
-      <text class="marketing-label" x="${pointX(i)}" y="${y(d[metric])-14}" text-anchor="middle">${marketingMetricValue(metric,d[metric])}</text>
-      <text class="marketing-small-label" x="${pointX(i)}" y="${H-24}" text-anchor="middle">${d.month}</text>`).join('');
-    marks=`<polyline class="marketing-line" points="${points}"></polyline>${dots}`;
-  } else {
-    marks=data.map((d,i)=>{
-      const h=innerH-(y(d[metric])-m.t);
-      return `<rect class="marketing-bar" x="${x(i)}" y="${y(d[metric])}" width="${barW}" height="${h}" rx="8"></rect>
-        <text class="marketing-label" x="${x(i)+barW/2}" y="${y(d[metric])-8}" text-anchor="middle">${marketingMetricValue(metric,d[metric])}</text>
-        <text class="marketing-small-label" x="${x(i)+barW/2}" y="${H-24}" text-anchor="middle">${d.month}</text>`;
+  if(mode === 'line'){
+    const monthIndex = Object.fromEntries(chartMonths.map((month,i) => [month,i]));
+    const labelYOffset = {2024:18, 2025:-14, 2026:4};
+    const lineMarks = series.map(s => {
+      const points = s.rows
+        .filter(d => monthIndex[d.month] != null)
+        .map(d => `${pointX(monthIndex[d.month])},${y(d.value)}`)
+        .join(' ');
+      const dots = s.rows
+        .filter(d => monthIndex[d.month] != null)
+        .map(d => {
+          const tip = tooltip([
+            `${d.month} ${s.year}`,
+            `<strong>${marketingMetricLabel(metric)}: ${marketingMetricValue(metric, d.value)}</strong>`
+          ]);
+          return `<circle class="tiptarget" data-tip="${tip}" cx="${pointX(monthIndex[d.month])}" cy="${y(d.value)}" r="5.5" fill="#ffffff" stroke="${s.color}" stroke-width="2.8"></circle>`;
+        })
+        .join('');
+      const last = s.rows.filter(d => monthIndex[d.month] != null).slice(-1)[0];
+      const lastLabel = last
+        ? `<text class="marketing-label" x="${Math.min(W-m.r-2, pointX(monthIndex[last.month])+10)}" y="${y(last.value)+(labelYOffset[s.year] || 0)}" text-anchor="start" fill="${s.color}">${s.year}</text>`
+        : '';
+      return `<polyline points="${points}" fill="none" stroke="${s.color}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></polyline>${dots}${lastLabel}`;
     }).join('');
+    const xLabels = chartMonths.map((month,i)=>`<text class="marketing-small-label" x="${pointX(i)}" y="${m.t+innerH+30}" text-anchor="middle">${month}</text>`).join('');
+    const legendX=m.l+innerW/2-150, legendY=H-24;
+    const hiddenYears = MARKETING_HIDDEN_YEARS.map(String);
+    const legend = allSeries.map((s,i)=>{
+      const inactive = hiddenYears.includes(String(s.year));
+      const lx = legendX+i*108;
+      return `<g class="marketing-year-toggle ${inactive ? 'is-muted' : ''}" onclick="toggleMarketingHistoricalYear('${s.year}')">
+        <circle cx="${lx}" cy="${legendY-5}" r="6.5" fill="${s.color}"></circle>
+        <text class="marketing-stack-legend" x="${lx+14}" y="${legendY}">${s.year}</text>
+      </g>`;
+    }).join('');
+    const toggleNote = `<text class="marketing-toggle-note" x="${legendX+108}" y="${legendY+22}" text-anchor="middle">(toggle each year on/off)</text>`;
+    marks=`${lineMarks}${xLabels}${legend}${toggleNote}`;
+  } else {
+    const compactValue=v=>{
+      if(metric==='spend'||metric==='cpa'||metric==='cpc') return moneyShort(v);
+      if(metric==='ctr'||metric==='cvr') return pct(v);
+      return v >= 1000 ? `${(v/1000).toFixed(v >= 10000 ? 0 : 1)}K` : fmt(v);
+    };
+    const monthIndex = Object.fromEntries(chartMonths.map((month,i) => [month,i]));
+    const barMarks = chartMonths.map((month,i)=>series.map((s,j)=>{
+      const row = s.rows.find(r => r.month === month);
+      if(!row) return '';
+      const xx = barX(i,j);
+      const yy = y(row.value);
+      const tip = tooltip([`${month} ${s.year}`, `<strong>${marketingMetricLabel(metric)}: ${marketingMetricValue(metric, row.value)}</strong>`]);
+      return `<rect class="tiptarget marketing-historical-bar" data-tip="${tip}" x="${xx}" y="${yy}" width="${barW-2}" height="${Math.max(2,m.t+innerH-yy)}" rx="5" fill="${s.color}"></rect>
+        <text class="marketing-compact-label" x="${xx+(barW-2)/2}" y="${yy-8}" text-anchor="middle">${compactValue(row.value)}</text>`;
+    }).join('') + `<text class="marketing-small-label" x="${groupX(i)+groupW/2}" y="${m.t+innerH+30}" text-anchor="middle">${month}</text>`).join('');
+    const legendX=m.l+innerW/2-150, legendY=H-24;
+    const hiddenYears = MARKETING_HIDDEN_YEARS.map(String);
+    const legend = allSeries.map((s,i)=>{
+      const inactive = hiddenYears.includes(String(s.year));
+      const lx = legendX+i*108;
+      return `<g class="marketing-year-toggle ${inactive ? 'is-muted' : ''}" onclick="toggleMarketingHistoricalYear('${s.year}')">
+        <circle cx="${lx}" cy="${legendY-5}" r="6.5" fill="${s.color}"></circle>
+        <text class="marketing-stack-legend" x="${lx+14}" y="${legendY}">${s.year}</text>
+      </g>`;
+    }).join('');
+    const toggleNote = `<text class="marketing-toggle-note" x="${legendX+108}" y="${legendY+22}" text-anchor="middle">(toggle each year on/off)</text>`;
+    marks=`${barMarks}${legend}${toggleNote}`;
   }
 
   return `<div class="marketing-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Monthly paid media performance chart">
     ${grid}
+    ${verticalGuides}
+    <line class="marketing-axis" x1="${m.l}" y1="${m.t}" x2="${m.l}" y2="${m.t+innerH}"></line>
     <line class="marketing-axis" x1="${m.l}" y1="${m.t+innerH}" x2="${W-m.r}" y2="${m.t+innerH}"></line>
     ${marks}
+  </svg></div>`;
+}
+
+function marketingHistoricalConversionsSvg(){
+  const series = marketingHistoricalSeriesForMetric('conversions');
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const W=1160,H=470;
+  const m={l:66,r:34,t:34,b:88};
+  const innerW=W-m.l-m.r, innerH=H-m.t-m.b;
+  const vals = series.flatMap(s => s.rows.map(row => row.value));
+  const max = Math.max(...vals, 1) * 1.2;
+  const y=v=>m.t+innerH-(v/max)*innerH;
+  const groupW=innerW/months.length;
+  const barW=Math.min(22, groupW/(series.length+1.25));
+  const groupX=i=>m.l+i*groupW;
+  const x=(i,j)=>groupX(i)+(groupW-(barW*series.length))/2+(j*barW);
+  const valueLabel=v=>v >= 1000 ? `${(v/1000).toFixed(v >= 10000 ? 0 : 1)}K` : fmt(v);
+  const grid=[0,.25,.5,.75,1].map(g=> {
+    const yy=m.t+innerH-(g*innerH);
+    return `<line class="marketing-gridline" x1="${m.l}" y1="${yy}" x2="${W-m.r}" y2="${yy}"></line><text class="marketing-small-label" x="${m.l-10}" y="${yy+4}" text-anchor="end">${fmt(Math.round(max*g))}</text>`;
+  }).join('');
+  const monthGuides = months.map((month,i)=>{
+    const xx = groupX(i)+groupW/2;
+    return `<line class="marketing-month-guide" x1="${xx}" y1="${m.t}" x2="${xx}" y2="${m.t+innerH}"></line><line class="marketing-axis-tick" x1="${xx}" y1="${m.t+innerH}" x2="${xx}" y2="${m.t+innerH+7}"></line>`;
+  }).join('');
+  const bars = months.map((month,i)=>{
+    const monthBars = series.map((s,j)=>{
+      const row = s.rows.find(r => r.month === month);
+      if(!row) return '';
+      const barX=x(i,j);
+      const barY=y(row.value);
+      const barH=m.t+innerH-barY;
+      const tip = tooltip([`${month} ${s.year}`, `<strong>${fmt(row.value)} conversions</strong>`]);
+      return `<rect class="tiptarget marketing-historical-bar" data-tip="${tip}" x="${barX}" y="${barY}" width="${barW-2}" height="${Math.max(2,barH)}" rx="6" fill="${s.color}"></rect>
+        <text class="marketing-compact-label" x="${barX+(barW-2)/2}" y="${barY-8}" text-anchor="middle">${valueLabel(row.value)}</text>`;
+    }).join('');
+    return `${monthBars}<text class="marketing-small-label marketing-month-label" x="${groupX(i)+groupW/2}" y="${m.t+innerH+32}" text-anchor="middle">${month}</text>`;
+  }).join('');
+  const legendX = m.l + innerW/2 - 142;
+  const legendY = H - 20;
+  const legend = series.map((s,i)=>`<circle cx="${legendX+i*120}" cy="${legendY-5}" r="7.5" fill="${s.color}"></circle><text class="marketing-stack-legend" x="${legendX+16+i*120}" y="${legendY}">${s.year}</text>`).join('');
+  return `<div class="marketing-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Paid media conversions by month across available years">
+    ${grid}
+    ${monthGuides}
+    <line class="marketing-axis" x1="${m.l}" y1="${m.t}" x2="${m.l}" y2="${m.t+innerH}"></line>
+    <line class="marketing-axis" x1="${m.l}" y1="${m.t+innerH}" x2="${W-m.r}" y2="${m.t+innerH}"></line>
+    ${bars}
+    ${legend}
+  </svg></div>`;
+}
+
+function marketingYearlyConversionsSvg(){
+  return marketingYearlyMetricTotalsSvg('conversions');
+}
+
+function marketingYearlyAggregate(series, metric) {
+  if(metric === 'cpa') {
+    const spend = series.rows.reduce((sum,row) => sum + (Number(row.spend) || 0), 0);
+    const conversions = series.rows.reduce((sum,row) => sum + (Number(row.conversions) || 0), 0);
+    return conversions ? spend / conversions : 0;
+  }
+  if(metric === 'ctr') {
+    const clicks = series.rows.reduce((sum,row) => sum + (Number(row.clicks) || 0), 0);
+    const impressions = series.rows.reduce((sum,row) => sum + (Number(row.impressions) || 0), 0);
+    return impressions ? clicks / impressions : 0;
+  }
+  if(metric === 'cpc') {
+    const spend = series.rows.reduce((sum,row) => sum + (Number(row.spend) || 0), 0);
+    const clicks = series.rows.reduce((sum,row) => sum + (Number(row.clicks) || 0), 0);
+    return clicks ? spend / clicks : 0;
+  }
+  return series.rows.reduce((sum,row) => sum + (Number(row[metric] ?? row.value) || 0), 0);
+}
+
+function marketingYearlyMetricTotalsSvg(metric='conversions'){
+  const data = marketingHistoricalSeriesForMetric(metric).map(series => ({
+    year: series.year,
+    color: series.color,
+    total: marketingYearlyAggregate(series, metric),
+    period: series.year === "2024" ? "Full year" : series.year === "2025" ? "Apr-Sep" : "Jan-Jul YTD"
+  }));
+  const W=760,H=410;
+  const m={l:72,r:40,t:34,b:86};
+  const innerW=W-m.l-m.r, innerH=H-m.t-m.b;
+  const max=metric === 'ctr' ? 0.10 : Math.max(...data.map(d=>d.total),1)*1.22;
+  const y=v=>m.t+innerH-(v/max)*innerH;
+  const step=innerW/data.length;
+  const barW=Math.min(118, step*.68);
+  const x=i=>m.l+i*step+(step-barW)/2;
+  const metricLabel = marketingMetricLabel(metric);
+  const valueLabel = value => metric === 'spend' || metric === 'cpa' || metric === 'cpc'
+    ? moneyShort(value)
+    : metric === 'ctr'
+      ? pctPlain(value)
+      : fmt(Math.round(value));
+  const shortValueLabel = value => metric === 'spend' || metric === 'cpa' || metric === 'cpc'
+    ? moneyShort(value)
+    : metric === 'ctr'
+      ? pctPlain(value)
+      : value >= 1000
+        ? `${(value/1000).toFixed(value >= 10000 ? 0 : 1)}K`
+        : fmt(Math.round(value));
+  const grid=[0,.25,.5,.75,1].map(g=> {
+    const yy=m.t+innerH-(g*innerH);
+    return `<line class="marketing-gridline" x1="${m.l}" y1="${yy}" x2="${W-m.r}" y2="${yy}"></line><text class="marketing-small-label" x="${m.l-10}" y="${yy+4}" text-anchor="end">${valueLabel(max*g)}</text>`;
+  }).join('');
+  const bars=data.map((d,i)=>{
+    const prior = i > 0 ? data[i-1] : null;
+    const change = prior && prior.total ? (d.total-prior.total)/prior.total : null;
+    const changeLabel = change == null ? '' : `${change >= 0 ? '+' : ''}${(change*100).toFixed(1)}%`;
+    const netChange = prior ? d.total-prior.total : null;
+    const netChangeLabel = netChange == null ? '' : `${netChange >= 0 ? '+' : '-'}${shortValueLabel(Math.abs(netChange))}`;
+    const barTop = y(d.total);
+    const tip = tooltip([`${d.year} paid media ${metricLabel.toLowerCase()}`, `<strong>${marketingMetricValue(metric, d.total)}</strong>`, d.period, changeLabel ? `Vs prior point: ${changeLabel}` : null, netChangeLabel ? `Net change: ${netChangeLabel}` : null]);
+    return `<rect class="tiptarget marketing-historical-bar" data-tip="${tip}" x="${x(i)}" y="${y(d.total)}" width="${barW}" height="${Math.max(2,m.t+innerH-y(d.total))}" rx="8" fill="${d.color}"></rect>
+      <text class="marketing-year-total-label" x="${x(i)+barW/2}" y="${barTop-26}" text-anchor="middle">${marketingMetricValue(metric, d.total)}</text>
+      ${changeLabel ? `<text class="marketing-change-label inside" x="${x(i)+barW/2}" y="${barTop+24}" text-anchor="middle">${changeLabel}</text>` : ''}
+      ${netChangeLabel ? `<text class="marketing-change-label inside" x="${x(i)+barW/2}" y="${barTop+42}" text-anchor="middle">(${netChangeLabel})</text>` : ''}
+      <text class="marketing-small-label marketing-year-label" x="${x(i)+barW/2}" y="${m.t+innerH+32}" text-anchor="middle">${d.year}</text>
+      <text class="marketing-small-label" x="${x(i)+barW/2}" y="${m.t+innerH+52}" text-anchor="middle">${d.period}</text>`;
+  }).join('');
+  return `<div class="marketing-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Paid media ${metricLabel.toLowerCase()} totals by year">
+    ${grid}
+    <line class="marketing-axis" x1="${m.l}" y1="${m.t}" x2="${m.l}" y2="${m.t+innerH}"></line>
+    <line class="marketing-axis" x1="${m.l}" y1="${m.t+innerH}" x2="${W-m.r}" y2="${m.t+innerH}"></line>
+    ${bars}
   </svg></div>`;
 }
 
@@ -7214,10 +7532,11 @@ function marketingInfluencerPerformanceTable(){
 
 function affiliateTotals(){
   return AFFILIATE_PARTNER_PERFORMANCE_DRAFT.reduce((acc,r)=>{
-    acc.traffic += r.traffic || 0;
+    acc.activatingPartners += r.activations ? 1 : 0;
     acc.conversions += r.conversions || 0;
+    if((r.conversions || 0) > 0) acc.partnersWithRegistrations += 1;
     return acc;
-  }, {traffic:0, conversions:0});
+  }, {activatingPartners:0, conversions:0, partnersWithRegistrations:0});
 }
 
 function setAffiliatePartnerSort(sortKey){
@@ -7232,7 +7551,6 @@ function affiliatePartnerTable(){
   const rows = [...AFFILIATE_PARTNER_PERFORMANCE_DRAFT]
     .map(r => ({
       ...r,
-      conversionRate: r.traffic ? r.conversions / r.traffic : null,
       share: totals.conversions ? r.conversions / totals.conversions : null
     }))
     .sort((a,b)=> (b[sortKey] || 0) - (a[sortKey] || 0));
@@ -7245,28 +7563,25 @@ function affiliatePartnerTable(){
   return `<div class="marketing-channel-table affiliate-partner-table">
     <div class="marketing-channel-table-head affiliate-partner-table-head">
       <div>Partner</div>
-      <div>${header('traffic', 'Traffic')}</div>
-      <div>${header('conversions', 'Conversions')}</div>
-      <div>${header('conversionRate', 'Conversion Rate')}</div>
-      <div>${header('share', 'Share of Conversions')}</div>
+      <div>Activation</div>
+      <div>${header('conversions', 'Registrations')}</div>
+      <div>${header('share', 'Share of Registrations')}</div>
     </div>
     ${rows.map(r=>`<div class="marketing-channel-table-row affiliate-partner-table-row">
       <div class="marketing-channel-name">${r.partner}</div>
-      <div class="marketing-channel-metric">${fmt(r.traffic || 0)}</div>
+      <div class="marketing-channel-metric affiliate-activation-copy">${r.activations || '—'}</div>
       <div class="marketing-channel-metric">${fmt(r.conversions || 0)}</div>
-      <div class="marketing-channel-metric">${r.conversionRate ? pctPlain(r.conversionRate, 1) : '—'}</div>
       <div class="marketing-channel-metric">${r.share ? pctPlain(r.share, 1) : '—'}</div>
     </div>`).join('')}
   </div>`;
 }
 
 function affiliateMonthlyTrendSvg(metric){
-  const data = AFFILIATE_MONTHLY_PERFORMANCE_DRAFT;
-  const isTraffic = metric === 'traffic';
+  const data = [...AFFILIATE_PARTNER_PERFORMANCE_DRAFT].sort((a,b)=>(b.conversions || 0)-(a.conversions || 0));
   const W=760,H=470;
-  const m={l:72,r:34,t:34,b:74};
+  const m={l:72,r:34,t:34,b:94};
   const innerW=W-m.l-m.r, innerH=H-m.t-m.b;
-  const max=Math.max(...data.map(d=>d[metric]))*1.18;
+  const max=Math.max(1, ...data.map(d=>d.conversions || 0))*1.25;
   const y=v=>m.t+innerH-(v/max)*innerH;
   const step=innerW/data.length;
   const x=i=>m.l+i*step+step/2;
@@ -7274,28 +7589,19 @@ function affiliateMonthlyTrendSvg(metric){
     const yy=m.t+innerH-(g*innerH);
     return `<line class="marketing-gridline" x1="${m.l}" y1="${yy}" x2="${W-m.r}" y2="${yy}"></line><text class="marketing-small-label" x="${m.l-10}" y="${yy+4}" text-anchor="end">${fmt(Math.round(max*g))}</text>`;
   }).join('');
-  if(isTraffic){
-    const pts=data.map((d,i)=>`${x(i)},${y(d[metric])}`).join(' ');
-    const dots=data.map((d,i)=>`<circle class="marketing-dot tiptarget" data-tip="${d.month}<br><strong>${fmt(d[metric])} visits</strong>" cx="${x(i)}" cy="${y(d[metric])}" r="5"></circle><text class="marketing-label" x="${x(i)}" y="${y(d[metric])-12}" text-anchor="middle">${fmt(d[metric])}</text>`).join('');
-    return `<div class="marketing-chart"><svg viewBox="0 0 ${W} ${H}">
-      ${grid}<line class="marketing-axis" x1="${m.l}" y1="${m.t+innerH}" x2="${W-m.r}" y2="${m.t+innerH}"></line>
-      <polyline class="marketing-line" points="${pts}"></polyline>
-      ${dots}
-      ${data.map((d,i)=>`<text class="marketing-label" x="${x(i)}" y="${m.t+innerH+36}" text-anchor="middle">${d.month}</text>`).join('')}
-    </svg></div>`;
-  }
   const barW=step*.52;
   const bars=data.map((d,i)=>{
     const bx=x(i)-barW/2;
-    const by=y(d[metric]);
+    const value=d.conversions || 0;
+    const by=y(value);
     const bh=m.t+innerH-by;
-    return `<rect class="marketing-bar tiptarget" data-tip="${d.month}<br><strong>${fmt(d[metric])} conversions</strong>" x="${bx}" y="${by}" width="${barW}" height="${bh}" rx="0"></rect>
-      <text class="marketing-label" x="${x(i)}" y="${by-10}" text-anchor="middle">${fmt(d[metric])}</text>`;
+    return `<rect class="marketing-bar tiptarget" data-tip="${d.partner}<br><strong>${fmt(value)} registrations</strong>" x="${bx}" y="${by}" width="${barW}" height="${Math.max(2,bh)}" rx="6"></rect>
+      <text class="marketing-label" x="${x(i)}" y="${Math.min(m.t+innerH-8, by-10)}" text-anchor="middle">${value ? fmt(value) : '0'}</text>`;
   }).join('');
   return `<div class="marketing-chart"><svg viewBox="0 0 ${W} ${H}">
     ${grid}<line class="marketing-axis" x1="${m.l}" y1="${m.t+innerH}" x2="${W-m.r}" y2="${m.t+innerH}"></line>
     ${bars}
-    ${data.map((d,i)=>`<text class="marketing-label" x="${x(i)}" y="${m.t+innerH+36}" text-anchor="middle">${d.month}</text>`).join('')}
+    ${data.map((d,i)=>`<text class="marketing-label affiliate-partner-axis-label" x="${x(i)}" y="${m.t+innerH+36}" text-anchor="middle">${d.partner}</text>`).join('')}
   </svg></div>`;
 }
 
@@ -7325,17 +7631,12 @@ function affiliateConversionShareDonutSvg(){
     const labelP=point(mid,145);
     angle=end;
     const pctText=Math.round((r.conversions/total)*100);
-    const shortLabel=r.partner === "DICK'S Sporting Goods" ? "DICK'S" :
-      r.partner === 'Partner Email' ? 'Email' :
-      r.partner === 'Arccos Golf' ? 'Arccos' :
-      r.partner === 'Golf.com' ? 'Golf.com' :
-      r.partner === 'Influencer' ? 'Influencer' :
-      r.partner;
+    const shortLabel = r.partner;
     const label = (r.conversions/total) >= 0.075
       ? `<text x="${labelP.x}" y="${labelP.y-4}" text-anchor="middle" class="affiliate-donut-inside-label" fill="${i === 3 || i === 4 || i === 5 ? '#0f172a' : '#ffffff'}">${shortLabel}</text>
          <text x="${labelP.x}" y="${labelP.y+24}" text-anchor="middle" class="affiliate-donut-inside-value" fill="${i === 3 || i === 4 || i === 5 ? '#0f172a' : '#ffffff'}">${pctText}%</text>`
       : '';
-    return `<path class="attribution-donut-segment tiptarget" data-tip="${r.partner}<br><strong>${fmt(r.conversions)} conversions</strong>" d="${slice(start,end)}" fill="${colors[i%colors.length]}"></path>${label}`;
+    return `<path class="attribution-donut-segment tiptarget" data-tip="${r.partner}<br><strong>${fmt(r.conversions)} registrations</strong>" d="${slice(start,end)}" fill="${colors[i%colors.length]}"></path>${label}`;
   }).join('');
 
   return `<div class="affiliate-donut-layout affiliate-donut-large">
@@ -7343,7 +7644,7 @@ function affiliateConversionShareDonutSvg(){
       ${segs}
       <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#fff" stroke="#e8eef6"></circle>
       <text x="${cx}" y="${cy-6}" text-anchor="middle" class="affiliate-donut-center-value">${fmt(total)}</text>
-      <text x="${cx}" y="${cy+24}" text-anchor="middle" class="affiliate-donut-center-label">CONVERSIONS</text>
+      <text x="${cx}" y="${cy+24}" text-anchor="middle" class="affiliate-donut-center-label">REGISTRATIONS</text>
     </svg>
   </div>`;
 }
@@ -7446,16 +7747,16 @@ function renderAcquisitionAttributionDraft() {
       <div class="marketing-dashboard">
         <div class="marketing-kpis marketing-kpis-split">
           <div class="marketing-kpi-row marketing-kpi-row-primary">
-            ${attributionDetailKpi('Total Spend', marketingTotals.spend, `${periodLabel} media spend`, 'currency')}
-            ${attributionDetailKpi('Impressions', marketingTotals.impressions, `${periodLabel} impressions`)}
-            ${attributionDetailKpi('Clicks', marketingTotals.clicks, `${periodLabel} clicks`)}
-            ${attributionDetailKpi('Total Conversions', marketingTotals.conversions, `${periodLabel} paid media conversions`, null, 'marketing-kpi-highlight')}
+            ${attributionDetailKpi('2026 YTD Total Spend', marketingTotals.spend, `${periodLabel} media spend`, 'currency')}
+            ${attributionDetailKpi('2026 YTD Impressions', marketingTotals.impressions, `${periodLabel} impressions`)}
+            ${attributionDetailKpi('2026 YTD Clicks', marketingTotals.clicks, `${periodLabel} clicks`)}
+            ${attributionDetailKpi('2026 YTD Total Conversions', marketingTotals.conversions, `${periodLabel} paid media conversions`, null, 'marketing-kpi-highlight')}
           </div>
           <div class="marketing-kpi-row marketing-kpi-row-secondary">
-            ${attributionDetailKpi('CVR', marketingCvr, 'Conversions / clicks', 'percent')}
-            ${attributionDetailKpi('CTR', marketingCtr, 'Clicks / impressions', 'percent')}
-            ${attributionDetailKpi('CPC', marketingCpc, 'Cost per click', 'currency')}
-            ${attributionDetailKpi('CPA', marketingCpa, 'Cost per acquisition', 'currency', 'marketing-kpi-highlight')}
+            ${attributionDetailKpi('2026 YTD CVR', marketingCvr, 'Conversions / clicks', 'percent')}
+            ${attributionDetailKpi('2026 YTD CTR', marketingCtr, 'Clicks / impressions', 'percent')}
+            ${attributionDetailKpi('2026 YTD CPC', marketingCpc, 'Cost per click', 'currency')}
+            ${attributionDetailKpi('2026 YTD CPA', marketingCpa, 'Cost per acquisition', 'currency', 'marketing-kpi-highlight')}
           </div>
         </div>
 
@@ -7463,34 +7764,55 @@ function renderAcquisitionAttributionDraft() {
 
         <div class="attribution-draft-card marketing-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>Paid Media-Attributed Conversions by Month</h3></div>
+            <div><h3>Total Paid Media Conversions by Year</h3></div>
           </div>
-          ${marketingMonthlyPerformanceSvg('conversions')}
+          ${marketingYearlyConversionsSvg()}
         </div>
 
         <div class="attribution-draft-card marketing-chart-card">
           <div class="marketing-trend-head">
-            <div><h3>Monthly Paid Media Trend</h3></div>
-            <div class="marketing-trend-select-wrap">
-              <label for="marketingMonthlyMetricSelect">Metric</label>
-              <select id="marketingMonthlyMetricSelect" class="marketing-trend-select" onchange="setMarketingMonthlyMetric(this.value)">
-                ${marketingMonthlyMetricOptions()}
-              </select>
+            <div><h3>Total Paid Media Metrics by Year</h3></div>
+            <div class="marketing-trend-controls">
+              <div class="marketing-trend-select-wrap">
+                <label for="marketingYearlyMetricSelect">Explore metric</label>
+                <select id="marketingYearlyMetricSelect" class="marketing-trend-select" onchange="setMarketingYearlyMetric(this.value)">
+                  ${marketingYearlyMetricOptions()}
+                </select>
+              </div>
             </div>
           </div>
-          ${marketingMonthlyPerformanceSvg(MARKETING_MONTHLY_METRIC, 'line')}
+          ${marketingYearlyMetricTotalsSvg(MARKETING_YEARLY_METRIC)}
+        </div>
+
+        <div class="attribution-draft-card marketing-chart-card full">
+          <div class="marketing-trend-head">
+            <div><h3>Paid Media Metrics By Month</h3></div>
+            <div class="marketing-trend-controls">
+              <div class="attribution-chart-toggle" role="tablist" aria-label="Paid media metric chart type">
+                <button class="${MARKETING_MONTHLY_CHART_VIEW === 'line' ? 'active' : ''}" onclick="setMarketingMonthlyChartView('line')">Line</button>
+                <button class="${MARKETING_MONTHLY_CHART_VIEW === 'bar' ? 'active' : ''}" onclick="setMarketingMonthlyChartView('bar')">Bar</button>
+              </div>
+              <div class="marketing-trend-select-wrap">
+                <label for="marketingMonthlyMetricSelect">Explore metric</label>
+                <select id="marketingMonthlyMetricSelect" class="marketing-trend-select" onchange="setMarketingMonthlyMetric(this.value)">
+                  ${marketingMonthlyMetricOptions()}
+                </select>
+              </div>
+            </div>
+          </div>
+          ${marketingMonthlyPerformanceSvg(MARKETING_MONTHLY_METRIC, MARKETING_MONTHLY_CHART_VIEW)}
         </div>
 
         <div class="attribution-draft-card marketing-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>Paid Media Spend Trend</h3></div>
+            <div><h3>Paid Media Funnel Spend Mix By Month</h3></div>
           </div>
           ${marketingMonthlyFunnelSpendSvg()}
         </div>
 
         <div class="attribution-draft-card marketing-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>Funnel Spend Mix</h3></div>
+            <div><h3>Paid Media Funnel Spend Mix YTD</h3></div>
           </div>
           ${marketingFunnelSpendDonutSvg()}
         </div>
@@ -7517,30 +7839,23 @@ function renderAcquisitionAttributionDraft() {
       <div class="marketing-dashboard affiliate-dashboard">
         <div class="marketing-kpis marketing-kpis-split affiliate-kpis">
           <div class="marketing-kpi-row affiliate-kpi-row">
-            ${attributionDetailKpi('Total Affiliate Traffic', affiliateTotalsRow.traffic, `${periodLabel} visits`, 'count', 'affiliate-mock-kpi')}
-            ${attributionDetailKpi('Affiliate Conversions', affiliateTotalsRow.conversions, `${periodLabel} conversions`, 'count', 'affiliate-mock-kpi')}
-            ${attributionDetailKpi('Conversion Rate', affiliateTotalsRow.conversions / affiliateTotalsRow.traffic, 'Conversions / traffic', 'percent', 'affiliate-mock-kpi')}
-            ${attributionDetailKpi('Top Partner', topAffiliate.conversions, topAffiliate.partner, 'count', 'affiliate-mock-kpi')}
-          </div>
-        </div>
-        <div class="affiliate-mock-banner">
-          <div class="affiliate-mock-banner-icon">ⓘ</div>
-          <div>
-            <div class="affiliate-mock-banner-title">MOCK DATA</div>
-            <div class="affiliate-mock-banner-copy">Affiliate reporting has not yet been integrated.<br>The values displayed on this page are sample data used to demonstrate the dashboard layout and functionality.</div>
+            ${attributionDetailKpi('Pilot Registrations', affiliateTotalsRow.conversions, 'Affiliate pilot total', 'count', 'ghin-gc-kpi')}
+            ${attributionDetailKpi('Partners With Registrations', affiliateTotalsRow.partnersWithRegistrations, 'Out of 4 pilot partners', 'count')}
+            ${attributionDetailKpi('Activating Partners', affiliateTotalsRow.activatingPartners, 'Partners with listed activation plans', 'count')}
+            ${attributionDetailKpi('Top Partner', topAffiliate?.conversions || 0, topAffiliate?.partner || '—', 'count')}
           </div>
         </div>
 
-        <div class="attribution-draft-card marketing-chart-card affiliate-top-tile affiliate-sample-watermark-card">
+        <div class="attribution-draft-card marketing-chart-card affiliate-top-tile">
           <div class="attribution-draft-head">
-            <div><h3>Affiliate Conversions by Month</h3></div>
+            <div><h3>Affiliate Registrations by Partner</h3></div>
           </div>
           ${affiliateMonthlyTrendSvg('conversions')}
         </div>
 
-        <div class="attribution-draft-card marketing-chart-card affiliate-top-tile affiliate-sample-watermark-card">
+        <div class="attribution-draft-card marketing-chart-card affiliate-top-tile">
           <div class="attribution-draft-head">
-            <div><h3>Conversion Share by Partner</h3></div>
+            <div><h3>Registration Share by Partner</h3></div>
           </div>
           ${affiliateConversionShareDonutSvg()}
         </div>
@@ -7571,7 +7886,7 @@ function renderAcquisitionAttributionDraft() {
             isYtd ? `${pctPlain(r.periodValue / ytdTotal)} of YTD acquisition` : `${pctPlain(r.periodValue / selectedMonthTotal)} of monthly acquisition`,
             r.key === 'trials' ? 'ghin' : r.key === 'marketing' ? 'marketing' : null
           )).join('')}
-          ${attributionAffiliateComingSoonKpi()}
+          ${attributionAffiliatePilotKpi(affiliateTotalsRow.conversions)}
         </div>
       </div>
 
@@ -9914,7 +10229,13 @@ async function initializeDashboard() {
   initRetentionClubList();
 }
 
-initializeDashboard();
+initializeDashboard().catch(error => {
+  console.error(error);
+  const summary = document.getElementById("membershipHero");
+  if(summary) {
+    summary.innerHTML = `<div class="empty-note">Dashboard failed to load: ${escapeHtml(error.message || error)}</div>`;
+  }
+});
 
 </script>
 </body>
@@ -11431,12 +11752,12 @@ initializeDashboard();
   grid-template-columns:repeat(3,minmax(0,1fr)) !important;
 }
 .marketing-kpis .marketing-kpi-highlight{
-  background:#fffbeb !important;
-  border-color:#fde68a !important;
+  background:#ecfdf5 !important;
+  border-color:#bbf7d0 !important;
 }
 .marketing-kpis .marketing-kpi-highlight .attribution-detail-kpi-label,
 .marketing-kpis .marketing-kpi-highlight .kpi-label{
-  color:#92400e !important;
+  color:#166534 !important;
 }
 @media(max-width:900px){
   .marketing-kpi-row-primary,
@@ -12139,97 +12460,18 @@ initializeDashboard();
   font-weight:800;
   margin:-4px 0 0;
 }
-.affiliate-mock-banner{
-  grid-column:span 12;
-  display:flex;
-  align-items:flex-start;
-  gap:13px;
-  padding:16px 18px;
-  border:1px solid #f4d88d;
-  border-radius:16px;
-  background:#fff8df;
-  color:#4b3a11;
-  box-shadow:0 8px 18px rgba(120,88,12,.06);
-}
-.affiliate-mock-banner-icon{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:30px;
-  height:30px;
-  flex:0 0 30px;
-  border-radius:999px;
-  background:#f4c95d;
-  color:#14395f;
-  font-size:17px;
-  font-weight:950;
-  line-height:1;
-}
-.affiliate-mock-banner-title{
-  color:#7a4f00;
-  font-size:13px;
-  font-weight:950;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  margin-bottom:4px;
-}
-.affiliate-mock-banner-copy{
-  color:#5f4b16;
-  font-size:13px;
-  font-weight:800;
-  line-height:1.45;
-}
-.affiliate-mock-kpi .attribution-detail-kpi-label{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-.affiliate-mock-kpi-badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  padding:3px 7px;
-  border-radius:999px;
-  background:#fff3c4;
-  color:#7a4f00;
-  font-size:9px;
-  font-weight:950;
-  letter-spacing:.07em;
-  line-height:1;
-  box-shadow:inset 0 0 0 1px rgba(122,79,0,.18);
-}
-.affiliate-sample-watermark-card{
-  position:relative;
-  overflow:hidden;
-}
-.affiliate-sample-watermark-card::before{
-  content:"SAMPLE DATA";
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%) rotate(-18deg);
-  z-index:0;
-  color:rgba(20,57,95,.055);
-  font-size:58px;
-  font-weight:950;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  white-space:nowrap;
-  pointer-events:none;
-}
-.affiliate-sample-watermark-card > *{
-  position:relative;
-  z-index:1;
-}
 .affiliate-partner-table .marketing-channel-table-head,
 .affiliate-partner-table .marketing-channel-table-row,
 .affiliate-partner-table-head,
 .affiliate-partner-table-row{
-  grid-template-columns:minmax(260px,2fr) repeat(4,minmax(120px,1fr)) !important;
+  grid-template-columns:minmax(190px,1.05fr) minmax(320px,1.9fr) repeat(2,minmax(150px,.8fr)) !important;
 }
 .affiliate-partner-table-head > div:first-child,
 .affiliate-partner-table-row > div:first-child{
+  text-align:left !important;
+}
+.affiliate-partner-table-head > div:nth-child(2),
+.affiliate-partner-table-row > div:nth-child(2){
   text-align:left !important;
 }
 .affiliate-partner-table-head > div:not(:first-child),
@@ -12238,6 +12480,13 @@ initializeDashboard();
 }
 .affiliate-partner-table-head .marketing-channel-sort-header{
   justify-content:flex-end !important;
+}
+.affiliate-partner-table-head > div:nth-child(2) .marketing-channel-sort-header{
+  justify-content:flex-start !important;
+}
+.affiliate-activation-copy{
+  white-space:normal !important;
+  line-height:1.35;
 }
 .affiliate-donut-layout{
   display:flex;
