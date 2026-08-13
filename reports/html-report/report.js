@@ -58,7 +58,7 @@ const defaultNarrative = {
 
   page2Eyebrow: "How Membership Is Growing",
   page2Title: "GC Acquisition",
-  page2Dek: "New Golfers measures newly created GHIN numbers by source.",
+  page2Dek: "New Golfers measures newly created GHIN numbers in the GC club by source.",
   newMembersLabel: "New GC Golfers July",
   trialsLabel: "GHIN Trial Conversions",
   paidLabel: "Paid Media Conversions",
@@ -72,7 +72,7 @@ const defaultNarrative = {
 
   page3Eyebrow: "How Membership Is Being Retained",
   page3Title: "GC Retention",
-  page3Dek: "Retention measures renewal performance and durability across the active membership base.",
+  page3Dek: "Retention measures renewal performance and membership durability within the GC club.",
   renewalPageLabel: "July On-Time Renewal Rate",
   retainedPageLabel: "Members Renewed",
   recoveryPageLabel: "Recovered Members",
@@ -86,7 +86,7 @@ const defaultNarrative = {
 
   page4Eyebrow: "How Membership Is Being Recovered",
   page4Title: "GC Recovery",
-  page4Dek: "Recovery measures inactive golfers who returned to active membership during the reporting period.",
+  page4Dek: "Recovery measures inactive GC club golfers who returned to active GC membership.",
   challengeTotalLabel: "Total Challenges",
   challengeGolfersLabel: "Total Golfers",
   rankedGolfersLabel: "Ranked Golfers",
@@ -166,6 +166,15 @@ async function loadNarrative() {
     }
     if (narrative.trendTitle === "Active Members by Year") {
       narrative.trendTitle = "Active GC Members By Year";
+    }
+    if (narrative.page2Dek === "New Golfers measures newly created GHIN numbers by source.") {
+      narrative.page2Dek = "New Golfers measures newly created GHIN numbers in the GC club by source.";
+    }
+    if (narrative.page3Dek === "Retention measures renewal performance and durability across the active membership base.") {
+      narrative.page3Dek = "Retention measures renewal performance and membership durability within the GC club.";
+    }
+    if (narrative.page4Dek === "Recovery measures inactive golfers who returned to active membership during the reporting period.") {
+      narrative.page4Dek = "Recovery measures inactive GC club golfers who returned to active GC membership.";
     }
     if (narrative.activeKpiLabel === "Total Active Membership") {
       narrative.activeKpiLabel = "Total Active GC Membership";
