@@ -136,7 +136,7 @@ h1 {
 .kpi span,
 .mini-kpi-row span {
   display: block;
-  min-height: 22px;
+  min-height: 18px;
   color: #667791;
   font-size: 9.5px;
   font-weight: 800;
@@ -147,7 +147,7 @@ h1 {
 
 .kpi strong {
   display: block;
-  margin-top: 9px;
+  margin-top: 5px;
   color: #102036;
   font-size: 26px;
   line-height: 1;
@@ -332,7 +332,7 @@ h1 {
   display: grid;
   grid-template-columns: 1.55fr 4fr;
   gap: 18px;
-  align-items: center;
+  align-items: start;
   margin-top: 15px;
 }
 
@@ -357,7 +357,7 @@ h1 {
 .projection-chart {
   display: block;
   width: 100%;
-  height: 245px;
+  height: 210px;
 }
 
 .bridge {
@@ -1149,7 +1149,6 @@ td:last-child, th:last-child { text-align: left; }
   bottom: 0.26in;
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid var(--line);
   padding-top: 8px;
   color: #7d8ca3;
   font-size: 8.5px;

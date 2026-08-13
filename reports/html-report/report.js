@@ -17,18 +17,28 @@ const colors = {
 
 const $ = (id) => document.getElementById(id);
 
+const GC_TRIAL_CONVERSIONS = [
+  { label: "Jan", conversions: 2445 },
+  { label: "Feb", conversions: 2707 },
+  { label: "Mar", conversions: 4791 },
+  { label: "Apr", conversions: 9694 },
+  { label: "May", conversions: 10199 },
+  { label: "Jun", conversions: 9716 },
+  { label: "Jul", conversions: 9180 }
+];
+
 const defaultNarrative = {
-  eyebrow: "GC Membership",
+  eyebrow: "USGA",
   reportMonth: "August 2026",
   reportDate: "Report Date: August 2, 2026",
-  page1Title: "August Membership Report",
-  page1Dek: "Monthly executive report summarizing GC membership performance, acquisition, retention, and recovery through the latest reporting period.",
-  activeKpiLabel: "Total Active Membership",
-  netKpiLabel: "Net Membership Change",
-  ytdKpiLabel: "Year-to-Date Growth",
-  annualKpiLabel: "Twelve-Month Change",
+  page1Title: "August GC Membership Report",
+  page1Dek: "Monthly view of GC membership performance, acquisition, retention, and recovery.",
+  activeKpiLabel: "Total Active GC Membership",
+  netKpiLabel: "Net Membership Change July",
+  ytdKpiLabel: "Net Membership Change YTD",
+  annualKpiLabel: "12-Month YoY GC Change",
   trendLabel: "Year Over Year Growth",
-  trendTitle: "Active Members by Year",
+  trendTitle: "Active GC Members By Year",
   trendNote: "Same month across years, back to 2022.",
   interpretationLabel: "What leadership should know",
   interpretationTitle: "Key Takeaways",
@@ -49,7 +59,7 @@ const defaultNarrative = {
   page2Eyebrow: "How Membership Is Growing",
   page2Title: "GC Acquisition",
   page2Dek: "New Golfers measures newly created GHIN numbers by source.",
-  newMembersLabel: "New Members",
+  newMembersLabel: "New GC Golfers July",
   trialsLabel: "GHIN Trial Conversions",
   paidLabel: "Paid Media Conversions",
   acqTrendLabel: "Acquisition Trend",
@@ -144,6 +154,30 @@ async function loadNarrative() {
     const narrative = deepMerge(deepMerge(defaultNarrative, archived), draft);
     if (narrative.page5Title === "What the Results Suggest") {
       narrative.page5Title = "What the Numbers Are Telling Us";
+    }
+    if (narrative.page1Title === "August Membership Report" || narrative.page1Title === "Executive Membership Report") {
+      narrative.page1Title = "August GC Membership Report";
+    }
+    if (narrative.eyebrow === "GC Membership") {
+      narrative.eyebrow = "USGA";
+    }
+    if (narrative.page1Dek === "Monthly executive report summarizing GC membership performance, acquisition, retention, and recovery through the latest reporting period.") {
+      narrative.page1Dek = "Monthly view of GC membership performance, acquisition, retention, and recovery.";
+    }
+    if (narrative.trendTitle === "Active Members by Year") {
+      narrative.trendTitle = "Active GC Members By Year";
+    }
+    if (narrative.activeKpiLabel === "Total Active Membership") {
+      narrative.activeKpiLabel = "Total Active GC Membership";
+    }
+    if (narrative.netKpiLabel === "Net Membership Change") {
+      narrative.netKpiLabel = "Net Membership Change July";
+    }
+    if (narrative.ytdKpiLabel === "Year-to-Date Growth" || narrative.ytdKpiLabel === "Year to Date GC Change") {
+      narrative.ytdKpiLabel = "Net Membership Change YTD";
+    }
+    if (narrative.annualKpiLabel === "Twelve-Month Change") {
+      narrative.annualKpiLabel = "12-Month YoY GC Change";
     }
     return narrative;
   } catch {
@@ -337,7 +371,7 @@ function drawYoYMembershipChart(svg, rows) {
   if (!svg || !rows.length) return;
   const w = 520, h = 360;
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  const pad = { left: 54, right: 20, top: 24, bottom: 40 };
+  const pad = { left: 54, right: 20, top: 24, bottom: 44 };
   const max = Math.max(...rows.map(row => row.activeGolfers)) * 1.04;
   const y = v => pad.top + (1 - v / max) * (h - pad.top - pad.bottom);
   const plotW = w - pad.left - pad.right;
@@ -360,7 +394,7 @@ function drawYoYMembershipChart(svg, rows) {
         <text x="${x + barW / 2}" y="${barY - 10}" text-anchor="middle" fill="${colors.text}" font-size="14">${Math.round(row.activeGolfers / 1000)}K</text>
         ${growth ? `<rect x="${x + 4}" y="${barY + 15}" width="${barW - 8}" height="20" rx="10" fill="#fff" stroke="#c8d5e4" stroke-width="1.5"/>
           <text x="${x + barW / 2}" y="${barY + 29}" text-anchor="middle" fill="#44546a" font-size="10">${growth}</text>` : ""}
-        <text x="${x + barW / 2}" y="${h - 10}" text-anchor="middle" fill="#667791" font-size="11">${row.month.slice(0, 3)} '${String(row.year).slice(2)}</text>`;
+        <text x="${x + barW / 2}" y="${h - 11}" text-anchor="middle" fill="#667791" font-size="13" font-weight="700">${row.month.slice(0, 3)} '${String(row.year).slice(2)}</text>`;
     }).join("")}
   `;
 }
@@ -529,9 +563,9 @@ function drawProjectionChart(svg, rows, currentYear, currentMonth, growthRate) {
   if (!svg || !rows.length) return;
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const years = [...new Set(rows.map(row => row.year))].sort();
-  const w = 680, h = 310;
+  const w = 680, h = 280;
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  const pad = { left: 45, right: 62, top: 24, bottom: 36 };
+  const pad = { left: 45, right: 62, top: 14, bottom: 30 };
   const monthValue = (year, monthNum) => {
     const row = rows.find(item => item.year === year && item.monthNum === monthNum);
     if (!row) return null;
@@ -679,7 +713,7 @@ async function render() {
   const recovered = recovery.summary.latestMonthRecoveries;
   const lost = prior.activeGolfers + current.newGolfers + recovered - current.activeGolfers;
   const paidMedia = marketing.monthlyPerformance.find(row => row.month === "YTD").conversions;
-  const trials = ghin.summary.trialConversions;
+  const trials = GC_TRIAL_CONVERSIONS.reduce((sum, row) => sum + row.conversions, 0);
   const organic = ytdNew - trials - paidMedia;
   const mix = [
     { label: "GHIN Trials", value: trials, color: colors.navy },
@@ -701,7 +735,7 @@ async function render() {
   const projectedDecember = Math.round(membership.find(row => row.year === current.year - 1 && row.monthNum === 12).activeGolfers * (1 + annualGrowth));
   setText("projectionValue", fmt.format(projectedDecember));
   setText("projectionSub", `${pct(annualGrowth)} growth scenario projected by EOY`);
-  setText("projectionNote", `Actuals through ${current.month}. Projection applies the current July YoY growth rate to remaining prior-year months.`);
+  setText("projectionNote", `Actuals through ${current.month}. Projection assumes current YoY growth continues.`);
   drawProjectionChart($("projectionChart"), membership.filter(row => row.year >= 2022 && row.year <= current.year), current.year, current.monthNum, annualGrowth);
   renderBridge({ opening: prior.activeGolfers, acquired: current.newGolfers, lost, recovered, closing: current.activeGolfers });
   renderInterpretation(narrative, current, recovered, lost, organic);
@@ -717,13 +751,13 @@ async function render() {
   setText("newMembersSub", `${current.month} ${current.year}`);
   setText("newMembersYtd", fmt.format(ytdNew));
   setText("newMembersYtdDelta", `${pct((ytdNew - priorYearYtdNew) / priorYearYtdNew)} vs Jan-July ${priorYear.year}`);
-  setText("newMembersActiveShare", pct(ytdActiveShare));
-  setText("newMembersActiveShareDelta", `${pct((ytdActiveShare - priorYtdActiveShare) / priorYtdActiveShare)} vs July ${priorYear.year}`);
+  setText("newGolfersYoyChange", pct((ytdNew - priorYearYtdNew) / priorYearYtdNew));
+  setText("newGolfersYoyDelta", `${fmt.format(ytdNew - priorYearYtdNew)} golfers vs Jan-July ${priorYear.year}`);
   setText("trialConversions", fmt.format(trials));
   setText("paidConversions", fmt.format(paidMedia));
   const monthlySources = ytdRows.map(row => {
     const shortMonth = row.month.slice(0, 3);
-    const trialsMonth = ghin.monthly.find(item => item.label === shortMonth)?.conversions || 0;
+    const trialsMonth = GC_TRIAL_CONVERSIONS.find(item => item.label === shortMonth)?.conversions || 0;
     const paidMonth = marketing.monthlyPerformance.find(item => item.month === shortMonth)?.conversions || 0;
     const organicMonth = Math.max((row.newGolfers || 0) - trialsMonth - paidMonth, 0);
     return { month: shortMonth, trials: trialsMonth, paid: paidMonth, organic: organicMonth, total: row.newGolfers || 0 };
@@ -735,8 +769,8 @@ async function render() {
       body: `YTD new GHIN numbers are down ${pct((ytdNew - priorYearYtdNew) / priorYearYtdNew)} versus Jan-July ${priorYear.year}, and ${current.month} was down ${pct((current.newGolfers - priorYearSameMonth.newGolfers) / priorYearSameMonth.newGolfers)} versus last year.`
     },
     {
-      title: "Monthly source mix is shifting",
-      body: `Organic / Untagged represented ${pct(latestSourceMonth.organic / latestSourceMonth.total)} of ${current.month} new golfers, while YTD source mix remains concentrated in GHIN Trials and untagged activity.`
+      title: "GHIN Trials are a healthy acquisition source",
+      body: `GC Trial Conversions account for ${pct(trials / ytdNew)} of year-to-date new golfers, which is a meaningful share of total GC acquisition.`
     },
     {
       title: "Retention is backstopping growth",
