@@ -16,5 +16,14 @@
     "totalGolfers": 30559,
     "rankedGolfers": 8976,
     "scoresPosted": 75662
+  },
+  {
+    "date": "2026-08-25",
+    "label": "Aug 25",
+    "participatingAssociations": 36,
+    "totalChallenges": 863,
+    "totalGolfers": 37777,
+    "rankedGolfers": 14642,
+    "scoresPosted": 128439
   }
 ]

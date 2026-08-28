@@ -188,6 +188,123 @@ GHIN Trials package:
 - `Conversions by Days in Trial.csv`
 - `AGA Conversions.csv`
 
+GHIN Challenges requires one authoritative, reviewed detail export per snapshot. A separate totals capture is required when the admin header reports unique golfers, because unique golfers cannot be derived from challenge-level counts alone.
+
+### GHIN Challenges source contract and operating procedure
+
+#### Purpose
+
+The GHIN Challenges dashboard is updated from periodic snapshots taken in the GHIN admin interface. The admin views may initially be captured as screenshots when a direct export is not available. ChatGPT/Codex translates and categorizes those snapshots into structured challenge-level data. The structured detail file—not the screenshots—is the dashboard input and source of truth after the transcription has been reviewed and corrected.
+
+This process should remain local until the updated dashboard has passed data and browser QA. Nothing is pushed to GitHub without explicit approval.
+
+#### Required delivery: one authoritative detail file
+
+The preferred delivery is one finalized CSV or Excel sheet with one row per challenge and these fields:
+
+| Field | Required | Definition |
+|---|---|---|
+| `Snapshot Date` | Yes, either as a column or stated with the delivery | Date the GHIN admin data was captured. Used for the Program Trend snapshot. |
+| `Status` | Yes | Exactly `Active`, `Completed`, or `Upcoming`. |
+| `Association` | Yes | Hosting golf association name. |
+| `Challenge Name` | Yes | Complete challenge name. No blank or OCR-placeholder names. |
+| `Golfers` | Yes | Challenge participants from all participating clubs, not only USGA GC members. |
+| `Ranked Golfers` | Yes | Golfers with a challenge rank. |
+| `Scores Posted` | Yes | Scores posted for the challenge. |
+| `Challenge ID` | Preferred when available | Stable identifier used to match the same challenge across exports and corrections. |
+| `Start Date` | Optional | Challenge start date when available. |
+| `End Date` | Optional | Challenge end date when available. |
+| `Source Page` / `Source Row` | Recommended for screenshot transcription | Location in the admin capture used to audit and correct a transcription. |
+| `Metric Source` | Recommended for screenshot transcription | Records whether values came from direct export, OCR, or manual screenshot correction. |
+
+A separate AGA summary is not required. Association totals and rankings are calculated from the authoritative detail rows.
+
+#### Required combined-header totals
+
+A small totals file or clear screenshot of the combined `Upcoming, Active, Completed` admin header must be supplied:
+
+| Status | Challenges | Golfers | Ranked Golfers | Scores Posted |
+|---|---:|---:|---:|---:|
+| Active |  |  |  |  |
+| Completed |  |  |  |  |
+| Upcoming |  |  |  |  |
+| TOTAL |  |  |  |  |
+
+The combined-header `Golfers` value is the unique-golfer count used by the dashboard hero KPI. The sum of the row-level `Golfers` values is challenge participations and will be higher when a golfer enters multiple challenges. These two values are not expected to reconcile. Header ranked-golfer and score totals can also move while multi-page screenshots are being captured; any timing variance must be documented rather than silently forced to match.
+
+When a corrected detail file is delivered, the corrected file supersedes earlier transcriptions. Its row-level values become authoritative unless the delivery explicitly says otherwise. All affected totals, rates, association results, rankings, and the same-date trend snapshot must be recalculated from the corrected rows.
+
+#### Admin snapshot workflow
+
+1. In the GHIN admin interface, capture all Active, Completed, and Upcoming challenge pages needed to cover every challenge record.
+2. Capture the visible status totals for challenges, golfers, ranked golfers, and scores posted. These totals are the reconciliation control.
+3. Preserve page and row order during transcription so a questionable value can be traced back to its image.
+4. ChatGPT/Codex transcribes and categorizes the captures into one detail CSV.
+5. Review and correct names, associations, and numeric OCR values before treating the file as final.
+6. Deliver the single corrected detail file with its snapshot date. Include the optional totals file when available.
+7. ChatGPT/Codex validates, calculates, updates locally, serves the site over HTTP, and performs browser QA.
+8. Review the local dashboard. Push only after explicit approval.
+
+Screenshots are needed only when the admin interface cannot provide a complete direct CSV/Excel export or when a questionable transcription must be checked. If the admin can export all required row-level fields directly, use that export and skip screenshot transcription.
+
+#### Validation rules
+
+Before updating dashboard JSON:
+
+- The detail file must contain exactly one row per challenge for the snapshot.
+- Every row must have a recognized status, association, complete challenge name, and numeric metrics.
+- Challenge names cannot be blank.
+- Counts cannot be negative.
+- `Ranked Golfers` should not exceed `Golfers`; exceptions must be checked against the admin source.
+- Detail rows must be grouped and summed by status. The resulting golfer total is challenge participations, not unique golfers.
+- The combined admin header must provide the unique-golfer total used by the hero KPI.
+- The participating-association count is the distinct count of associations appearing in the detail rows.
+- Corrections must be compared with the prior delivered file so every changed name, association, or numeric value is known.
+- A totals mismatch, missing page, blank name, duplicate record, or unexplained correction blocks the update.
+
+#### Dashboard calculations
+
+Challenge counts and tables are calculated from the authoritative detail rows. Unique-golfer headline metrics come from the combined admin header:
+
+- `Active Challenges` = count of rows where Status is Active.
+- `Completed Challenges` = count of rows where Status is Completed.
+- `Upcoming Challenges` = count of rows where Status is Upcoming.
+- `Total Challenges` = Active + Completed + Upcoming.
+- `Total Participants (Uniques)` = combined admin-header Golfers across Upcoming, Active, and Completed.
+- `Challenge Participations` = sum of row-level Golfers across all statuses, including Upcoming. This is retained for audit and association/challenge tables, not shown as the hero unique count.
+- `Ranked Golfers` = combined admin-header Ranked Golfer total.
+- `Ranked Golfer Rate` = header Ranked Golfers / header unique golfers.
+- `Scores Posted` = combined admin-header Scores Posted total.
+- `Average Posted / Golfer` = header Scores Posted / header unique golfers.
+- `Participating Associations` = distinct associations represented by the detail rows.
+- Association metrics = the same counts, sums, and rates grouped by Association.
+- Challenge rankings = detail rows sorted using the dashboard's existing table controls.
+- Program Trend snapshot = the calculated snapshot totals stored under the supplied Snapshot Date.
+
+Engagement metrics include golfers from all participating clubs, not just USGA GC members. Upcoming challenges remain in all applicable calculations. Upcoming Challenges is not displayed as a supporting KPI card.
+
+#### Files updated
+
+Routine GHIN Challenges refreshes should normally update only:
+
+- `data/processed/ghin_challenges.json`
+- `data/processed/ghin_challenges_growth.json`
+
+`index.html` should not change for a data-only refresh. Layout, cards, filters, sorting, Program Trend behavior, and unrelated modules remain unchanged unless a separate UI change is explicitly requested.
+
+#### Local QA and release checklist
+
+1. Validate JSON syntax and schema.
+2. Reconcile row counts, status counts, totals, rates, and participating associations.
+3. Confirm every challenge name is populated.
+4. Serve the dashboard over local HTTP; do not use `file://`.
+5. Open Engagement > GHIN Challenges and verify all hero and supporting KPIs.
+6. Verify the required all-participating-clubs note remains visible.
+7. Verify the new Program Trend point and both ranking tables.
+8. Confirm there are no visible data-error placeholders or browser errors.
+9. Show the changed files and retain unrelated working-tree changes untouched.
+10. Push to GitHub only when explicitly instructed.
+
 ### GHIN Trials source contract
 
 GHIN Trials automation is implemented from five aggregate Tableau CSV exports placed in:
