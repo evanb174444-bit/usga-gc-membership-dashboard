@@ -5802,6 +5802,13 @@ function kpiChangeMarkup(change, basisLabel) {
   const arrow = change > 0 ? "▲" : change < 0 ? "▼" : "•";
   return `<div class="kpi-change ${cls}">${arrow} ${pct(change)} vs ${basisLabel}</div>`;
 }
+function kpiPointChangeMarkup(change, basisLabel) {
+  if(change == null) return `<div class="kpi-change neutral">No comparison available</div>`;
+  const cls = change > 0 ? "positive" : change < 0 ? "negative" : "neutral";
+  const arrow = change > 0 ? "▲" : change < 0 ? "▼" : "•";
+  const pointLabel = `${change >= 0 ? "+" : ""}${(change * 100).toFixed(1)} pts`;
+  return `<div class="kpi-change ${cls}">${arrow} ${pointLabel} vs ${basisLabel}</div>`;
+}
 function richKpiBlock(items) {
   return `<div class="kpis acquisition-kpis">${items.map(i => `
     <div class="kpi acquisition-kpi ${escapeHtml(i.className || '')}">
@@ -8300,8 +8307,8 @@ function renderAcquisitionSection() {
   highlightsCard.innerHTML = richKpiBlock([
     {label:'New golfers', value:ref.newGolfers, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.newGolfers, priorMonth?.newGolfers), `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
     {label:'New golfers YTD', value:ref.ytdNewGolfers, format:'count', changeHtml:kpiChangeMarkup(ref.ytdNewPct, `Jan–${ref.month} ${ref.year-1}`), sub:`Jan through ${ref.month}`},
-    {label:'YTD as % of active', value:ytdShare, format:'percent', changeHtml:kpiChangeMarkup(relChange(ytdShare, priorYtdShare), `${ref.month} ${ref.year-1}`), sub:'Current active base'},
-    {label:'Monthly as % of active', value:monthlyShare, format:'percent', changeHtml:kpiChangeMarkup(relChange(monthlyShare, priorMonthlyShare), `${ref.month} ${ref.year-1}`), sub:'Selected month share'}
+    {label:'YTD as % of active', value:ytdShare, format:'percent', changeHtml:kpiPointChangeMarkup(ytdShare != null && priorYtdShare != null ? ytdShare - priorYtdShare : null, `${ref.month} ${ref.year-1}`), sub:'Current active base'},
+    {label:'Monthly as % of active', value:monthlyShare, format:'percent', changeHtml:kpiPointChangeMarkup(monthlyShare != null && priorMonthlyShare != null ? monthlyShare - priorMonthlyShare : null, `${ref.month} ${ref.year-1}`), sub:'Selected month share'}
   ]);
 
   const monthlyChange = relChange(ref.newGolfers, priorMonth?.newGolfers);
@@ -8975,8 +8982,8 @@ function renderMembership() {
   const netGrowthYtdChange = (currentNetGrowthYtd != null && priorNetGrowthYtd != null) ? currentNetGrowthYtd - priorNetGrowthYtd : null;
   const newGolfersChange = relChange(ref.newGolfers, sameMonthPrior?.newGolfers);
   const ytdNewGolfersChange = ref.ytdNewPct;
-  const onTimeRenewalChange = relChange(ref.onTimeRenewalRate, sameMonthPrior?.onTimeRenewalRate);
-  const rollingRetentionChange = relChange(ref.retentionRate, prevMonthRow?.retentionRate);
+  const onTimeRenewalChange = ref.onTimeRenewalRate != null && sameMonthPrior?.onTimeRenewalRate != null ? ref.onTimeRenewalRate - sameMonthPrior.onTimeRenewalRate : null;
+  const rollingRetentionChange = ref.retentionRate != null && prevMonthRow?.retentionRate != null ? ref.retentionRate - prevMonthRow.retentionRate : null;
   const reactivationsChange = relChange(ref.reactivations, sameMonthPrior?.reactivations);
   const ytdReactivationsChange = ref.ytdReactivationsPct;
 
@@ -9008,8 +9015,8 @@ function renderMembership() {
         <div class="dashboard-summary-group membership">
           <div class="dashboard-summary-group-title">Membership</div>
           <div class="dashboard-summary-metrics">
-            ${summaryMetric("Growth YTD", fmt(annualGrowth,'percent'), pointChangeMarkup(annualGrowthDelta, `Jan–${ref.month} ${ref.year-1}`), `Prior period: ${fmt(priorYearGrowthSoFar,'percent')}`)}
-            ${summaryMetric("Net Growth YTD", currentNetGrowthYtd != null ? `${currentNetGrowthYtd >= 0 ? "+" : ""}${fmt(Math.abs(currentNetGrowthYtd))}` : "—", countChangeMarkup(netGrowthYtdChange, `Jan–${ref.month} ${ref.year-1}`), `Since Dec ${ref.year-1}`)}
+            ${summaryMetric("Growth YTD", fmt(annualGrowth,'percent'), pointChangeMarkup(annualGrowthDelta, `year-end to ${priorReportDateLabel}`), `Prior period: ${fmt(priorYearGrowthSoFar,'percent')}`)}
+            ${summaryMetric("Net Growth YTD", currentNetGrowthYtd != null ? `${currentNetGrowthYtd >= 0 ? "+" : ""}${fmt(Math.abs(currentNetGrowthYtd))}` : "—", countChangeMarkup(netGrowthYtdChange, `year-end to ${priorReportDateLabel}`), `Since Dec ${ref.year-1}`)}
           </div>
         </div>
 
@@ -9025,8 +9032,8 @@ function renderMembership() {
         <div class="dashboard-summary-group retention">
           <div class="dashboard-summary-group-title">Retention</div>
           <div class="dashboard-summary-metrics">
-            ${summaryMetric("On-time renewal", fmt(ref.onTimeRenewalRate,'percent'), changeMarkup(onTimeRenewalChange, `${ref.month} ${ref.year-1}`), "Current month")}
-            ${summaryMetric("12M retention", fmt(ref.retentionRate,'percent'), changeMarkup(rollingRetentionChange, `${prevMonthRow?.month} ${prevMonthRow?.year}`), "Rolling rate")}
+            ${summaryMetric("On-time renewal", fmt(ref.onTimeRenewalRate,'percent'), pointChangeMarkup(onTimeRenewalChange, `${ref.month} ${ref.year-1}`), `${ref.month} ${ref.year}`)}
+            ${summaryMetric("12M retention", fmt(ref.retentionRate,'percent'), pointChangeMarkup(rollingRetentionChange, reportDateLabelForRow(prevMonthRow)), `As of ${reportDateLabel}`)}
           </div>
           <a class="dashboard-summary-link" onclick="setTab('retention')">Open Retention →</a>
         </div>
@@ -9104,7 +9111,7 @@ function renderMembership() {
       </div>
     </div>
     <div class="square-exec-copy">
-      Actuals through <strong>${ref.month}</strong>. Projection uses the <strong>${scenarioLabel}</strong> growth scenario versus prior-year remaining months.
+      Latest actual as of <strong>${reportDateLabel}</strong>. Projection uses the <strong>${scenarioLabel}</strong> growth scenario versus prior-year remaining months.
     </div>
     ${projectionChart(proj)}
 `;
@@ -9138,19 +9145,22 @@ function renderRetentionSection() {
   const retentionPref = CHART_PREFS['retentionCard'] || 'line';
 
   const retainedChange = relChange(ref.retainedGolfers, priorYearRow?.retainedGolfers);
-  const onTimeChange = relChange(ref.onTimeRenewalRate, priorYearRow?.onTimeRenewalRate);
-  const rollingChange = relChange(ref.retentionRate, prevMonthRow?.retentionRate);
+  const onTimeChange = ref.onTimeRenewalRate != null && priorYearRow?.onTimeRenewalRate != null ? ref.onTimeRenewalRate - priorYearRow.onTimeRenewalRate : null;
+  const rollingChange = ref.retentionRate != null && prevMonthRow?.retentionRate != null ? ref.retentionRate - prevMonthRow.retentionRate : null;
+  const previousSnapshotLabel = reportDateLabelForRow(prevMonthRow);
+  const priorYearSnapshotLabel = reportDateLabelForRow(priorYearRow);
+  const priorCohortBaseLabel = reportDateLabelForRow(BY_YEAR_MONTH[(ref.year-2) + '-' + month]);
 
   highlightsCard.className = 'retention-highlights';
   highlightsCard.innerHTML = '';
 
   const renewalControls = `<div class="toggle"><button class="${renewalPref==='bar'?'active':''}" onclick="setChart('renewalCard','bar')">Bar chart</button><button class="${renewalPref==='line'?'active':''}" onclick="setChart('renewalCard','line')">Line graph</button></div>${yearToggleControls('renewalCard', ref)}`;
   const renewalCopyBits = [];
-  if(onTimeChange != null) renewalCopyBits.push(`${pct(onTimeChange)} vs ${ref.month} ${ref.year-1}.`);
+  if(onTimeChange != null) renewalCopyBits.push(`${onTimeChange >= 0 ? '+' : ''}${(onTimeChange*100).toFixed(1)} pts vs ${ref.month} ${ref.year-1}.`);
   if(ref.renewed != null && ref.upForRenewal != null) renewalCopyBits.push(`${fmt(ref.renewed)} of ${fmt(ref.upForRenewal)} golfers renewed on time.`);
   const renewalCopy = renewalCopyBits.join(' ');
   const renewalKpis = richKpiBlock([
-    {label:'On time renewal rate', value:ref.onTimeRenewalRate, format:'percent', changeHtml:kpiChangeMarkup(onTimeChange, `${ref.month} ${ref.year-1}`), sub:'Current month'},
+    {label:'On time renewal rate', value:ref.onTimeRenewalRate, format:'percent', changeHtml:kpiPointChangeMarkup(onTimeChange, `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
     {label:'Up for renewal', value:ref.upForRenewal, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.upForRenewal, priorYearRow?.upForRenewal), `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
     {label:'Renewed', value:ref.renewed, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.renewed, priorYearRow?.renewed), `${ref.month} ${ref.year-1}`), sub:'On time renewals'},
     {label:'Not renewed', value:ref.notRenewed, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.notRenewed, priorYearRow?.notRenewed), `${ref.month} ${ref.year-1}`), sub:'Not renewed on time'}
@@ -9164,14 +9174,14 @@ function renderRetentionSection() {
 
   const retentionControls = `<div class="toggle"><button class="${retentionPref==='bar'?'active':''}" onclick="setChart('retentionCard','bar')">Bar chart</button><button class="${retentionPref==='line'?'active':''}" onclick="setChart('retentionCard','line')">Line graph</button></div>${yearToggleControls('retentionCard', ref)}`;
   const retentionCopyBits = [];
-  if(rollingChange != null) retentionCopyBits.push(`${pct(rollingChange)} vs ${prevMonthRow.month} ${prevMonthRow.year}.`);
+  if(rollingChange != null) retentionCopyBits.push(`${rollingChange >= 0 ? '+' : ''}${(rollingChange*100).toFixed(1)} pts vs ${previousSnapshotLabel}.`);
   if(ref.retainedGolfers != null && ref.priorYearActiveGolfers != null) retentionCopyBits.push(`Equivalent to ${fmt(ref.retainedGolfers)} retained golfers from the prior-year active base of ${fmt(ref.priorYearActiveGolfers)}.`);
   const retentionCopy = retentionCopyBits.join(' ');
   const retentionKpis = richKpiBlock([
-    {label:'12M retention', value:ref.retentionRate, format:'percent', changeHtml:kpiChangeMarkup(rollingChange, prevMonthRow ? `${prevMonthRow.month} ${prevMonthRow.year}` : `${ref.month} ${ref.year}`), sub:'Rolling rate'},
-    {label:'Up for renewal during the last 12 months', value:ref.priorYearActiveGolfers, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.priorYearActiveGolfers, priorYearRow?.priorYearActiveGolfers), `${ref.month} ${ref.year-1}`), sub:'Prior-year active base'},
-    {label:'Retained golfers', value:ref.retainedGolfers, format:'count', changeHtml:kpiChangeMarkup(retainedChange, `${ref.month} ${ref.year-1}`), sub:'Still active now'},
-    {label:'Not renewed', value:retentionNotRenewed, format:'count', changeHtml:kpiChangeMarkup(relChange(retentionNotRenewed, priorRetentionNotRenewed), `${ref.month} ${ref.year-1}`), sub:'No longer active'}
+    {label:'12M retention', value:ref.retentionRate, format:'percent', changeHtml:kpiPointChangeMarkup(rollingChange, previousSnapshotLabel), sub:`As of ${reportDateLabelForRow(ref)}`},
+    {label:'Up for renewal during the last 12 months', value:ref.priorYearActiveGolfers, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.priorYearActiveGolfers, priorYearRow?.priorYearActiveGolfers), `${priorCohortBaseLabel} base`), sub:`${priorYearSnapshotLabel} active base`},
+    {label:'Retained golfers', value:ref.retainedGolfers, format:'count', changeHtml:kpiChangeMarkup(retainedChange, 'prior 12M cohort'), sub:'Still active now'},
+    {label:'Not renewed', value:retentionNotRenewed, format:'count', changeHtml:kpiChangeMarkup(relChange(retentionNotRenewed, priorRetentionNotRenewed), 'prior 12M cohort'), sub:'No longer active'}
   ]);
 
   retentionCard.innerHTML = `
@@ -9413,8 +9423,8 @@ function renderRecoverySection() {
   highlightsCard.innerHTML = richKpiBlock([
     {label:'Reactivations', value:ref.reactivations, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.reactivations, priorMonth?.reactivations), `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
     {label:'Reactivations YTD', value:ref.ytdReactivations, format:'count', changeHtml:kpiChangeMarkup(ref.ytdReactivationsPct, `Jan–${ref.month} ${ref.year-1}`), sub:`Jan through ${ref.month}`},
-    {label:'YTD as % of active', value:ytdShare, format:'percent', changeHtml:kpiChangeMarkup(relChange(ytdShare, priorYtdShare), `${ref.month} ${ref.year-1}`), sub:'Current active base'},
-    {label:'Monthly as % of active', value:monthlyShare, format:'percent', changeHtml:kpiChangeMarkup(relChange(monthlyShare, priorMonthlyShare), `${ref.month} ${ref.year-1}`), sub:'Selected month share'}
+    {label:'YTD as % of active', value:ytdShare, format:'percent', changeHtml:kpiPointChangeMarkup(ytdShare != null && priorYtdShare != null ? ytdShare - priorYtdShare : null, `${ref.month} ${ref.year-1}`), sub:'Current active base'},
+    {label:'Monthly as % of active', value:monthlyShare, format:'percent', changeHtml:kpiPointChangeMarkup(monthlyShare != null && priorMonthlyShare != null ? monthlyShare - priorMonthlyShare : null, `${ref.month} ${ref.year-1}`), sub:'Selected month share'}
   ]);
 
   const monthlyCopy = `${pct(relChange(ref.reactivations, priorMonth?.reactivations))} vs ${ref.month} ${ref.year-1}.`;
