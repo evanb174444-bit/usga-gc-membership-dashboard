@@ -5587,7 +5587,7 @@ const CHART_PREFS = JSON.parse(localStorage.getItem("pa_presentation_chart_prefs
 
 let DEFAULT_REF_ROW = null;
 let DEFAULT_REF = null;
-const WIDGET_REFS = JSON.parse(localStorage.getItem("pa_widget_refs") || "{}");
+const WIDGET_REFS = {};
 
 let YOY_REF = null;
 
@@ -5620,7 +5620,7 @@ async function loadMembershipData() {
   YOY_REF = {...DEFAULT_REF};
 
   ["membership","newGolfersCard","ytdNewGolfersCard","renewalCard","retentionCard","reactivationsCard","ytdReactivationsCard"].forEach(id => {
-    if(!WIDGET_REFS[id]) WIDGET_REFS[id] = {...DEFAULT_REF};
+    WIDGET_REFS[id] = {...DEFAULT_REF};
   });
 }
 
@@ -6687,7 +6687,7 @@ let MARKETING_MONTHLY_METRIC = localStorage.getItem("pa_marketing_monthly_metric
 let MARKETING_MONTHLY_CHART_VIEW = localStorage.getItem("pa_marketing_monthly_chart_view") || "line";
 let MARKETING_YEARLY_METRIC = localStorage.getItem("pa_marketing_yearly_metric") || "spend";
 let MARKETING_HIDDEN_YEARS = JSON.parse(localStorage.getItem("pa_marketing_hidden_years") || "[]");
-let ACQUISITION_YOY_REF = JSON.parse(localStorage.getItem("pa_acquisition_yoy_ref") || "null");
+let ACQUISITION_YOY_REF = null;
 
 
 function attributionDraftMonthOptions() {
@@ -8387,7 +8387,6 @@ function setAcquisitionYoyRef(key, value) {
   if(!ACQUISITION_YOY_REF) ACQUISITION_YOY_REF = {...DEFAULT_REF};
   ACQUISITION_YOY_REF[key] = Number(value);
   normalizeAcquisitionYoyRef(enrich(latestActiveRow()));
-  localStorage.setItem("pa_acquisition_yoy_ref", JSON.stringify(ACQUISITION_YOY_REF));
   renderAcquisitionSection();
 }
 
@@ -8853,7 +8852,6 @@ function widgetMonthYearControl(widgetId) {
 function setWidgetRef(widgetId, key, value) {
   if(!WIDGET_REFS[widgetId]) WIDGET_REFS[widgetId] = {...DEFAULT_REF};
   WIDGET_REFS[widgetId][key] = Number(value);
-  localStorage.setItem("pa_widget_refs", JSON.stringify(WIDGET_REFS));
   render();
 }
 
