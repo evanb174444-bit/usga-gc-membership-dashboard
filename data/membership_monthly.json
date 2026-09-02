@@ -882,18 +882,18 @@
   {
     "year": 2026,
     "month": "August",
+    "activeGolfers": 537730,
     "monthNum": 8,
     "label": "August 2026",
-    "activeGolfers": null,
-    "priorMonthActive": null,
-    "netChange": null,
-    "percentChange": null,
-    "newGolfers": null,
-    "reactivations": null,
-    "onTimeRenewalRate": null,
-    "renewed": null,
-    "upForRenewal": null,
-    "retentionRate": null
+    "priorMonthActive": 525382,
+    "netChange": 12348,
+    "percentChange": 0.023502898843127475,
+    "newGolfers": 18933,
+    "reactivations": 4253,
+    "onTimeRenewalRate": 0.8261237417563346,
+    "renewed": 38081,
+    "upForRenewal": 46096,
+    "retentionRate": 0.8050941229526107
   },
   {
     "year": 2026,

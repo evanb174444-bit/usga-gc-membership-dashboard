@@ -235,7 +235,6 @@ MEMBERSHIP_RATE_METRICS = {
 METHODOLOGY_CHANGE_METRICS = {
     "renewed",
     "onTimeRenewalRate",
-    "retentionRate",
 }
 
 PARITY_ABSOLUTE_TOLERANCE = 1e-9
@@ -2214,6 +2213,8 @@ def generate_recovery_analysis(
         if creation_date >= status_date:
             creation_not_before_status_rows += 1
             continue
+        if is_target_month(creation_date, period_end.year, latest_month):
+            continue
         if not period_start <= status_date <= period_end:
             continue
 
@@ -3436,8 +3437,10 @@ def membership_parity_baseline(
 def compare_membership_parity(
     calculated_record: dict[str, Any],
     dashboard_record: dict[str, Any],
+    *,
+    prior_month_reference: bool = False,
 ) -> list[ParityResult]:
-    """Compare generated metrics with the selected dashboard baseline values."""
+    """Compare generated metrics with a same-month baseline or prior-month reference."""
     results: list[ParityResult] = []
     for metric in MEMBERSHIP_PARITY_METRICS:
         calculated = calculated_record.get(metric)
@@ -3467,7 +3470,9 @@ def compare_membership_parity(
             difference = None
             passed = False
 
-        if metric in METHODOLOGY_CHANGE_METRICS:
+        if prior_month_reference:
+            result_label = "UNCHANGED" if passed else "CHANGE"
+        elif metric in METHODOLOGY_CHANGE_METRICS:
             result_label = "METHODOLOGY CHANGE"
         else:
             result_label = "PASS" if passed else "FAIL"
@@ -3826,7 +3831,11 @@ def print_qa_summary(report: QAReport, status: str, message: str) -> None:
         print_membership_parity_table(report.membership_parity)
         print()
 
-    if report.membership_grain_counts and report.membership_parity:
+    if (
+        report.membership_grain_counts
+        and report.membership_parity
+        and not report.parity_baseline_is_fallback
+    ):
         print("New golfer and reactivation grain diagnostics")
         print_metric_grain_diagnostics(
             report.membership_grain_counts,
@@ -4558,7 +4567,7 @@ def run(args: argparse.Namespace) -> int:
         )
         report.calculation_notes.extend(
             (
-                "Recovery Analysis is membership-level and includes Active Golfer Detail rows where Membership Creation Date precedes Golfer Status Date and Golfer Status Date falls inside the YTD activity period",
+                "Recovery Analysis is membership-level and uses the same reactivation rule as the membership record: Active Golfer Detail rows where Membership Creation Date precedes Golfer Status Date, creation is outside the recovery month, and Golfer Status Date falls inside the YTD activity period",
                 "Recovery Analysis uses Recoveries as % of Active Base for composition metrics; it is not an inactive-population conversion rate",
                 "Recovery Analysis monthly, club, creation-year, membership-age, and ranking datasets reconcile to the same YTD recovery cohort",
             )
@@ -4668,50 +4677,58 @@ def run(args: argparse.Namespace) -> int:
             report.membership_parity = compare_membership_parity(
                 report.membership_record,
                 dashboard_record,
-            )
-            comparable_results = [
-                result
-                for result in report.membership_parity
-                if result.result_label != "METHODOLOGY CHANGE"
-            ]
-            methodology_change_count = (
-                len(report.membership_parity) - len(comparable_results)
-            )
-            parity_pass_count = sum(result.passed for result in comparable_results)
-            parity_passed = parity_pass_count == len(comparable_results)
-            report.add_check(
-                "Membership monthly diagnostics",
-                "PASS" if parity_passed else "FAIL",
-                (
-                    f"{parity_pass_count}/{len(comparable_results)} comparable metrics match "
-                    f"the {baseline_label} dashboard baseline; "
-                    f"{methodology_change_count} metrics classified as methodology changes"
-                ),
+                prior_month_reference=baseline_is_fallback,
             )
             if baseline_is_fallback:
-                report.warnings.append(
-                    f"{activity_month} dashboard metrics are all null; parity uses {baseline_label} as a fallback baseline."
+                parity_evaluated = False
+                parity_passed = True
+                report.add_check(
+                    "Membership month-over-month reference",
+                    "PASS",
+                    (
+                        f"new {activity_month} snapshot compared with the prior live "
+                        f"{baseline_label} snapshot for context only; changes are expected "
+                        "and are not parity failures"
+                    ),
                 )
-            new_golfer_parity = next(
-                result
-                for result in report.membership_parity
-                if result.metric == "newGolfers"
-            )
-            if not new_golfer_parity.passed:
                 report.warnings.append(
-                    "New Golfer logic remains membership_creation_date in the activity month; "
-                    "the dashboard variance is treated as likely snapshot/backfill drift."
+                    f"{activity_month} has no previously populated same-period snapshot; "
+                    f"{baseline_label} is shown only as the prior live snapshot reference."
                 )
-            report.warnings.append(
-                "The old dashboard used stricter same-club and expiration-extension renewal logic. "
-                "The new active-anywhere method counts eligible golfers retained anywhere in the GC ecosystem; "
-                "Renewed and On-Time Renewal Rate differences are methodology changes, not parity failures."
-            )
-            report.warnings.append(
-                "The old dashboard's 70.76% retention rate cannot be reproduced from available fields "
-                "without nonstandard exclusions or a different prior-year snapshot. The new retention method "
-                "uses distinct active prior-year GHINs as the denominator and counts those GHINs Active anywhere "
-                "in Current Month_Golfer Detail as the numerator; its variance is a methodology change."
+            else:
+                comparable_results = [
+                    result
+                    for result in report.membership_parity
+                    if result.result_label != "METHODOLOGY CHANGE"
+                ]
+                methodology_change_count = (
+                    len(report.membership_parity) - len(comparable_results)
+                )
+                parity_pass_count = sum(result.passed for result in comparable_results)
+                parity_passed = parity_pass_count == len(comparable_results)
+                report.add_check(
+                    "Membership monthly parity",
+                    "PASS" if parity_passed else "FAIL",
+                    (
+                        f"{parity_pass_count}/{len(comparable_results)} comparable metrics match "
+                        f"the existing {baseline_label} same-period snapshot; "
+                        f"{methodology_change_count} metrics classified as methodology changes"
+                    ),
+                )
+                new_golfer_parity = next(
+                    result
+                    for result in report.membership_parity
+                    if result.metric == "newGolfers"
+                )
+                if not new_golfer_parity.passed:
+                    report.warnings.append(
+                        "New Golfer logic remains membership_creation_date in the activity month; "
+                        "the dashboard variance is treated as likely snapshot/backfill drift."
+                    )
+            report.calculation_notes.append(
+                "retention uses the established active-anywhere methodology: distinct active prior-year "
+                "GHINs are the denominator and those GHINs Active anywhere in Current Month_Golfer Detail "
+                "are the numerator"
             )
         report.add_check(
             "Membership target record",

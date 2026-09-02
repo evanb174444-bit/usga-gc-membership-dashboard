@@ -5025,7 +5025,7 @@ svg{height:100%;width:100%;overflow:visible}
   <div class="header-inner">
     <div>
       <h1>USGA/GC Membership Dashboard</h1>
-      <div class="subtitle">Report Date: August 2, 2026</div>
+      <div class="subtitle">Report Date: September 2, 2026</div>
     </div>
   </div>
 </header>
@@ -8617,7 +8617,7 @@ function executiveMiniBarChart(data, title) {
   if(!data.length) return `<div class="empty-note">No membership data for this selection.</div>`;
   const w = 560, h = 300, p = 34, top = 16, bottom = 42;
   const maxVal = Math.max(...data.map(d => d.value));
-  const yMax = title === "Total Membership Growth" ? 525000 : Math.ceil(maxVal / 50000) * 50000;
+  const yMax = Math.ceil(maxVal / 50000) * 50000;
   const plotW = w - p - 8;
   const plotH = h - top - bottom;
   const slot = plotW / data.length;
