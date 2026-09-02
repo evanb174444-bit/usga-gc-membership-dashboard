@@ -10276,7 +10276,7 @@ function renderEngagementSection() {
       <div class="card full retention-card retention-tenure-card ghin-challenges-executive-card">
         ${engagementExecutiveHeroBlock([
           {label:"Total Challenges", value:summary.totalChallenges, format:"count", badge:engagementGrowthBadge("totalChallenges"), sub:"Active + Completed + Upcoming", className:"green"},
-          {label:"Total Participants (Uniques)", value:summary.totalGolfers, format:"count", badge:engagementGrowthBadge("totalGolfers"), sub:"Unique golfers", className:"blue"},
+          {label:"Total Participants (Uniques)", value:summary.totalGolfers, format:"count", badge:engagementGrowthBadge("totalGolfers"), sub:`(${fmt(GHIN_CHALLENGES_DATA.metadata?.detailTotals?.totalGolfers)} challenge participations)`, className:"blue"},
           {label:"Participating Associations", value:engagementLatestSnapshotValue("participatingAssociations"), format:"count", badge:engagementGrowthBadge("participatingAssociations"), sub:"Participating AGAs", className:"slate"}
         ])}
         ${engagementSupportingKpiBlock([
