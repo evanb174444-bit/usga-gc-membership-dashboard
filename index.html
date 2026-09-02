@@ -5679,6 +5679,11 @@ function reportDateLabelForRow(row) {
   const reportYear = activityMonth === 12 ? Number(row.year) + 1 : Number(row.year);
   return `${monthName(reportMonth)} 1, ${reportYear}`;
 }
+function shortReportDateLabelForRow(row) {
+  const label = reportDateLabelForRow(row);
+  const match = label.match(/^(\w+) (\d+), (\d{4})$/);
+  return match ? `${match[1].slice(0,3)} ${match[2]} '${match[3].slice(2)}` : label;
+}
 function idx(year, month) { return Number(year) * 12 + Number(month); }
 function rowIdx(r) { return idx(r.year, monthNum(r.month)); }
 function fmt(v, type="count") {
@@ -8535,7 +8540,7 @@ function targetMonthData(ref) {
   const out = [];
   for(let y=2022;y<=ref.year;y++) {
     const r = BY_YEAR_MONTH[y+"-"+m];
-    if(r?.activeGolfers != null) out.push({year:y,label:`${ref.month.slice(0,3)} '${String(y).slice(2)}`,value:r.activeGolfers,current:y===ref.year});
+    if(r?.activeGolfers != null) out.push({year:y,label:shortReportDateLabelForRow(r),value:r.activeGolfers,current:y===ref.year});
   }
   out.forEach((d,i)=>d.growth = i ? (d.value - out[i-1].value)/out[i-1].value : null);
   return out;
@@ -8885,7 +8890,7 @@ function projectionScenarioLabel(ref) {
   if(PROJECTION_SCENARIO === "20") return "20%";
   if(PROJECTION_SCENARIO === "25") return "25%";
   if(PROJECTION_SCENARIO === "30") return "30%";
-  return `Current ${ref.month} YOY`;
+  return `Current ${reportDateLabelForRow(ref)} YOY`;
 }
 
 function projectionScenarioControls(ref) {
@@ -8928,6 +8933,7 @@ function renderMembership() {
   const reportDateLabel = reportDateLabelForRow(ref);
 
   const sameMonthPrior = BY_YEAR_MONTH[(ref.year-1) + "-" + monthNum(ref.month)];
+  const priorReportDateLabel = reportDateLabelForRow(sameMonthPrior);
   const prevMonthNum = monthNum(ref.month) === 1 ? 12 : monthNum(ref.month) - 1;
   const prevMonthYear = monthNum(ref.month) === 1 ? ref.year - 1 : ref.year;
   const prevMonthRow = BY_YEAR_MONTH[prevMonthYear + "-" + prevMonthNum];
@@ -8994,7 +9000,7 @@ function renderMembership() {
         </div>
         <div class="dashboard-topline-change">
           <span class="dashboard-topline-change-main">${activeChange > 0 ? "▲" : activeChange < 0 ? "▼" : "•"} ${pct(activeChange)}</span>
-          <span class="dashboard-topline-change-basis">vs ${ref.month} ${ref.year-1}</span>
+          <span class="dashboard-topline-change-basis">vs ${priorReportDateLabel}</span>
         </div>
       </div>
 
@@ -9050,7 +9056,7 @@ function renderMembership() {
       </div>
     </div>
     <div class="square-exec-copy">
-      <strong>${fmt(ref.activeGolfers)}</strong> active GC golfers through <strong>${ref.month} ${ref.year}</strong>, compared with <strong>${fmt(prevDec?.activeGolfers)}</strong> at year-end ${ref.year-1}.
+      <strong>${fmt(ref.activeGolfers)}</strong> active GC golfers as of <strong>${reportDateLabel}</strong>, compared with <strong>${fmt(prevDec?.activeGolfers)}</strong> at year-end ${ref.year-1}.
     </div>
     ${executiveMiniBarChart(annual, "Total Membership Growth")}
 `;
@@ -9068,7 +9074,7 @@ function renderMembership() {
     <div class="card-head">
       <div>
         <h3>Year Over Year Growth</h3>
-        <div class="card-sub">Same month across years, back to 2022.</div>
+        <div class="card-sub">Same report-date snapshot across years, back to 2022.</div>
       </div>
       ${yoyControls()}
     </div>
@@ -9079,7 +9085,7 @@ function renderMembership() {
       </div>
     </div>
     <div class="square-exec-copy">
-      <strong>${yoyRef.month} ${yoyRef.year}</strong> ${yoyVerb} up <strong>${fmt(yoyRef.yoyActiveChange)}</strong> golfers from <strong>${yoyRef.month} ${yoyRef.year-1}</strong>. ${totalLabel} ${totalVerb} <strong>${fmt(yoyRef.activeGolfers)}</strong>.
+      <strong>${reportDateLabelForRow(yoyRef)}</strong> ${yoyVerb} up <strong>${fmt(yoyRef.yoyActiveChange)}</strong> golfers from <strong>${reportDateLabelForRow(BY_YEAR_MONTH[(yoyRef.year-1)+"-"+monthNum(yoyRef.month)])}</strong>. ${totalLabel} ${totalVerb} <strong>${fmt(yoyRef.activeGolfers)}</strong>.
     </div>
     ${executiveMiniBarChart(yoyTarget, yoyRef.month + " Membership by Year")}
 `;
