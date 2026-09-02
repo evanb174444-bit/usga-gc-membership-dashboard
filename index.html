@@ -8939,10 +8939,6 @@ function renderMembership() {
 
   const sameMonthPrior = BY_YEAR_MONTH[(ref.year-1) + "-" + monthNum(ref.month)];
   const priorReportDateLabel = reportDateLabelForRow(sameMonthPrior);
-  const prevMonthNum = monthNum(ref.month) === 1 ? 12 : monthNum(ref.month) - 1;
-  const prevMonthYear = monthNum(ref.month) === 1 ? ref.year - 1 : ref.year;
-  const prevMonthRow = BY_YEAR_MONTH[prevMonthYear + "-" + prevMonthNum];
-
   const relChange = (curr, prior) => (curr != null && prior != null && Number(prior) !== 0) ? (curr - prior) / prior : null;
   const share = (num, denom) => (num != null && denom != null && Number(denom) !== 0) ? num / denom : null;
   const changeMarkup = (change, basisLabel) => {
@@ -8981,7 +8977,7 @@ function renderMembership() {
   const newGolfersChange = relChange(ref.newGolfers, sameMonthPrior?.newGolfers);
   const ytdNewGolfersChange = ref.ytdNewPct;
   const onTimeRenewalChange = ref.onTimeRenewalRate != null && sameMonthPrior?.onTimeRenewalRate != null ? ref.onTimeRenewalRate - sameMonthPrior.onTimeRenewalRate : null;
-  const rollingRetentionChange = ref.retentionRate != null && prevMonthRow?.retentionRate != null ? ref.retentionRate - prevMonthRow.retentionRate : null;
+  const rollingRetentionChange = ref.retentionRate != null && sameMonthPrior?.retentionRate != null ? ref.retentionRate - sameMonthPrior.retentionRate : null;
   const reactivationsChange = relChange(ref.reactivations, sameMonthPrior?.reactivations);
   const ytdReactivationsChange = ref.ytdReactivationsPct;
 
@@ -9031,7 +9027,7 @@ function renderMembership() {
           <div class="dashboard-summary-group-title">Retention</div>
           <div class="dashboard-summary-metrics">
             ${summaryMetric("On-time renewal", fmt(ref.onTimeRenewalRate,'percent'), pointChangeMarkup(onTimeRenewalChange, `${ref.month} ${ref.year-1}`), `${ref.month} ${ref.year}`)}
-            ${summaryMetric("12M retention", fmt(ref.retentionRate,'percent'), pointChangeMarkup(rollingRetentionChange, reportDateLabelForRow(prevMonthRow)), `As of ${reportDateLabel}`)}
+            ${summaryMetric("12M retention", fmt(ref.retentionRate,'percent'), pointChangeMarkup(rollingRetentionChange, priorReportDateLabel), `As of ${reportDateLabel}`)}
           </div>
           <a class="dashboard-summary-link" onclick="setTab('retention')">Open Retention →</a>
         </div>
@@ -9130,7 +9126,6 @@ function renderRetentionSection() {
 
   const month = monthNum(ref.month);
   const priorYearRow = enrich(BY_YEAR_MONTH[(ref.year - 1) + '-' + month]);
-  const prevMonthRow = month > 1 ? enrich(BY_YEAR_MONTH[ref.year + '-' + (month - 1)]) : null;
   const priorRetentionNotRenewed = priorYearRow?.priorYearActiveGolfers != null && priorYearRow?.retainedGolfers != null ? (priorYearRow.priorYearActiveGolfers - priorYearRow.retainedGolfers) : null;
   const retentionNotRenewed = ref.priorYearActiveGolfers != null && ref.retainedGolfers != null ? (ref.priorYearActiveGolfers - ref.retainedGolfers) : null;
 
@@ -9144,8 +9139,7 @@ function renderRetentionSection() {
 
   const retainedChange = relChange(ref.retainedGolfers, priorYearRow?.retainedGolfers);
   const onTimeChange = ref.onTimeRenewalRate != null && priorYearRow?.onTimeRenewalRate != null ? ref.onTimeRenewalRate - priorYearRow.onTimeRenewalRate : null;
-  const rollingChange = ref.retentionRate != null && prevMonthRow?.retentionRate != null ? ref.retentionRate - prevMonthRow.retentionRate : null;
-  const previousSnapshotLabel = reportDateLabelForRow(prevMonthRow);
+  const rollingChange = ref.retentionRate != null && priorYearRow?.retentionRate != null ? ref.retentionRate - priorYearRow.retentionRate : null;
   const priorYearSnapshotLabel = reportDateLabelForRow(priorYearRow);
   const priorCohortBaseLabel = reportDateLabelForRow(BY_YEAR_MONTH[(ref.year-2) + '-' + month]);
 
@@ -9172,11 +9166,11 @@ function renderRetentionSection() {
 
   const retentionControls = `<div class="toggle"><button class="${retentionPref==='bar'?'active':''}" onclick="setChart('retentionCard','bar')">Bar chart</button><button class="${retentionPref==='line'?'active':''}" onclick="setChart('retentionCard','line')">Line graph</button></div>${yearToggleControls('retentionCard', ref)}`;
   const retentionCopyBits = [];
-  if(rollingChange != null) retentionCopyBits.push(`${rollingChange >= 0 ? '+' : ''}${(rollingChange*100).toFixed(1)} pts vs ${previousSnapshotLabel}.`);
+  if(rollingChange != null) retentionCopyBits.push(`${rollingChange >= 0 ? '+' : ''}${(rollingChange*100).toFixed(1)} pts vs ${priorYearSnapshotLabel}.`);
   if(ref.retainedGolfers != null && ref.priorYearActiveGolfers != null) retentionCopyBits.push(`Equivalent to ${fmt(ref.retainedGolfers)} retained golfers from the prior-year active base of ${fmt(ref.priorYearActiveGolfers)}.`);
   const retentionCopy = retentionCopyBits.join(' ');
   const retentionKpis = richKpiBlock([
-    {label:'12M retention', value:ref.retentionRate, format:'percent', changeHtml:kpiPointChangeMarkup(rollingChange, previousSnapshotLabel), sub:`As of ${reportDateLabelForRow(ref)}`},
+    {label:'12M retention', value:ref.retentionRate, format:'percent', changeHtml:kpiPointChangeMarkup(rollingChange, priorYearSnapshotLabel), sub:`As of ${reportDateLabelForRow(ref)}`},
     {label:'Up for renewal during the last 12 months', value:ref.priorYearActiveGolfers, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.priorYearActiveGolfers, priorYearRow?.priorYearActiveGolfers), `${priorCohortBaseLabel} base`), sub:`${priorYearSnapshotLabel} active base`},
     {label:'Retained golfers', value:ref.retainedGolfers, format:'count', changeHtml:kpiChangeMarkup(retainedChange, 'prior 12M cohort'), sub:'Still active now'},
     {label:'Not renewed', value:retentionNotRenewed, format:'count', changeHtml:kpiChangeMarkup(relChange(retentionNotRenewed, priorRetentionNotRenewed), 'prior 12M cohort'), sub:'No longer active'}

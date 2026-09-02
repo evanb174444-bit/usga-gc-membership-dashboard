@@ -219,6 +219,10 @@ Add automated validation for:
 
 Move YTD totals, year-over-year changes, retained-golfer counts, projection inputs, attribution shares, and cohort milestones into a tested data-preparation layer. This would reduce the amount of calculation logic performed independently by browser renderers.
 
+### KPI comparison convention
+
+Primary KPI comparison badges use the equivalent prior-year period, not the immediately preceding month. Snapshot metrics compare matching report-date snapshots (for example, September 1, 2026 versus September 1, 2025), while activity metrics compare matching calendar periods (for example, August 2026 versus August 2025). Changes between rates are displayed as percentage-point differences. Month-over-month movement belongs in trend charts or secondary context rather than the primary KPI badge.
+
 ### Automated dashboard builds
 
 A lightweight build script could:
