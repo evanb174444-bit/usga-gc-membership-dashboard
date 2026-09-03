@@ -1,14 +1,16 @@
 # USGA/GC Membership Dashboard — Project Overview
 
+> Monthly operations are governed by `MONTHLY_GC_RUNBOOK.md`. That runbook is the authoritative source for file intake, metric methodology, QA interpretation, date labeling, visual verification, and publishing.
+
 ## 1. Current dashboard structure
 
-The dashboard is currently a self-contained static web application implemented in a single `index.html` file. It does not require a web server, build step, package manager, JavaScript framework, or external charting library. Opening the file in a modern browser is enough to run it.
+The dashboard is a static web application centered on `index.html` with generated JSON datasets in `data/`. It has no package-manager build step, JavaScript framework, or external charting library. Because it loads JSON with `fetch()`, serve the repository over HTTP with `PORT=8000 ./scripts/serve_dashboard.sh` for local use.
 
 `index.html` combines four concerns:
 
 1. **Presentation styles** — Embedded `<style>` blocks define the page layout, cards, tabs, tables, charts, responsive behavior, and visual states. The file contains one main stylesheet plus several later override blocks.
 2. **Static document structure** — The HTML establishes the header, primary tabs, secondary tabs, static retention-cohort content, and empty containers used by JavaScript renderers.
-3. **Embedded data** — Membership, segmentation, attribution, marketing, affiliate, and retention figures are stored directly in JavaScript arrays and objects.
+3. **Dashboard data** — Core membership, segmentation, retention, recovery, GHIN Trials, marketing, affiliate, engagement, and attribution data are loaded from JSON files in `data/` where migrated; remaining draft/static modules may still use embedded values.
 4. **Application logic** — Vanilla JavaScript calculates metrics, generates SVG charts, renders HTML into dashboard containers, handles interactions, and persists user preferences.
 
 The main startup flow is:
@@ -28,9 +30,9 @@ render()
 Restore the saved tab and other browser preferences
 ```
 
-Most charts are generated as inline SVG. There are no calls to `fetch()`, no API integration, and no external runtime assets. UI settings are saved in browser `localStorage`, including the active tab, chart types, visible years, projection scenario, attribution view, table sort order, and selected segmentation club.
+Most charts are generated as inline SVG. JSON datasets are loaded locally with `fetch()`; there is no live external API integration. UI presentation settings such as the active tab, chart types, visible years, projection scenario, attribution view, table sort order, and selected segmentation club may persist in browser `localStorage`. Month/year comparison controls intentionally do not persist: every page load selects the latest populated period.
 
-The dashboard header currently displays a report date of July 1, 2026. The latest populated core membership record is May 2026, while segmentation status data extends through June 1, 2026.
+The dashboard header currently displays a report date of September 2, 2026. The latest populated core membership record represents August 2026 activity and the September 1, 2026 membership snapshot. Segmentation, retention, and recovery outputs are populated through the same delivery.
 
 ## 2. Major sections and tabs
 
@@ -124,7 +126,7 @@ The Segmentation tab supports an aggregate view and selection among 58 clubs/ass
 
 ### Core membership data
 
-The `DATA` array contains 60 monthly rows spanning January 2022 through December 2026. It includes:
+`data/membership_monthly.json` contains 60 monthly rows spanning January 2022 through December 2026. It includes:
 
 - Active golfers
 - Monthly net change and percent change
@@ -134,11 +136,11 @@ The `DATA` array contains 60 monthly rows spanning January 2022 through December
 - Renewed and up-for-renewal counts
 - Rolling retention rates
 
-Actual populated coverage varies by metric. May 2026 is the latest row with populated core membership values. June through December 2026 are present as empty future rows.
+Actual populated coverage varies by metric. August 2026 is the latest row with populated core membership values and represents the September 1, 2026 membership snapshot plus August activity. September through December 2026 remain empty future rows.
 
 ### Segmentation status data
 
-`SEGMENTATION_STATUS_DATA` contains 348 records for 58 aggregate/club selections across six report dates from January 5 through June 1, 2026. Fields include:
+`data/segmentation_status.json` contains cumulative aggregate/club snapshot records through the September 1, 2026 snapshot. Fields include:
 
 - Active golfers
 - Inactive golfers
@@ -148,7 +150,7 @@ Actual populated coverage varies by metric. May 2026 is the latest row with popu
 
 ### Segmentation demographic breakdown data
 
-`SEGMENTATION_BREAKDOWN_DATA` contains 7,656 records covering 58 aggregate/club selections from February through May 2026. It breaks Active, Inactive, and Archived golfers down by:
+`data/segmentation_breakdown.json` contains cumulative aggregate/club demographic snapshot records through the September 1, 2026 snapshot. It breaks Active, Inactive, and Archived golfers down by:
 
 - Age range
 - Gender
@@ -157,7 +159,7 @@ Actual populated coverage varies by metric. May 2026 is the latest row with popu
 
 ### Retention cohort and club data
 
-Creation-year cohort summaries, survival milestones, the survival curve, and club rankings are embedded directly in the HTML. These values are not currently stored in a reusable JavaScript dataset.
+Creation-year cohort summaries and survival milestones are generated in `data/retention_cohorts.json`; club rankings are generated in `data/retention_club_rankings.json`. The dashboard renders the survival curve and tables from those datasets.
 
 ### Acquisition attribution data
 

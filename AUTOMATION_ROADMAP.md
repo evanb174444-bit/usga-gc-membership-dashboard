@@ -1,5 +1,7 @@
 # USGA/GC Dashboard Automation Roadmap
 
+> This file describes longer-term architecture. For the current production workflow and business rules, follow `MONTHLY_GC_RUNBOOK.md`.
+
 ## Purpose
 
 This roadmap describes how the current dashboard can evolve from a manually maintained, self-contained HTML file into a repeatable monthly reporting system. The recommended approach preserves the dashboard as a static, easy-to-distribute artifact while moving data preparation, validation, and business calculations into an automated pipeline.
@@ -19,19 +21,15 @@ The application is a single `index.html` file containing:
 - Tab, filter, sorting, tooltip, and projection interactions
 - Browser `localStorage` persistence for presentation preferences
 
-There is currently no:
+The project now has a Python-based monthly updater with source validation, cumulative JSON generation, backups, and QA output. Longer-term gaps still include:
 
-- Data-ingestion process
-- Data contract or schema enforcement
 - Database
 - Build step
-- Automated calculation test suite
-- Data-quality test suite
 - Release manifest
 - API or external data loading
 - Automated deployment process
 
-The dashboard header displays July 1, 2026. Core membership data is populated through May 2026, segmentation status data through June 1, 2026, and segmentation demographic data through May 1, 2026. This illustrates an important current risk: one manually edited report date can imply a uniform cutoff even when sections have different source coverage.
+The dashboard header displays September 2, 2026. Core membership, segmentation, retention, and recovery data are populated through the September delivery, representing the September 1 snapshot and August activity. GHIN Trials and marketing may have different source coverage and must not be presented as current until their monthly inputs are processed.
 
 ### Current embedded sources
 

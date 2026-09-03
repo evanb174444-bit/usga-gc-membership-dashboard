@@ -2850,6 +2850,12 @@ def generate_ghin_trials_output(
     existing_overview = (
         existing_ghin.get("overview", {}) if isinstance(existing_ghin, dict) else {}
     )
+    existing_gc_summary = (
+        existing_ghin.get("gcSummary", {}) if isinstance(existing_ghin, dict) else {}
+    )
+    existing_gc_monthly = (
+        existing_ghin.get("gcMonthly", []) if isinstance(existing_ghin, dict) else []
+    )
     overview = {
         "signups": summary["totalTrialsCreated"],
         "activeTrials": summary["activeTrialGolfers"],
@@ -2866,6 +2872,10 @@ def generate_ghin_trials_output(
         },
         "overview": overview,
         "summary": summary,
+        # These aggregate exports refresh the "All" population only. Preserve
+        # the independently sourced GC-only series until replacements arrive.
+        "gcSummary": existing_gc_summary,
+        "gcMonthly": existing_gc_monthly,
         "yearlyTotals": yearly_totals,
         "monthly": monthly,
         "conversionBuckets": conversion_buckets,
@@ -2893,11 +2903,24 @@ def generate_ghin_trials_output(
 
 
 def validate_ghin_trials_output(output: dict[str, Any]) -> None:
-    required = {"metadata", "overview", "summary", "yearlyTotals", "monthly", "conversionBuckets", "agaConversions"}
+    required = {
+        "metadata", "overview", "summary", "gcSummary", "gcMonthly",
+        "yearlyTotals", "monthly", "conversionBuckets", "agaConversions",
+    }
     if set(output) != required:
         raise ValidationError("ghin_trials.json has an invalid top-level schema")
     if output["metadata"].get("schemaVersion") != 1:
         raise ValidationError("ghin_trials.json metadata.schemaVersion must be 1")
+    if not isinstance(output["gcSummary"].get("trialConversions"), int):
+        raise ValidationError("ghin_trials.json gcSummary.trialConversions must be an integer")
+    if not isinstance(output["gcMonthly"], list) or not output["gcMonthly"]:
+        raise ValidationError("ghin_trials.json gcMonthly must be a non-empty array")
+    if not all(
+        isinstance(record.get("label"), str)
+        and isinstance(record.get("conversions"), int)
+        for record in output["gcMonthly"]
+    ):
+        raise ValidationError("ghin_trials.json gcMonthly records are invalid")
     summary = output["summary"]
     for key in ("totalTrialsCreated", "trialConversions", "activeTrialGolfers", "inactiveTrialGolfers"):
         if not isinstance(summary.get(key), int):
@@ -4204,6 +4227,7 @@ def run(args: argparse.Namespace) -> int:
                     "ghin_trials.json conversionBuckets uses Conversions by Days in Trial.csv counts and validates Tableau percentages against count share",
                     "ghin_trials.json agaConversions uses AGA Conversions.csv grouped counts sorted by count descending and association name",
                     "overview numeric fields are generated from summary; overview campaign and funnel rows are preserved from existing ghin_trials.json because the five aggregate Tableau exports do not include campaign, activation, or engagement detail",
+                    "gcSummary and gcMonthly are preserved from existing ghin_trials.json because the five aggregate Tableau exports contain All-population conversions, not the GC-only series",
                 )
             )
             if args.dry_run:
