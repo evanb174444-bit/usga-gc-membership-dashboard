@@ -617,6 +617,9 @@ svg{height:100%;width:100%;overflow:visible}
   margin-top:0;
   margin-bottom:0;
 }
+.ghin-challenges-support-kpis .kpi-change{
+  white-space:nowrap;
+}
 .ghin-challenges-hero-kpi{
   position:relative;
   padding:13px 14px;
@@ -10038,6 +10041,21 @@ function engagementGrowthBadge(key) {
   };
 }
 
+function engagementRatePointBadge(numeratorKey, denominatorKey) {
+  const rows = GHIN_CHALLENGES_GROWTH_DATA || [];
+  if(rows.length < 2) return {main:"No comparison", basis:""};
+  const firstNumerator = Number(rows[0]?.[numeratorKey] || 0);
+  const firstDenominator = Number(rows[0]?.[denominatorKey] || 0);
+  const latestNumerator = Number(rows[rows.length - 1]?.[numeratorKey] || 0);
+  const latestDenominator = Number(rows[rows.length - 1]?.[denominatorKey] || 0);
+  if(!firstDenominator || !latestDenominator) return {main:"No comparison", basis:""};
+  const pointChange = (latestNumerator / latestDenominator - firstNumerator / firstDenominator) * 100;
+  return {
+    main:`${pointChange >= 0 ? "▲ +" : "▼ "}${Math.abs(pointChange).toFixed(1)} pts`,
+    basis:"since May"
+  };
+}
+
 function engagementExecutiveHeroCard(item) {
   return `
     <div class="kpi acquisition-kpi ghin-challenges-hero-kpi ${escapeHtml(item.className || '')}">
@@ -10076,6 +10094,7 @@ function engagementSupportingKpiBlock(items) {
       ` : `
         <div class="kpi-label">${escapeHtml(i.label)}</div>
         <div class="kpi-value">${fmt(i.value, i.format || 'count')}</div>
+        ${i.badge ? `<div class="kpi-change ${i.badge.main.startsWith("▼") ? "negative" : i.badge.main.startsWith("▲") ? "positive" : "neutral"}">${escapeHtml(i.badge.main)}${i.badge.basis ? ` ${escapeHtml(i.badge.basis)}` : ""}</div>` : ""}
         <div class="kpi-sub">${escapeHtml(i.sub || '')}</div>
       `}
     </div>`).join("")}</div>`;
@@ -10274,9 +10293,9 @@ function renderEngagementSection() {
         ${engagementSupportingKpiBlock([
           {label:"Active Challenges", value:summary.activeChallenges, format:"count", sub:"Currently active"},
           {label:"Completed Challenges", value:summary.completedChallenges, format:"count", sub:"Completed"},
-          {label:"Ranked Golfers", value:summary.rankedGolfers, format:"count", sub:"With rank"},
-          {label:"Ranked Golfer Rate", value:summary.rankedGolferRate, format:"percent", sub:"Ranked golfers / golfers"},
-          {label:"Scores Posted", value:summary.scoresPosted, format:"count", sub:""},
+          {label:"Ranked Golfers", value:summary.rankedGolfers, format:"count", badge:engagementGrowthBadge("rankedGolfers"), sub:"With rank"},
+          {label:"Ranked Golfer Rate", value:summary.rankedGolferRate, format:"percent", badge:engagementRatePointBadge("rankedGolfers", "totalGolfers"), sub:"Ranked golfers / golfers"},
+          {label:"Scores Posted", value:summary.scoresPosted, format:"count", badge:engagementGrowthBadge("scoresPosted"), sub:""},
           {label:"Average Posted / Golfer", value:engagementDecimal(summary.scoresPerGolfer), format:"text", sub:""}
         ])}
       </div>
