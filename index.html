@@ -527,8 +527,6 @@ svg{height:100%;width:100%;overflow:visible}
   padding:8px 10px;
   font-size:11.5px;
 }
-
-
 .acquisition-card{
   grid-column:span 12;
   min-height:760px;
@@ -877,7 +875,26 @@ svg{height:100%;width:100%;overflow:visible}
   display:block;
 }
 
-.tooltip{position:fixed;display:none;background:#111827;color:#fff;padding:8px 10px;border-radius:9px;font-size:12px;line-height:1.35;pointer-events:none;z-index:99;box-shadow:0 12px 28px rgba(2,6,23,.28)}
+.tooltip{position:fixed;display:none;max-width:min(320px,calc(100vw - 24px));background:#111827;color:#fff;padding:8px 10px;border-radius:9px;font-size:12px;line-height:1.35;pointer-events:none;z-index:99;box-shadow:0 12px 28px rgba(2,6,23,.28)}
+.yoy-driver-tip{min-width:245px;padding:3px 2px;font-size:14px;line-height:1.4}
+.yoy-driver-tip-title{font-size:15px;font-weight:900;margin-bottom:8px;color:#fff}
+.yoy-driver-tip-row{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:5px 0}
+.yoy-driver-tip-label{color:#dbe4f0;font-weight:700}
+.yoy-driver-tip-value{font-weight:900;white-space:nowrap}
+.yoy-driver-tip-value.positive{color:#4ade80}
+.yoy-driver-tip-value.negative{color:#f87171}
+.yoy-driver-tip-value.neutral{color:#e2e8f0}
+.membership-driver-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:nowrap}
+.membership-driver-head>div:first-child{flex:1 1 auto;min-width:0}
+.membership-driver-head>div:last-child{flex:0 0 auto}
+.driver-scoreboard{display:flex;align-items:center;gap:7px;flex:0 0 auto;white-space:nowrap}
+.driver-score{min-width:104px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;text-align:center}
+.driver-score-op{color:#64748b;font-size:20px;font-weight:950}
+.driver-score-label{color:#64748b;font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}
+.driver-score-value{font-size:24px;line-height:1.1;font-weight:950;margin-top:4px}
+.driver-summary-line{color:#334155;font-size:13px;font-weight:500;margin-top:5px}
+.driver-summary-line strong{color:#1e293b;font-weight:900}
+@media(max-width:700px){.membership-driver-head{display:block}.driver-scoreboard{margin-top:12px;gap:4px}.driver-score{min-width:0;padding:8px 6px}.driver-score-value{font-size:15px}.driver-score-op{font-size:16px}}
 @media(max-width:1100px){.hero-card,.hero-chart,.half{grid-column:span 12}.kpis{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){header,main{padding-left:16px;padding-right:16px}h1{font-size:24px}.hero-number{font-size:38px}.hero-stat-grid,.kpis{grid-template-columns:1fr}.chart{height:280px}.chart.tall{height:330px}}
 
@@ -891,30 +908,74 @@ svg{height:100%;width:100%;overflow:visible}
 
 .dashboard-topline-hero{
   margin:20px 0 18px;
-  background:linear-gradient(180deg,#ffffff,#f8fafc);
-  border:1px solid #e8eef6;
-  border-radius:18px;
-  padding:22px 24px;
-  box-shadow:0 6px 18px rgba(15,23,42,.05);
+  background:transparent;
+  border:0;
+  border-radius:0;
+  padding:0;
+  min-height:300px;
+  box-shadow:none;
   display:flex;
+  align-items:stretch;
+  justify-content:space-between;
+  gap:14px;
+  flex-wrap:nowrap;
+}
+.dashboard-topline-stat{
+  display:flex;
+  flex-direction:column;
   align-items:center;
-  justify-content:flex-start;
-  gap:28px;
-  flex-wrap:wrap;
+  justify-content:center;
+  gap:20px;
+  flex:0 0 calc(35% - 7px);
+  min-height:300px;
+  padding:24px;
+  text-align:center;
+  background:#f8fafc;
+  border:1px solid #edf2f7;
+  border-radius:14px;
+}
+.dashboard-topline-trend{
+  flex:1 1 0;
+  min-width:0;
+  min-height:300px;
+  padding:18px 30px 10px 22px;
+  background:#fbfcfe;
+  border:1px solid #edf2f7;
+  border-radius:14px;
+}
+.dashboard-topline-trend-title{
+  color:#1e293b;
+  font-size:16px;
+  line-height:1.2;
+  font-weight:900;
+  letter-spacing:-.01em;
+}
+.dashboard-topline-trend-sub{
+  color:#64748b;
+  font-size:12.5px;
+  line-height:1.35;
+  margin-top:4px;
+}
+.dashboard-topline-trend svg{
+  display:block;
+  height:auto;
+  margin:2px auto 0;
+  width:96%;
 }
 .dashboard-topline-eyebrow{
-  font-size:11px;
+  font-size:12px;
   color:#64748b;
-  font-weight:950;
-  letter-spacing:.07em;
+  font-weight:900;
+  letter-spacing:.06em;
   text-transform:uppercase;
   margin-bottom:6px;
 }
 .dashboard-topline-main{
   display:flex;
-  align-items:baseline;
-  gap:14px;
-  flex-wrap:wrap;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+  justify-content:center;
 }
 .dashboard-topline-number{
   font-size:46px;
@@ -925,21 +986,22 @@ svg{height:100%;width:100%;overflow:visible}
 }
 .dashboard-topline-label{
   font-size:18px;
-  color:#334155;
-  font-weight:950;
+  color:#1e293b;
+  font-weight:900;
 }
 .dashboard-topline-sub{
-  font-size:12px;
+  font-size:12.5px;
+  line-height:1.35;
   color:#64748b;
-  margin-top:6px;
+  margin-top:8px;
 }
 .dashboard-topline-change{
-  min-width:170px;
-  background:#f0fdf4;
-  border:1px solid #bbf7d0;
+  min-width:0;
+  background:transparent;
+  border:0;
   color:#15803d;
-  border-radius:16px;
-  padding:14px 16px;
+  border-radius:0;
+  padding:0;
   text-align:center;
 }
 .dashboard-topline-change-main{
@@ -953,13 +1015,16 @@ svg{height:100%;width:100%;overflow:visible}
   display:block;
   font-size:12px;
   font-weight:900;
-  margin-top:6px;
+  margin-top:8px;
   color:#166534;
 }
 @media(max-width:700px){
-  .dashboard-topline-hero{align-items:flex-start}
+  .dashboard-topline-hero{align-items:flex-start;min-height:0;flex-wrap:wrap}
+  .dashboard-topline-stat{align-items:flex-start;flex-basis:100%;min-height:0;text-align:left}
+  .dashboard-topline-main{align-items:flex-start;justify-content:flex-start}
   .dashboard-topline-number{font-size:38px}
   .dashboard-topline-change{text-align:left;width:100%}
+  .dashboard-topline-trend{min-width:100%;min-height:0;padding:16px}
 }
 
 .dashboard-summary-grid{
@@ -1008,7 +1073,7 @@ svg{height:100%;width:100%;overflow:visible}
   line-height:1.05;
   font-weight:950;
   color:#0f172a;
-  margin-top:5px;
+  margin-top:7px;
   white-space:nowrap;
 }
 .dashboard-summary-sub{
@@ -1021,7 +1086,7 @@ svg{height:100%;width:100%;overflow:visible}
   align-items:center;
   justify-content:center;
   gap:6px;
-  margin-top:16px;
+  margin-top:28px;
   padding:8px 12px;
   border-radius:999px;
   font-size:12px;
@@ -1056,7 +1121,7 @@ svg{height:100%;width:100%;overflow:visible}
   color:#b64545;
 }
 .dashboard-summary-change{
-  margin-top:7px;
+  margin-top:9px;
   letter-spacing:.01em;
   line-height:1.05;
 }
@@ -1070,7 +1135,7 @@ svg{height:100%;width:100%;overflow:visible}
   display:block;
   font-size:10.5px;
   font-weight:900;
-  margin-top:3px;
+  margin-top:5px;
   color:#64748b;
   white-space:nowrap;
 }
@@ -5052,6 +5117,7 @@ svg{height:100%;width:100%;overflow:visible}
       <div class="card full square-card square-exec summary-full" id="annualCard"></div>
       <div class="card full square-card square-exec summary-full" id="targetMonthCard"></div>
       <div class="card full membership-tile summary-full" id="projectionCard"></div>
+      <div class="card full membership-tile summary-full" id="membershipDriversCard"></div>
     </div>
   </section>
   </div>
@@ -5595,7 +5661,7 @@ const WIDGET_REFS = {};
 let YOY_REF = null;
 
 async function loadMembershipData() {
-  const response = await fetch("./data/membership_monthly.json");
+  const response = await fetch("./data/membership_monthly.json", {cache:"no-store"});
   if(!response.ok) {
     throw new Error(`Unable to load membership data: ${response.status} ${response.statusText}`);
   }
@@ -8733,6 +8799,158 @@ function projectionChart(data) {
   return `<div class="chart tall projection-chart"><div class="projection-chart-inner">${svg}</div></div>`;
 }
 
+function membershipYoyGrowthChart(ref) {
+  const endMonth = monthNum(ref.month);
+  const rows = [];
+  for(let month=1; month<=endMonth; month++) {
+    const current = BY_YEAR_MONTH[`${ref.year}-${month}`];
+    const prior = BY_YEAR_MONTH[`${ref.year-1}-${month}`];
+    if(current?.activeGolfers == null || prior?.activeGolfers == null || !Number(prior.activeGolfers)) continue;
+    rows.push({
+      month:current.month,
+      value:(Number(current.activeGolfers)-Number(prior.activeGolfers))/Number(prior.activeGolfers),
+      current:Number(current.activeGolfers),
+      prior:Number(prior.activeGolfers)
+    });
+  }
+  if(!rows.length) return "";
+  const w=620,h=260,left=42,right=20,top=28,bottom=36;
+  const values=rows.map(row=>row.value);
+  const yMin=Math.floor((Math.min(...values)-.01)*100)/100;
+  const yMax=Math.ceil((Math.max(...values)+.01)*100)/100;
+  const plotW=w-left-right,plotH=h-top-bottom;
+  const x=index=>left+(rows.length===1?plotW/2:index*plotW/(rows.length-1));
+  const y=value=>top+(yMax-value)/(yMax-yMin)*plotH;
+  const ticks=3;
+  let svg=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${ref.year} monthly year-over-year active membership growth">`;
+  for(let i=0;i<ticks;i++) {
+    const value=yMin+(yMax-yMin)*i/(ticks-1);
+    const yy=y(value);
+    svg+=`<line class="gridline" x1="${left}" x2="${w-right}" y1="${yy}" y2="${yy}"></line>`;
+    svg+=`<text class="axis-label" x="${left-7}" y="${yy+4}" text-anchor="end" style="font-size:11px">${(value*100).toFixed(0)}%</text>`;
+  }
+  svg+=`<line class="axis" x1="${left}" x2="${left}" y1="${top}" y2="${h-bottom}"></line>`;
+  svg+=`<line class="axis" x1="${left}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+  rows.forEach((row,index)=>{
+    const xx=x(index);
+    svg+=`<line class="gridline" x1="${xx}" x2="${xx}" y1="${top}" y2="${h-bottom}" style="opacity:.55"></line>`;
+    svg+=`<line class="axis" x1="${xx}" x2="${xx}" y1="${h-bottom}" y2="${h-bottom+6}"></line>`;
+  });
+  const points=rows.map((row,index)=>`${x(index)},${y(row.value)}`).join(" ");
+  svg+=`<polyline fill="none" stroke="#d85a32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${points}"></polyline>`;
+  rows.forEach((row,index)=>{
+    const xx=x(index),yy=y(row.value);
+    const isFirst=index===0;
+    const isLast=index===rows.length-1;
+    const labelX=isFirst?xx+9:isLast?xx-5:xx;
+    const labelAnchor=isFirst?"start":isLast?"end":"middle";
+    const currentRow=BY_YEAR_MONTH[`${ref.year}-${monthNum(row.month)}`];
+    const priorRow=BY_YEAR_MONTH[`${ref.year-1}-${monthNum(row.month)}`];
+    const acquisitionChange=relChange(currentRow?.newGolfers,priorRow?.newGolfers);
+    const retentionChange=currentRow?.onTimeRenewalRate != null && priorRow?.onTimeRenewalRate != null
+      ? currentRow.onTimeRenewalRate-priorRow.onTimeRenewalRate : null;
+    const recoveryChange=relChange(currentRow?.reactivations,priorRow?.reactivations);
+    const retentionLabel=retentionChange == null ? "—" : `${retentionChange>=0?"+":""}${(retentionChange*100).toFixed(1)} pts`;
+    const driverValue=(value,label)=>{
+      const state=value==null?"neutral":value>0?"positive":value<0?"negative":"neutral";
+      const arrow=value==null?"•":value>0?"▲":value<0?"▼":"•";
+      return `<span class='yoy-driver-tip-value ${state}'>${arrow} ${label}</span>`;
+    };
+    const tooltipText=`${row.month} ${ref.year}. Acquisition: ${pct(acquisitionChange)} YoY. On-time renewal: ${retentionLabel} YoY. Recovery: ${pct(recoveryChange)} YoY.`;
+    const tooltipHtml=`<div class='yoy-driver-tip'><div class='yoy-driver-tip-title'>${row.month} ${ref.year} drivers</div><div class='yoy-driver-tip-row'><span class='yoy-driver-tip-label'>Acquisition</span>${driverValue(acquisitionChange,`${pct(acquisitionChange)} YoY`)}</div><div class='yoy-driver-tip-row'><span class='yoy-driver-tip-label'>On-time renewal</span>${driverValue(retentionChange,`${retentionLabel} YoY`)}</div><div class='yoy-driver-tip-row'><span class='yoy-driver-tip-label'>Recovery</span>${driverValue(recoveryChange,`${pct(recoveryChange)} YoY`)}</div></div>`;
+    svg+=`<circle class="dot" cx="${xx}" cy="${yy}" r="5" style="stroke:#d85a32"></circle>`;
+    svg+=`<circle class="tiptarget" data-tip="${tooltipHtml}" cx="${xx}" cy="${yy}" r="13" fill="transparent" tabindex="0" role="img" aria-label="${escapeHtml(tooltipText)}" style="cursor:pointer"></circle>`;
+    svg+=`<text class="value-label" x="${labelX}" y="${yy-11}" text-anchor="${labelAnchor}" style="font-size:11px;pointer-events:none">${(row.value*100).toFixed(1)}%</text>`;
+    svg+=`<text class="axis-label" x="${xx}" y="${h-11}" text-anchor="middle" style="font-size:11px">${escapeHtml(row.month.slice(0,3))}</text>`;
+  });
+  svg+=`</svg>`;
+  return `<div class="dashboard-topline-trend"><div class="dashboard-topline-trend-title">${ref.year} Monthly YoY Change</div><div class="dashboard-topline-trend-sub">Same-month active membership vs ${ref.year-1}</div>${svg}</div>`;
+}
+
+function membershipDriverContributionChart(ref) {
+  const rows=[];
+  for(let month=1;month<=monthNum(ref.month);month++) {
+    const current=BY_YEAR_MONTH[`${ref.year}-${month}`];
+    const prior=BY_YEAR_MONTH[`${ref.year-1}-${month}`];
+    if(!current||!prior||current.priorMonthActive==null||prior.priorMonthActive==null||current.newGolfers==null||prior.newGolfers==null||current.reactivations==null||prior.reactivations==null) continue;
+    const acquisition=Number(current.newGolfers)-Number(prior.newGolfers);
+    const recovery=Number(current.reactivations)-Number(prior.reactivations);
+    const currentNet=Number(current.activeGolfers)-Number(current.priorMonthActive);
+    const priorNet=Number(prior.activeGolfers)-Number(prior.priorMonthActive);
+    const incrementalNet=currentNet-priorNet;
+    const retention=incrementalNet-acquisition-recovery;
+    rows.push({
+      month:current.month,
+      acquisition,
+      retention,
+      recovery,
+      incrementalNet
+    });
+  }
+  if(!rows.length) return `<div class="empty-note">Comparable driver impacts are not available for this reporting period.</div>`;
+  const series=[
+    {key:"acquisition",label:"Acquisition",color:"#2563eb"},
+    {key:"recovery",label:"Recovery",color:"#16a34a"},
+    {key:"retention",label:"Retention Impact",color:"#dc2626"}
+  ];
+  const totals=series.map(s=>({...s,total:rows.reduce((sum,row)=>sum+(row[s.key]||0),0)}));
+  const incrementalImpact=totals.reduce((sum,item)=>sum+item.total,0);
+  const priorDecember=BY_YEAR_MONTH[`${ref.year-2}-12`];
+  const priorSameMonth=BY_YEAR_MONTH[`${ref.year-1}-${monthNum(ref.month)}`];
+  const priorGrowth=priorDecember&&priorSameMonth?Number(priorSameMonth.activeGolfers)-Number(priorDecember.activeGolfers):null;
+  const currentGrowth=priorGrowth==null?null:priorGrowth+incrementalImpact;
+  const scoreCard=item=>`<div class="driver-score"><div class="driver-score-label">${item.label}</div><div class="driver-score-value" style="color:${item.color}">${item.total>=0?'+':''}${fmt(Math.round(item.total))}</div></div>`;
+  const netScore={label:"Net",color:incrementalImpact>=0?"#15803d":"#b91c1c",total:incrementalImpact};
+  const scoreboard=`${totals.map(scoreCard).join("")}<span class="driver-score-op">=</span>${scoreCard(netScore)}`;
+  const w=1200,h=430,left=82,right=30,top=58,bottom=72;
+  const allValues=rows.flatMap(row=>series.map(s=>row[s.key]).filter(v=>v!=null));
+  const extent=Math.max(1,...allValues.map(v=>Math.abs(v)))*1.18;
+  const y=value=>top+(extent-value)/(extent*2)*(h-top-bottom);
+  const zeroY=y(0);
+  const groupW=(w-left-right)/rows.length;
+  const barW=Math.min(42,groupW/5);
+  let svg=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Monthly incremental membership growth impacts versus the prior year">`;
+  rows.forEach((row,index)=>{
+    const groupX=left+groupW*index;
+    if(index%2===0) svg+=`<rect x="${groupX}" y="${top}" width="${groupW}" height="${h-top-bottom}" fill="#f8fafc"></rect>`;
+    const bracketY=36,bracketLeft=groupX+8,bracketRight=groupX+groupW-8;
+    const netColor=row.incrementalNet>0?'#15803d':row.incrementalNet<0?'#b91c1c':'#64748b';
+    svg+=`<path d="M ${bracketLeft} ${bracketY+6} V ${bracketY} H ${bracketRight} V ${bracketY+6}" fill="none" stroke="#94a3b8" stroke-width="1.5"></path>`;
+    svg+=`<text x="${groupX+groupW/2}" y="${bracketY-7}" text-anchor="middle" fill="${netColor}" style="font-size:13px;font-weight:950">${row.incrementalNet>=0?'+':''}${fmtShort(Math.round(row.incrementalNet))}</text>`;
+  });
+  [-1,-.5,0,.5,1].forEach(mult=>{
+    const value=extent*mult,yy=y(value);
+    svg+=`<line class="${mult===0?'axis':'gridline'}" x1="${left}" x2="${w-right}" y1="${yy}" y2="${yy}"></line>`;
+    svg+=`<line class="axis" x1="${left-6}" x2="${left}" y1="${yy}" y2="${yy}"></line>`;
+    svg+=`<text class="axis-label" x="${left-10}" y="${yy+4}" text-anchor="end">${mult===0?'0':`${value>0?'+':''}${fmtShort(value)}`}</text>`;
+  });
+  svg+=`<line class="axis" x1="${left}" x2="${left}" y1="${top}" y2="${h-bottom}"></line>`;
+  svg+=`<line class="axis" x1="${left}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+  rows.forEach((row,index)=>{
+    const center=left+groupW*(index+.5);
+    svg+=`<line class="gridline" x1="${center}" x2="${center}" y1="${top}" y2="${h-bottom}" style="opacity:.55"></line>`;
+    svg+=`<line class="axis" x1="${center}" x2="${center}" y1="${h-bottom}" y2="${h-bottom+6}"></line>`;
+  });
+  rows.forEach((row,index)=>{
+    const center=left+groupW*(index+.5);
+    series.forEach((s,seriesIndex)=>{
+      const value=row[s.key];
+      if(value==null) return;
+      const xx=center+(seriesIndex-(series.length-1)/2)*(barW+5)-barW/2;
+      const yy=value>=0?y(value):zeroY;
+      const height=Math.max(1,Math.abs(y(value)-zeroY));
+      const tip=tooltip([`${row.month} ${ref.year} ${s.label} impact`,`<strong>${value>=0?'+':''}${fmt(Math.round(value))} golfers</strong>`,s.key==='retention'?'Balancing impact after acquisition and recovery':'Change versus same month in 2025']);
+      svg+=`<rect class="tiptarget" data-tip="${tip}" x="${xx}" y="${yy}" width="${barW}" height="${height}" rx="5" fill="${s.color}"></rect>`;
+      const labelY=value>=0?yy-9:yy+height+17;
+      svg+=`<text x="${xx+barW/2}" y="${labelY}" text-anchor="middle" fill="${s.color}" style="font-size:12px;font-weight:950">${value>=0?'+':''}${fmtShort(Math.round(value))}</text>`;
+    });
+    svg+=`<text class="axis-label" x="${center}" y="${h-42}" text-anchor="middle" style="font-size:13px">${escapeHtml(row.month.slice(0,3))}</text>`;
+  });
+  svg+=`</svg>`;
+  const legend=series.map(s=>`<span style="display:inline-flex;align-items:center;gap:7px"><span style="width:13px;height:13px;border-radius:3px;background:${s.color}"></span>${s.label}</span>`).join("");
+  return `<div class="card-head membership-driver-head"><div><h3>What Is Driving Incremental Membership Growth?</h3><div class="driver-summary-line">${priorGrowth==null?'':`${ref.year-1} Raw Growth: <strong>${fmt(priorGrowth)}</strong> · ${ref.year} Raw Growth: <strong>${fmt(Math.round(currentGrowth))}</strong> · Incremental Impact: <strong>${incrementalImpact>=0?'+':''}${fmt(Math.round(incrementalImpact))}</strong>`}</div></div><div class="driver-scoreboard">${scoreboard}</div></div><div style="display:flex;justify-content:center;gap:28px;margin:22px 0 0;font-size:15px;font-weight:850;color:#475569">${legend}</div><div class="chart tall">${svg}</div><div class="context">Retention Impact is the balancing impact after acquisition and recovery, so each month reconciles to actual membership growth.</div>`;
+}
+
 function genericRows(field, widgetId = null) {
   const baseRows = widgetId ? rowsThroughReportMonth(widgetId, field) : allRowsSorted().filter(r => r[field] != null);
   return baseRows.map(enrich).filter(r => r && r[field] != null && !Number.isNaN(Number(r[field])));
@@ -8964,12 +9182,17 @@ function renderMembership() {
     const countLabel = `${change >= 0 ? "+" : ""}${fmt(Math.abs(change))}`;
     return `<div class="dashboard-summary-change ${cls}"><span class="dashboard-summary-change-main">${arrow} ${countLabel}</span><span class="dashboard-summary-change-basis">vs ${basisLabel}</span></div>`;
   };
+  const abbreviateKpiMonths = value => String(value ?? "")
+    .replace(
+      /\b(January|February|March|April|June|July|August|September|October|November|December)\b/g,
+      month => ({January:"Jan.",February:"Feb.",March:"Mar.",April:"Apr.",June:"Jun.",July:"Jul.",August:"Aug.",September:"Sept.",October:"Oct.",November:"Nov.",December:"Dec."})[month]
+    )
+    .replace(/\b(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\b(?!\.)/g, month => `${month === "Sep" ? "Sept" : month}.`);
   const summaryMetric = (label, value, changeHtml, sub) => `
     <div>
       <div class="dashboard-summary-label">${label}</div>
       <div class="dashboard-summary-value">${value}</div>
-      ${changeHtml || ""}
-      <div class="dashboard-summary-sub">${sub}</div>
+      ${abbreviateKpiMonths(changeHtml || "")}
     </div>
   `;
 
@@ -8994,18 +9217,21 @@ function renderMembership() {
       </div>
 
       <div class="dashboard-topline-hero">
-        <div>
-          <div class="dashboard-topline-eyebrow">Top Line</div>
-          <div class="dashboard-topline-main">
-            <div class="dashboard-topline-number">${fmt(ref.activeGolfers)}</div>
-            <div class="dashboard-topline-label">Active GC Golfers</div>
+        <div class="dashboard-topline-stat">
+          <div>
+            <div class="dashboard-topline-eyebrow">Top Line</div>
+            <div class="dashboard-topline-main">
+              <div class="dashboard-topline-number">${fmt(ref.activeGolfers)}</div>
+              <div class="dashboard-topline-label">Active GC Golfers</div>
+            </div>
+            <div class="dashboard-topline-sub">Active GC Golfers as of ${reportDateLabel}</div>
           </div>
-          <div class="dashboard-topline-sub">Active GC Golfers as of ${reportDateLabel}</div>
+          <div class="dashboard-topline-change">
+            <span class="dashboard-topline-change-main">${activeChange > 0 ? "▲" : activeChange < 0 ? "▼" : "•"} ${pct(activeChange)}</span>
+            <span class="dashboard-topline-change-basis">vs ${priorReportDateLabel}</span>
+          </div>
         </div>
-        <div class="dashboard-topline-change">
-          <span class="dashboard-topline-change-main">${activeChange > 0 ? "▲" : activeChange < 0 ? "▼" : "•"} ${pct(activeChange)}</span>
-          <span class="dashboard-topline-change-basis">vs ${priorReportDateLabel}</span>
-        </div>
+        ${membershipYoyGrowthChart(ref)}
       </div>
 
       <div class="dashboard-summary-grid">
@@ -9112,6 +9338,7 @@ function renderMembership() {
     </div>
     ${projectionChart(proj)}
 `;
+  document.getElementById("membershipDriversCard").innerHTML = membershipDriverContributionChart(ref);
 }
 
 function updateSections() {
@@ -10041,19 +10268,11 @@ function engagementGrowthBadge(key) {
   };
 }
 
-function engagementRatePointBadge(numeratorKey, denominatorKey) {
-  const rows = GHIN_CHALLENGES_GROWTH_DATA || [];
-  if(rows.length < 2) return {main:"No comparison", basis:""};
-  const firstNumerator = Number(rows[0]?.[numeratorKey] || 0);
-  const firstDenominator = Number(rows[0]?.[denominatorKey] || 0);
-  const latestNumerator = Number(rows[rows.length - 1]?.[numeratorKey] || 0);
-  const latestDenominator = Number(rows[rows.length - 1]?.[denominatorKey] || 0);
-  if(!firstDenominator || !latestDenominator) return {main:"No comparison", basis:""};
-  const pointChange = (latestNumerator / latestDenominator - firstNumerator / firstDenominator) * 100;
-  return {
-    main:`${pointChange >= 0 ? "▲ +" : "▼ "}${Math.abs(pointChange).toFixed(1)} pts`,
-    basis:"since May"
-  };
+function engagementRankedParticipationRate() {
+  const detail = GHIN_CHALLENGES_DATA.metadata?.detailTotals || {};
+  const rankedParticipations = Number(detail.rankedGolfers || 0);
+  const totalParticipations = Number(detail.totalGolfers || 0);
+  return totalParticipations ? rankedParticipations / totalParticipations : 0;
 }
 
 function engagementExecutiveHeroCard(item) {
@@ -10293,8 +10512,8 @@ function renderEngagementSection() {
         ${engagementSupportingKpiBlock([
           {label:"Active Challenges", value:summary.activeChallenges, format:"count", sub:"Currently active"},
           {label:"Completed Challenges", value:summary.completedChallenges, format:"count", sub:"Completed"},
-          {label:"Ranked Golfers", value:summary.rankedGolfers, format:"count", badge:engagementGrowthBadge("rankedGolfers"), sub:"With rank"},
-          {label:"Ranked Golfer Rate", value:summary.rankedGolferRate, format:"percent", badge:engagementRatePointBadge("rankedGolfers", "totalGolfers"), sub:"Ranked golfers / golfers"},
+          {label:"Ranked Participations", value:GHIN_CHALLENGES_DATA.metadata?.detailTotals?.rankedGolfers, format:"count", badge:engagementGrowthBadge("rankedGolfers"), sub:"Ranked challenge entries"},
+          {label:"Ranked Participation Rate", value:engagementRankedParticipationRate(), format:"percent", sub:"Ranked entries / challenge participations"},
           {label:"Scores Posted", value:summary.scoresPosted, format:"count", badge:engagementGrowthBadge("scoresPosted"), sub:""},
           {label:"Average Posted / Golfer", value:engagementDecimal(summary.scoresPerGolfer), format:"text", sub:""}
         ])}
@@ -10359,11 +10578,21 @@ document.addEventListener("mouseover", e => {
   tt.innerHTML = t.dataset.tip || "";
   tt.style.display = "block";
 });
+function positionTooltip(tt,clientX,clientY) {
+  const gap=14;
+  const edge=12;
+  const rect=tt.getBoundingClientRect();
+  let left=clientX+gap;
+  let top=clientY+gap;
+  if(left+rect.width>window.innerWidth-edge) left=clientX-rect.width-gap;
+  if(top+rect.height>window.innerHeight-edge) top=clientY-rect.height-gap;
+  tt.style.left=Math.max(edge,Math.min(left,window.innerWidth-rect.width-edge))+"px";
+  tt.style.top=Math.max(edge,Math.min(top,window.innerHeight-rect.height-edge))+"px";
+}
 document.addEventListener("mousemove", e => {
   const tt = document.getElementById("tooltip");
   if(tt.style.display === "block") {
-    tt.style.left = (e.clientX + 14) + "px";
-    tt.style.top = (e.clientY + 14) + "px";
+    positionTooltip(tt,e.clientX,e.clientY);
   }
 });
 document.addEventListener("mouseout", e => {
