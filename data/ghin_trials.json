@@ -58,8 +58,144 @@
     "inactiveTrialGolfers": 27453
   },
   "gcSummary": {
-    "trialConversions": 48732
+    "trialConversions": 56778
   },
+  "gcHistoricalSnapshots": [
+    {
+      "snapshotDate": "2025-02-01",
+      "activityThrough": "2025-01",
+      "trialConversions": 2148,
+      "source": "USGA/AGA GC February 1, 2025 report screenshot supplied 2026-09-10"
+    },
+    {
+      "snapshotDate": "2025-03-01",
+      "activityThrough": "2025-02",
+      "trialConversions": 4762,
+      "source": "USGA/AGA GC March 1, 2025 report screenshot supplied 2026-09-10"
+    },
+    {
+      "snapshotDate": "2025-04-01",
+      "activityThrough": "2025-03",
+      "trialConversions": 10066,
+      "source": "USGA/AGA GC April 1, 2025 report screenshot supplied 2026-09-10"
+    },
+    {
+      "snapshotDate": "2025-05-01",
+      "activityThrough": "2025-04",
+      "trialConversions": 17252,
+      "source": "USGA/AGA GC May 1, 2025 report value supplied 2026-09-10"
+    },
+    {
+      "snapshotDate": "2025-07-01",
+      "activityThrough": "2025-06",
+      "trialConversions": 38420,
+      "source": "USGA/AGA GC July 1, 2025 report screenshot supplied 2026-09-10"
+    },
+    {
+      "snapshotDate": "2025-09-01",
+      "activityThrough": "2025-08",
+      "trialConversions": 56744,
+      "source": "USGA/AGA GC September 1, 2025 report screenshot supplied 2026-09-10"
+    },
+    {
+      "snapshotDate": "2025-10-01",
+      "activityThrough": "2025-09",
+      "trialConversions": 61790,
+      "source": "USGA/AGA GC October 1, 2025 report screenshot supplied 2026-09-10"
+    },
+    {
+      "snapshotDate": "2025-12-01",
+      "activityThrough": "2025-11",
+      "trialConversions": 67401,
+      "source": "USGA/AGA GC December 1, 2025 report screenshot supplied 2026-09-10"
+    },
+    {
+      "snapshotDate": "2026-01-01",
+      "activityThrough": "2025-12",
+      "trialConversions": 68581,
+      "source": "USGA/AGA GC January 1, 2026 report value supplied 2026-09-10"
+    }
+  ],
+  "gcHistoricalMonthly": [
+    {
+      "year": 2025,
+      "label": "Jan",
+      "conversions": 2148,
+      "derivation": "2025-02-01 cumulative snapshot"
+    },
+    {
+      "year": 2025,
+      "label": "Feb",
+      "conversions": 2614,
+      "derivation": "2025-03-01 cumulative snapshot minus 2025-02-01 cumulative snapshot"
+    },
+    {
+      "year": 2025,
+      "label": "Mar",
+      "conversions": 5304,
+      "derivation": "2025-04-01 cumulative snapshot minus 2025-03-01 cumulative snapshot"
+    },
+    {
+      "year": 2025,
+      "label": "Apr",
+      "conversions": 7186,
+      "derivation": "2025-05-01 cumulative snapshot minus 2025-04-01 cumulative snapshot"
+    },
+    {
+      "year": 2025,
+      "label": "May",
+      "conversions": 10841,
+      "estimated": true,
+      "derivation": "Estimated share of the 21,168 May-June total using the 2026 May-June distribution"
+    },
+    {
+      "year": 2025,
+      "label": "Jun",
+      "conversions": 10327,
+      "estimated": true,
+      "derivation": "Estimated share of the 21,168 May-June total using the 2026 May-June distribution"
+    },
+    {
+      "year": 2025,
+      "label": "Jul",
+      "conversions": 9765,
+      "estimated": true,
+      "derivation": "Estimated share of the 18,324 July-August total using the 2026 July-August distribution"
+    },
+    {
+      "year": 2025,
+      "label": "Aug",
+      "conversions": 8559,
+      "estimated": true,
+      "derivation": "Estimated share of the 18,324 July-August total using the 2026 July-August distribution"
+    },
+    {
+      "year": 2025,
+      "label": "Sep",
+      "conversions": 5046,
+      "derivation": "2025-10-01 cumulative snapshot minus 2025-09-01 cumulative snapshot"
+    },
+    {
+      "year": 2025,
+      "label": "Oct",
+      "conversions": 3086,
+      "estimated": true,
+      "derivation": "Estimated as 55% of the 5,611 October-November total"
+    },
+    {
+      "year": 2025,
+      "label": "Nov",
+      "conversions": 2525,
+      "estimated": true,
+      "derivation": "Estimated as 45% of the 5,611 October-November total"
+    },
+    {
+      "year": 2025,
+      "label": "Dec",
+      "conversions": 1180,
+      "derivation": "2026-01-01 cumulative snapshot minus 2025-12-01 cumulative snapshot"
+    }
+  ],
   "gcMonthly": [
     {
       "label": "Jan",
@@ -88,6 +224,37 @@
     {
       "label": "Jul",
       "conversions": 9180
+    },
+    {
+      "label": "Aug",
+      "conversions": 8046
+    }
+  ],
+  "gcAnnualTotals": [
+    {
+      "year": 2024,
+      "trialConversions": 34485
+    },
+    {
+      "year": 2025,
+      "trialConversions": 68581
+    }
+  ],
+  "gcYearlyTotals": [
+    {
+      "year": 2024,
+      "period": "Full year",
+      "trialConversions": 34485
+    },
+    {
+      "year": 2025,
+      "period": "Jan-August YTD",
+      "trialConversions": 56744
+    },
+    {
+      "year": 2026,
+      "period": "Jan-August YTD",
+      "trialConversions": 56778
     }
   ],
   "yearlyTotals": [
@@ -109,6 +276,7 @@
     },
     {
       "year": 2026,
+      "period": "Jan-August YTD",
       "totalTrialsCreated": 134542,
       "trialConversions": 68581,
       "conversionRate": 0.5097,

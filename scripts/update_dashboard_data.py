@@ -2856,6 +2856,18 @@ def generate_ghin_trials_output(
     existing_gc_monthly = (
         existing_ghin.get("gcMonthly", []) if isinstance(existing_ghin, dict) else []
     )
+    existing_gc_yearly_totals = (
+        existing_ghin.get("gcYearlyTotals", []) if isinstance(existing_ghin, dict) else []
+    )
+    existing_gc_annual_totals = (
+        existing_ghin.get("gcAnnualTotals", []) if isinstance(existing_ghin, dict) else []
+    )
+    existing_gc_historical_snapshots = (
+        existing_ghin.get("gcHistoricalSnapshots", []) if isinstance(existing_ghin, dict) else []
+    )
+    existing_gc_historical_monthly = (
+        existing_ghin.get("gcHistoricalMonthly", []) if isinstance(existing_ghin, dict) else []
+    )
     overview = {
         "signups": summary["totalTrialsCreated"],
         "activeTrials": summary["activeTrialGolfers"],
@@ -2875,7 +2887,11 @@ def generate_ghin_trials_output(
         # These aggregate exports refresh the "All" population only. Preserve
         # the independently sourced GC-only series until replacements arrive.
         "gcSummary": existing_gc_summary,
+        "gcHistoricalSnapshots": existing_gc_historical_snapshots,
+        "gcHistoricalMonthly": existing_gc_historical_monthly,
         "gcMonthly": existing_gc_monthly,
+        "gcAnnualTotals": existing_gc_annual_totals,
+        "gcYearlyTotals": existing_gc_yearly_totals,
         "yearlyTotals": yearly_totals,
         "monthly": monthly,
         "conversionBuckets": conversion_buckets,
@@ -2904,7 +2920,9 @@ def generate_ghin_trials_output(
 
 def validate_ghin_trials_output(output: dict[str, Any]) -> None:
     required = {
-        "metadata", "overview", "summary", "gcSummary", "gcMonthly",
+        "metadata", "overview", "summary", "gcSummary", "gcHistoricalSnapshots",
+        "gcHistoricalMonthly",
+        "gcMonthly", "gcAnnualTotals", "gcYearlyTotals",
         "yearlyTotals", "monthly", "conversionBuckets", "agaConversions",
     }
     if set(output) != required:
@@ -2913,6 +2931,24 @@ def validate_ghin_trials_output(output: dict[str, Any]) -> None:
         raise ValidationError("ghin_trials.json metadata.schemaVersion must be 1")
     if not isinstance(output["gcSummary"].get("trialConversions"), int):
         raise ValidationError("ghin_trials.json gcSummary.trialConversions must be an integer")
+    if not isinstance(output["gcHistoricalSnapshots"], list):
+        raise ValidationError("ghin_trials.json gcHistoricalSnapshots must be an array")
+    if not all(
+        isinstance(record.get("snapshotDate"), str)
+        and isinstance(record.get("activityThrough"), str)
+        and isinstance(record.get("trialConversions"), int)
+        for record in output["gcHistoricalSnapshots"]
+    ):
+        raise ValidationError("ghin_trials.json gcHistoricalSnapshots records are invalid")
+    if not isinstance(output["gcHistoricalMonthly"], list):
+        raise ValidationError("ghin_trials.json gcHistoricalMonthly must be an array")
+    if not all(
+        isinstance(record.get("year"), int)
+        and isinstance(record.get("label"), str)
+        and isinstance(record.get("conversions"), int)
+        for record in output["gcHistoricalMonthly"]
+    ):
+        raise ValidationError("ghin_trials.json gcHistoricalMonthly records are invalid")
     if not isinstance(output["gcMonthly"], list) or not output["gcMonthly"]:
         raise ValidationError("ghin_trials.json gcMonthly must be a non-empty array")
     if not all(
@@ -2921,6 +2957,23 @@ def validate_ghin_trials_output(output: dict[str, Any]) -> None:
         for record in output["gcMonthly"]
     ):
         raise ValidationError("ghin_trials.json gcMonthly records are invalid")
+    if not isinstance(output["gcYearlyTotals"], list) or not output["gcYearlyTotals"]:
+        raise ValidationError("ghin_trials.json gcYearlyTotals must be a non-empty array")
+    if not isinstance(output["gcAnnualTotals"], list) or not output["gcAnnualTotals"]:
+        raise ValidationError("ghin_trials.json gcAnnualTotals must be a non-empty array")
+    if not all(
+        isinstance(record.get("year"), int)
+        and isinstance(record.get("trialConversions"), int)
+        for record in output["gcAnnualTotals"]
+    ):
+        raise ValidationError("ghin_trials.json gcAnnualTotals records are invalid")
+    if not all(
+        isinstance(record.get("year"), int)
+        and isinstance(record.get("period"), str)
+        and isinstance(record.get("trialConversions"), int)
+        for record in output["gcYearlyTotals"]
+    ):
+        raise ValidationError("ghin_trials.json gcYearlyTotals records are invalid")
     summary = output["summary"]
     for key in ("totalTrialsCreated", "trialConversions", "activeTrialGolfers", "inactiveTrialGolfers"):
         if not isinstance(summary.get(key), int):

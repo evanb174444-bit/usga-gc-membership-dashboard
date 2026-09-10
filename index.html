@@ -578,6 +578,10 @@ svg{height:100%;width:100%;overflow:visible}
 .kpi-change.positive{color:#15803d}
 .kpi-change.negative{color:#b91c1c}
 .kpi-change.neutral{color:#475569}
+.retention-change-basis{display:block;margin-top:5px;color:#64748b;font-size:11.5px;font-weight:400}
+#retentionCard .kpi-change{font-size:15px;line-height:1.15}
+#renewalCard .kpi-change{font-size:15px;line-height:1.15}
+#renewalCard .kpi-change.neutral{color:#94a3b8;font-size:11.5px;font-weight:400}
 .kpi-sub{
   font-size:12px;
   color:#64748b;
@@ -741,11 +745,69 @@ svg{height:100%;width:100%;overflow:visible}
   min-height:0 !important;
   padding-bottom:12px !important;
 }
+.acquisition-topline-hero{
+  display:flex;
+  align-items:stretch;
+  gap:14px;
+  margin-bottom:14px;
+}
 .acquisition-highlights{
-  margin:0 0 14px;
+  flex:0 0 calc(25% - 7px);
+  min-width:0;
+  margin:0;
 }
 .acquisition-highlights .kpis{
+  display:grid;
+  grid-template-columns:1fr;
+  grid-template-rows:repeat(3,1fr);
+  gap:12px;
+  height:100%;
   margin:0;
+}
+.acquisition-highlights .kpi{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  border-top:3px solid #9db7d5;
+  border-bottom:3px solid #9db7d5;
+}
+.acquisition-highlights .kpi-label{font-size:12px}
+.acquisition-highlights .kpi-value{font-size:28px;margin-top:7px}
+.acquisition-highlights .kpi-change{font-size:13.5px;margin-top:9px;padding-left:0;text-align:center}
+.acquisition-highlights .acquisition-change-main{display:block;font-size:21px;font-weight:950;line-height:1}
+.acquisition-highlights .acquisition-change-basis{display:block;color:#64748b;font-size:12.5px;font-weight:400;line-height:1.2;margin-top:7px}
+.acquisition-yoy-trend-card h3{font-size:20px}
+.acquisition-yoy-trend-card .card-sub{font-size:14px}
+.acquisition-yoy-trend-card{
+  flex:1 1 0;
+  min-width:0;
+  min-height:500px;
+  padding:18px 24px 6px;
+  border-top:3px solid #9db7d5;
+  border-bottom:3px solid #9db7d5;
+}
+.acquisition-yoy-trend-card .chart{
+  height:430px;
+}
+.recovery-highlights{
+  margin:0 0 14px;
+}
+.recovery-highlights .kpis{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  margin:0;
+}
+@media(max-width:900px){
+  .recovery-highlights .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+  .recovery-highlights .kpis{grid-template-columns:1fr}
+}
+@media(max-width:1100px){
+  .acquisition-topline-hero{flex-wrap:wrap}
+  .acquisition-highlights,.acquisition-yoy-trend-card{flex-basis:100%}
 }
 .acquisition-pacing-note{
   font-size:12px;
@@ -876,6 +938,14 @@ svg{height:100%;width:100%;overflow:visible}
 }
 
 .tooltip{position:fixed;display:none;max-width:min(320px,calc(100vw - 24px));background:#111827;color:#fff;padding:8px 10px;border-radius:9px;font-size:12px;line-height:1.35;pointer-events:none;z-index:99;box-shadow:0 12px 28px rgba(2,6,23,.28)}
+.tooltip.tooltip-light{background:rgba(255,255,255,.98);color:#1e293b;padding:11px 13px;border:1px solid #dbe5f1;border-radius:12px;box-shadow:0 12px 30px rgba(15,23,42,.14)}
+.chart-hover-tip{min-width:170px}
+.chart-hover-date{color:#64748b;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+.chart-hover-row{display:flex;align-items:baseline;justify-content:space-between;gap:18px}
+.chart-hover-label{color:#475569;font-size:12px;font-weight:700}
+.chart-hover-value{color:#163b64;font-size:17px;font-weight:950;white-space:nowrap}
+.chart-hit{cursor:pointer}
+.chart-hit:hover+.chart-point{r:6.5px;fill:#fff;filter:drop-shadow(0 2px 4px rgba(15,23,42,.18))}
 .yoy-driver-tip{min-width:245px;padding:3px 2px;font-size:14px;line-height:1.4}
 .yoy-driver-tip-title{font-size:15px;font-weight:900;margin-bottom:8px;color:#fff}
 .yoy-driver-tip-row{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:5px 0}
@@ -5136,7 +5206,10 @@ svg{height:100%;width:100%;overflow:visible}
     </div>
 
     <div class="acquisition-subpanel active" id="acquisitionTotalsPanel">
-      <div id="acquisitionHighlights"></div>
+      <div class="acquisition-topline-hero">
+        <div id="acquisitionHighlights"></div>
+        <div class="card acquisition-yoy-trend-card" id="acquisitionMonthlyYoyTrendCard"></div>
+      </div>
       <div class="grid">
         <div class="card full acquisition-card" id="newGolfersMonthlyYoyBarCard"></div>
         <div class="card full acquisition-card" id="newGolfersYoyBarCard"></div>
@@ -5376,6 +5449,7 @@ let GHIN_TRIALS_MONTHLY_DRAFT = [];
 let GHIN_TRIALS_GC_SUMMARY_DRAFT = {};
 let GHIN_TRIALS_GC_YEARLY_TOTALS_DRAFT = [];
 let GHIN_TRIALS_GC_MONTHLY_DRAFT = [];
+let GHIN_TRIALS_GC_HISTORICAL_MONTHLY_DRAFT = [];
 let GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT = [];
 let GHIN_TRIALS_AGA_DRAFT = [];
 let MARKETING_MONTHLY_PERFORMANCE_DRAFT = [];
@@ -5487,7 +5561,7 @@ async function loadAgaMasterData() {
 }
 
 async function loadAffiliateAttributionData() {
-  const response = await fetch("./data/affiliate_attribution.json?v=20260813-affiliate-pilot");
+  const response = await fetch("./data/affiliate_attribution.json?v=20260910-affiliate-pilot");
   if(!response.ok) {
     throw new Error(`Unable to load Affiliate Attribution data: ${response.status} ${response.statusText}`);
   }
@@ -5570,6 +5644,7 @@ async function loadGhinTrialsData() {
     trialConversions: GHIN_TRIALS_GC_SUMMARY_DRAFT.trialConversions || 48732
   }];
   GHIN_TRIALS_GC_MONTHLY_DRAFT = Array.isArray(data.gcMonthly) ? data.gcMonthly : [];
+  GHIN_TRIALS_GC_HISTORICAL_MONTHLY_DRAFT = Array.isArray(data.gcHistoricalMonthly) ? data.gcHistoricalMonthly : [];
   GHIN_TRIALS_CONVERSION_BUCKETS_DRAFT = data.conversionBuckets;
   GHIN_TRIALS_AGA_DRAFT = data.agaConversions;
 }
@@ -5882,6 +5957,13 @@ function kpiPointChangeMarkup(change, basisLabel) {
   const pointLabel = `${change >= 0 ? "+" : ""}${(change * 100).toFixed(1)} pts`;
   return `<div class="kpi-change ${cls}">${arrow} ${pointLabel} vs ${basisLabel}</div>`;
 }
+function acquisitionStackedChangeMarkup(change, basisLabel, points=false) {
+  if(change == null) return `<div class="kpi-change neutral">No comparison available</div>`;
+  const cls=change>0?"positive":change<0?"negative":"neutral";
+  const arrow=change>0?"▲":change<0?"▼":"•";
+  const value=points?`${change>=0?"+":""}${(change*100).toFixed(1)} pts`:pct(change);
+  return `<div class="kpi-change ${cls}"><span class="acquisition-change-main">${arrow} ${value}</span><span class="acquisition-change-basis">vs ${escapeHtml(basisLabel)}</span></div>`;
+}
 function richKpiBlock(items) {
   return `<div class="kpis acquisition-kpis">${items.map(i => `
     <div class="kpi acquisition-kpi ${escapeHtml(i.className || '')}">
@@ -5999,6 +6081,7 @@ let YEAR_FILTERS = (() => {
 })();
 
 const CHART_YEAR_OPTIONS = {
+  acquisitionMonthlyYoyTrend: [2023, 2024, 2025, 2026],
   renewalCard: [2025, 2026],
   retentionCard: [2025, 2026],
   reactivationsCard: [2025, 2026],
@@ -6173,7 +6256,7 @@ function attributionDraftSourceRows() {
     {key:'trials', label:'GC Conversions YTD', value:t.trials, cls:'attribution-seg-trials'},
     {key:'marketing', label:'Paid Media', value:t.marketing, cls:'attribution-seg-marketing'},
     {key:'affiliate', label:'Affiliate Program', value:t.affiliate, cls:'attribution-seg-affiliate'},
-    {key:'organic', label:'Organic / Untagged', value:t.organic, cls:'attribution-seg-organic'}
+    {key:'organic', label:'Organic / Other Marketing', value:t.organic, cls:'attribution-seg-organic'}
   ];
 }
 
@@ -6209,7 +6292,7 @@ function attributionSummaryYearTotalsChart(view = ACQUISITION_ATTRIBUTION_YEAR_V
     { key: 'trials', label: 'GHIN Trials', color: '#173f66', text: '#ffffff' },
     { key: 'marketing', label: 'Paid Media', color: '#5b8cc0', text: '#ffffff' },
     { key: 'affiliate', label: 'Affiliate Marketing', color: '#2f9461', text: '#ffffff' },
-    { key: 'organic', label: 'Organic / Untagged', color: '#c4d3e2', text: '#14243a' }
+    { key: 'organic', label: 'Organic / Other Marketing', color: '#c4d3e2', text: '#14243a' }
   ];
   const data = [
     { year: '2024', period: 'Full year', total: 171676, trials: 34485, marketing: 21538, affiliate: 0 },
@@ -6349,7 +6432,7 @@ function attributionDraftTrendChart(view = ACQUISITION_ATTRIBUTION_TREND_VIEW) {
   const sources = [
     {key:'trials', label:'GC Trials', color:'#14395f'},
     {key:'marketing', label:'Paid Media', color:'#4f83b8'},
-    {key:'organic', label:'Organic / Untagged', color:'#c6d4e2'}
+    {key:'organic', label:'Organic / Other Marketing', color:'#c6d4e2'}
   ];
   const rows = ATTRIBUTION_DRAFT_DATA;
   const w = 1040, h = 720;
@@ -6516,7 +6599,7 @@ function attributionDraftDonutChart(isYtd) {
   const rows = [
     {key:'trials', label:'Trials', value:vals.trials, color:'#14395f', textColor:'#ffffff'},
     {key:'marketing', label:'Paid Media', value:vals.marketing, color:'#4f83b8', textColor:'#ffffff'},
-    {key:'organic', label:'Organic / Untagged', value:vals.organic, color:'#c6d4e2', textColor:'#0f172a'}
+    {key:'organic', label:'Organic / Other Marketing', value:vals.organic, color:'#c6d4e2', textColor:'#0f172a'}
   ];
   const total = rows.reduce((s,r) => s + r.value, 0);
 
@@ -6563,8 +6646,8 @@ function attributionDraftDonutChart(isYtd) {
     const fontColor = r.textColor;
     const labelText = r.key === 'organic'
       ? `<text x="${labelPoint.x}" y="${labelPoint.y-12}" text-anchor="middle" class="summary-donut-inside-label" fill="${fontColor}">
-           <tspan x="${labelPoint.x}" dy="0">Organic /</tspan>
-           <tspan x="${labelPoint.x}" dy="22">Untagged</tspan>
+           <tspan x="${labelPoint.x}" dy="0">Organic / Other</tspan>
+           <tspan x="${labelPoint.x}" dy="22">Marketing</tspan>
          </text>`
       : `<text x="${labelPoint.x}" y="${labelPoint.y-4}" text-anchor="middle" class="summary-donut-inside-label" fill="${fontColor}">${r.label}</text>`;
     const valueY = r.key === 'organic' ? labelPoint.y + 40 : labelPoint.y + 24;
@@ -6591,12 +6674,12 @@ function attributionDraftGrowthRows(isYtd) {
     ? [
         {label:'GHIN Trials', value:5400},
         {label:'Paid Media', value:1700},
-        {label:'Organic / Untagged', value:-200}
+        {label:'Organic / Other Marketing', value:-200}
       ]
     : [
         {label:'GHIN Trials', value:1050},
         {label:'Paid Media', value:450},
-        {label:'Organic / Untagged', value:-400}
+        {label:'Organic / Other Marketing', value:-400}
       ];
   const maxAbs = Math.max(...contributions.map(r => Math.abs(r.value)), 1);
   return contributions.map(r => {
@@ -6752,6 +6835,7 @@ let ACQUISITION_ATTRIBUTION_PERIOD = localStorage.getItem("pa_acquisition_attrib
 let ACQUISITION_ATTRIBUTION_SECTION = localStorage.getItem("pa_acquisition_attribution_section") || "summary";
 let ACQUISITION_ATTRIBUTION_TREND_VIEW = localStorage.getItem("pa_acquisition_attribution_trend_view") || "line";
 let ACQUISITION_ATTRIBUTION_YEAR_VIEW = localStorage.getItem("pa_acquisition_attribution_year_view") || "bar";
+let GHIN_GC_MONTHLY_VIEW = localStorage.getItem("pa_ghin_gc_monthly_view") || "bar";
 let ACQUISITION_ATTRIBUTION_MIX_MONTH = localStorage.getItem("pa_acquisition_attribution_mix_month") || "May";
 let MARKETING_CHANNEL_SORT = localStorage.getItem("pa_marketing_channel_sort") || "spend";
 let MARKETING_INFLUENCER_SORT = localStorage.getItem("pa_marketing_influencer_sort") || "conversions";
@@ -6838,6 +6922,12 @@ function setAcquisitionAttributionTrendView(view) {
 function setAcquisitionAttributionYearView(view) {
   ACQUISITION_ATTRIBUTION_YEAR_VIEW = view === "line" ? "line" : "bar";
   localStorage.setItem("pa_acquisition_attribution_year_view", ACQUISITION_ATTRIBUTION_YEAR_VIEW);
+  renderAcquisitionAttributionDraft();
+}
+
+function setGhinGcMonthlyView(view) {
+  GHIN_GC_MONTHLY_VIEW = view === "line" ? "line" : "bar";
+  localStorage.setItem("pa_ghin_gc_monthly_view", GHIN_GC_MONTHLY_VIEW);
   renderAcquisitionAttributionDraft();
 }
 
@@ -7078,7 +7168,7 @@ function ghinTrialYearOverYearTotalsSvg() {
   const barW = Math.min(118, groupW * 0.68);
   const colors = ['#a8bfd4', '#dd5a32', '#173f67'];
   const ticks = [0, .25, .5, .75, 1].map(g => max * g);
-  const periodLabel = year => year === 2026 ? 'Jan-July YTD' : 'Full year';
+  const periodLabel = row => row.period || (row.year === 2026 ? 'Jan-August YTD' : 'Full year');
   const yearGuides = rows.map((r,i) => {
     const cx = m.left + groupW * i + groupW / 2;
     return `
@@ -7096,14 +7186,14 @@ function ghinTrialYearOverYearTotalsSvg() {
     const netChange = prior ? r.trialConversions - prior.trialConversions : null;
     const changeLabel = change == null ? '' : `${change >= 0 ? '+' : ''}${(change * 100).toFixed(1)}%`;
     const netChangeLabel = netChange == null ? '' : `${netChange >= 0 ? '+' : '-'}${fmtShort(Math.abs(netChange))}`;
-    const tip = tooltip([`${r.year} GHIN trials`, `<strong>${fmt(r.trialConversions)} conversions</strong>`, `${fmt(r.totalTrialsCreated)} trials created`, `Conversion rate: ${pctPlain(r.conversionRate)}`, periodLabel(r.year)]);
+    const tip = tooltip([`${r.year} GHIN trials`, `<strong>${fmt(r.trialConversions)} conversions</strong>`, `${fmt(r.totalTrialsCreated)} trials created`, `Conversion rate: ${pctPlain(r.conversionRate)}`, periodLabel(r)]);
     return `
       <rect class="tiptarget marketing-historical-bar" data-tip="${tip}" x="${x.toFixed(1)}" y="${barTop.toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" rx="8" fill="${colors[i] || colors[0]}"></rect>
       <text class="marketing-year-total-label" x="${cx.toFixed(1)}" y="${(barTop - 26).toFixed(1)}" text-anchor="middle">${fmt(r.trialConversions)}</text>
       ${changeLabel ? `<text class="marketing-change-label inside" x="${cx.toFixed(1)}" y="${(barTop + 24).toFixed(1)}" text-anchor="middle">${changeLabel}</text>` : ''}
       ${netChangeLabel ? `<text class="marketing-change-label inside" x="${cx.toFixed(1)}" y="${(barTop + 42).toFixed(1)}" text-anchor="middle">(${netChangeLabel})</text>` : ''}
       <text class="marketing-small-label marketing-year-label" x="${cx.toFixed(1)}" y="${m.top+innerH+32}" text-anchor="middle">${r.year}</text>
-      <text class="marketing-small-label" x="${cx.toFixed(1)}" y="${m.top+innerH+52}" text-anchor="middle">${periodLabel(r.year)}</text>
+      <text class="marketing-small-label" x="${cx.toFixed(1)}" y="${m.top+innerH+52}" text-anchor="middle">${periodLabel(r)}</text>
     `;
   }).join('');
   return `
@@ -7175,42 +7265,63 @@ function ghinTrialGcYearOverYearTotalsSvg() {
 }
 
 function ghinGcTrialConversionsSvg() {
-  const rows = GHIN_TRIALS_GC_MONTHLY_DRAFT;
-  if(!rows.length) return '';
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const series = [
+    {year:2025, color:'#a8bfd4', rows:GHIN_TRIALS_GC_HISTORICAL_MONTHLY_DRAFT},
+    {year:2026, color:'#6f95bb', lineColor:'#14395f', rows:GHIN_TRIALS_GC_MONTHLY_DRAFT}
+  ].map(s => ({...s, values:new Map((s.rows || []).map(r => [r.label, r.conversions]))}));
+  if(!series.some(s => s.values.size)) return '';
   const w = 760, h = 370;
-  const m = {top:34,right:36,bottom:62,left:70};
+  const m = {top:34,right:36,bottom:70,left:70};
   const innerW = w - m.left - m.right;
   const innerH = h - m.top - m.bottom;
-  const max = Math.ceil(Math.max(...rows.map(r => r.conversions)) / 2500) * 2500;
+  const allValues = series.flatMap(s => [...s.values.values()]);
+  const max = Math.ceil(Math.max(...allValues) / 2500) * 2500;
   const y = v => m.top + innerH - (v / max) * innerH;
-  const groupW = innerW / rows.length;
-  const barW = Math.min(58, groupW * 0.5);
+  const groupW = innerW / months.length;
+  const barW = Math.min(22, groupW * 0.34);
   const ticks = [0, max/2, max];
-  const monthGuides = rows.map((r,i) => {
+  const monthGuides = months.map((label,i) => {
     const cx = m.left + groupW * i + groupW/2;
     return `
       <line x1="${cx.toFixed(1)}" y1="${m.top}" x2="${cx.toFixed(1)}" y2="${m.top+innerH}" class="ghin-chart-month-guide"></line>
       <line x1="${cx.toFixed(1)}" y1="${m.top+innerH}" x2="${cx.toFixed(1)}" y2="${m.top+innerH+8}" class="ghin-chart-month-tick"></line>
+      <text x="${cx.toFixed(1)}" y="${h-34}" text-anchor="middle" class="ghin-chart-small-label">${label}</text>
     `;
   }).join('');
-  const bars = rows.map((r,i) => {
-    const cx = m.left + groupW * i + groupW/2;
-    const x = cx - barW/2;
-    const barH = m.top + innerH - y(r.conversions);
-    return `
-      <rect x="${x.toFixed(1)}" y="${y(r.conversions).toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" rx="7" class="ghin-bar-converted"></rect>
-      <text x="${cx.toFixed(1)}" y="${(y(r.conversions)-10).toFixed(1)}" text-anchor="middle" class="ghin-chart-value-red">${fmt(r.conversions)}</text>
-      <text x="${cx.toFixed(1)}" y="${h-24}" text-anchor="middle" class="ghin-chart-small-label">${r.label}</text>
-    `;
-  }).join('');
+  let marks='';
+  if(GHIN_GC_MONTHLY_VIEW === 'line') {
+    marks = series.map(s => {
+      const lineColor=s.lineColor || s.color;
+      const points=months.map((label,i) => s.values.has(label) ? {label,value:s.values.get(label),x:m.left+groupW*i+groupW/2} : null).filter(Boolean);
+      const path=points.map((p,i)=>`${i?'L':'M'} ${p.x.toFixed(1)} ${y(p.value).toFixed(1)}`).join(' ');
+      return `<path d="${path}" fill="none" stroke="${lineColor}" stroke-width="4"></path>` + points.map(p => `
+        <circle class="tiptarget" data-tip="${p.label} ${s.year}<br><strong>${fmt(p.value)} conversions</strong>" cx="${p.x.toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="5" fill="#fff" stroke="${lineColor}" stroke-width="3"></circle>
+      `).join('');
+    }).join('');
+  } else {
+    marks = months.map((label,i) => {
+      const center=m.left+groupW*i+groupW/2;
+      return series.map((s,seriesIndex) => {
+        if(!s.values.has(label)) return '';
+        const value=s.values.get(label);
+        const cx=center+(seriesIndex===0?-barW/2:barW/2);
+        const x=cx-barW/2;
+        const barH=m.top+innerH-y(value);
+        return `<rect class="tiptarget" data-tip="${label} ${s.year}<br><strong>${fmt(value)} conversions</strong>" x="${x.toFixed(1)}" y="${y(value).toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" rx="5" fill="${s.color}"></rect>`;
+      }).join('');
+    }).join('');
+  }
+  const legend = series.map((s,i) => `<circle cx="${m.left+250+i*105}" cy="${h-10}" r="6" fill="${GHIN_GC_MONTHLY_VIEW==='line' ? (s.lineColor || s.color) : s.color}"></circle><text x="${m.left+264+i*105}" y="${h-6}" class="ghin-legend-text">${s.year}</text>`).join('');
   return `
     <div class="ghin-chart">
-      <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="GC trial conversions monthly trend">
+      <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="2025 and 2026 GC trial conversions by month">
         ${ticks.map(t => `<line x1="${m.left}" y1="${y(t).toFixed(1)}" x2="${w-m.right}" y2="${y(t).toFixed(1)}" class="ghin-chart-grid"></line><text x="${m.left-12}" y="${(y(t)+4).toFixed(1)}" text-anchor="end" class="ghin-chart-small-label">${fmt(Math.round(t))}</text>`).join('')}
         ${monthGuides}
         <line x1="${m.left}" y1="${m.top}" x2="${m.left}" y2="${m.top+innerH}" class="ghin-chart-axis-strong"></line>
         <line x1="${m.left}" y1="${m.top+innerH}" x2="${w-m.right}" y2="${m.top+innerH}" class="ghin-chart-axis-strong"></line>
-        ${bars}
+        ${marks}
+        ${legend}
       </svg>
     </div>
   `;
@@ -8087,24 +8198,29 @@ function renderAcquisitionAttributionDraft() {
   const summaryKpiLabel = (row) => {
     if(isYtd && row.key === 'trials') return 'GHIN Trial YTD';
     if(isYtd && row.key === 'marketing') return 'Paid Media YTD';
-    if(isYtd && row.key === 'organic') return 'Organic / Untagged YTD';
+    if(isYtd && row.key === 'organic') return 'Organic / Other Marketing YTD';
     return row.label;
   };
 
   const ghinKpiValues = selectedGhinTrialsKpiValues(isYtd, selectedMonth.label);
   const marketingRows = isYtd ? marketingYtd : marketingMonth;
   const affiliateRows = isYtd ? affiliateYtd : affiliateMonth;
-  const ghinGcJulyConversions = (GHIN_TRIALS_GC_MONTHLY_DRAFT || []).find(row => row.label === 'Jul')?.conversions || 0;
+  const ghinGcLatest = (GHIN_TRIALS_GC_MONTHLY_DRAFT || []).at(-1) || {};
+  const ghinGcLatestMonth = ghinGcLatest.label === 'Aug' ? 'August' : (ghinGcLatest.label || 'Latest');
 
       const ghinSection = `
       <div class="ghin-trials-dashboard">
         <div class="ghin-trials-kpis ghin-trials-gc-kpis">
-          ${attributionDetailKpi('GC Conversions YTD', GHIN_TRIALS_GC_SUMMARY_DRAFT.trialConversions || 0, 'Jan–July', 'count', 'ghin-gc-kpi')}
-          ${attributionDetailKpi('GC Conversions July', ghinGcJulyConversions, 'July', 'count', 'ghin-gc-kpi')}
+          ${attributionDetailKpi('GC Conversions YTD', GHIN_TRIALS_GC_SUMMARY_DRAFT.trialConversions || 0, `Jan–${ghinGcLatestMonth}`, 'count', 'ghin-gc-kpi')}
+          ${attributionDetailKpi(`GC Conversions ${ghinGcLatestMonth}`, ghinGcLatest.conversions || 0, ghinGcLatestMonth, 'count', 'ghin-gc-kpi')}
         </div>
         <div class="attribution-draft-card ghin-trials-chart-card">
           <div class="attribution-draft-head">
-            <div><h3>YTD GHIN Trial GC Conversions by Month</h3></div>
+            <div><h3>GHIN Trial GC Conversions by Month</h3></div>
+            <div class="attribution-chart-toggle" role="group" aria-label="GC monthly chart type">
+              <button class="${GHIN_GC_MONTHLY_VIEW === 'bar' ? 'active' : ''}" onclick="setGhinGcMonthlyView('bar')">Bar</button>
+              <button class="${GHIN_GC_MONTHLY_VIEW === 'line' ? 'active' : ''}" onclick="setGhinGcMonthlyView('line')">Line</button>
+            </div>
           </div>
           ${ghinGcTrialConversionsSvg()}
         </div>
@@ -8358,12 +8474,85 @@ function renderAcquisitionAttributionDraft() {
   `;
 }
 
+function acquisitionMonthlyYoyTrendChart(ref) {
+  const chartId='acquisitionMonthlyYoyTrend';
+  const years=yearsForChart(chartId,ref).filter(year=>year>2022);
+  if(!YEAR_FILTERS[chartId]) {
+    YEAR_FILTERS[chartId]={};
+    years.forEach(year=>YEAR_FILTERS[chartId][year]=year===ref.year);
+    localStorage.setItem("pa_year_filters",JSON.stringify(YEAR_FILTERS));
+  }
+  const visible=visibleYearsFor(chartId,ref);
+  const colors={2023:'#a8b3c2',2024:'#8291a6',2025:'#586b84',2026:'#2563eb'};
+  const allSeries=years.map(year=>{
+    const rows=[];
+    for(let month=1;month<=12;month++) {
+      const current=BY_YEAR_MONTH[`${year}-${month}`];
+      const prior=BY_YEAR_MONTH[`${year-1}-${month}`];
+      if(current?.newGolfers==null||prior?.newGolfers==null||!Number(prior.newGolfers)) continue;
+      rows.push({year,month:current.month,monthNum:month,value:(Number(current.newGolfers)-Number(prior.newGolfers))/Number(prior.newGolfers),current:Number(current.newGolfers),prior:Number(prior.newGolfers)});
+    }
+    return {year,rows,color:colors[year]||'#64748b'};
+  }).filter(series=>series.rows.length);
+  const activeSeries=allSeries.filter(series=>visible[series.year]);
+  const allRows=activeSeries.flatMap(series=>series.rows);
+  if(!allRows.length) return `<div class="empty-note">Comparable acquisition data is not available.</div>`;
+  const w=1200,h=415,left=72,right=30,top=34,bottom=52;
+  const values=allRows.map(row=>row.value);
+  const rawMin=Math.min(0,...values),rawMax=Math.max(0,...values);
+  let yMin=Math.floor((rawMin-.025)*20)/20;
+  let yMax=Math.ceil((rawMax+.025)*20)/20;
+  if(yMax-yMin<.2){const mid=(yMax+yMin)/2;yMin=mid-.1;yMax=mid+.1;}
+  const plotW=w-left-right,plotH=h-top-bottom;
+  const maxMonth=Math.max(...allRows.map(row=>row.monthNum));
+  const x=month=>left+(maxMonth===1?plotW/2:(month-1)*plotW/(maxMonth-1));
+  const y=value=>top+(yMax-value)/(yMax-yMin)*plotH;
+  let svg=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Monthly year-over-year acquisition change by selected year">`;
+  for(let i=0;i<5;i++) {
+    const value=yMin+(yMax-yMin)*i/4,yy=y(value);
+    svg+=`<line class="gridline" x1="${left}" x2="${w-right}" y1="${yy}" y2="${yy}"></line>`;
+    svg+=`<text class="axis-label" x="${left-10}" y="${yy+5}" text-anchor="end" style="font-size:14px">${(value*100).toFixed(0)}%</text>`;
+  }
+  for(let month=1;month<=maxMonth;month++) {
+    const xx=x(month);
+    svg+=`<line class="gridline" x1="${xx}" x2="${xx}" y1="${top}" y2="${h-bottom}" style="opacity:.55"></line>`;
+  }
+  svg+=`<line class="axis" x1="${left}" x2="${left}" y1="${top}" y2="${h-bottom}"></line>`;
+  svg+=`<line class="axis" x1="${left}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+  const labelYear=Math.max(...activeSeries.map(series=>series.year));
+  activeSeries.forEach(series=>{
+    const isCurrent=series.year===ref.year;
+    svg+=`<polyline fill="none" stroke="${series.color}" stroke-width="${isCurrent?4:2.5}" opacity="${isCurrent?1:.78}" stroke-linecap="round" stroke-linejoin="round" points="${series.rows.map(row=>`${x(row.monthNum)},${y(row.value)}`).join(' ')}"></polyline>`;
+    series.rows.forEach((row,index)=>{
+      const xx=x(row.monthNum),yy=y(row.value),positive=row.value>=0;
+      const isFirst=index===0,isLast=index===series.rows.length-1;
+      const labelX=isFirst?xx+13:isLast?xx-9:xx;
+      const labelAnchor=isFirst?'start':isLast?'end':'middle';
+      const labelY=isLast?yy-13:(positive?yy-13:yy+22);
+      const changeState=row.value>0?'positive':row.value<0?'negative':'neutral';
+      const changeArrow=row.value>0?'▲':row.value<0?'▼':'•';
+      const tip=`<div class='yoy-driver-tip'><div class='yoy-driver-tip-title'>${row.month} ${row.year} acquisition</div><div class='yoy-driver-tip-row'><span class='yoy-driver-tip-label'>YoY change</span><span class='yoy-driver-tip-value ${changeState}'>${changeArrow} ${pct(row.value)}</span></div><div class='yoy-driver-tip-row'><span class='yoy-driver-tip-label'>${row.year} new golfers</span><span class='yoy-driver-tip-value neutral'>${fmt(row.current)}</span></div><div class='yoy-driver-tip-row'><span class='yoy-driver-tip-label'>${row.year-1} new golfers</span><span class='yoy-driver-tip-value neutral'>${fmt(row.prior)}</span></div></div>`;
+      svg+=`<circle class="dot tiptarget" data-tip="${tip}" aria-label="${escapeHtml(`${row.month} ${row.year} acquisition: ${pct(row.value)} year over year, ${fmt(row.current)} versus ${fmt(row.prior)} new golfers`)}" cx="${xx}" cy="${yy}" r="${isCurrent?6:4.5}" style="stroke:${series.color};cursor:pointer"></circle>`;
+      if(series.year===labelYear) svg+=`<text class="value-label" x="${labelX}" y="${labelY}" text-anchor="${labelAnchor}" style="font-size:18px;paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round">${pct(row.value)}</text>`;
+    });
+  });
+  for(let month=1;month<=maxMonth;month++) {
+    const xx=x(month);
+    svg+=`<line class="axis" x1="${xx}" x2="${xx}" y1="${h-bottom}" y2="${h-bottom+6}"></line>`;
+    svg+=`<text class="axis-label" x="${xx}" y="${h-17}" text-anchor="middle" style="font-size:14px">${monthName(month).slice(0,3)}</text>`;
+  }
+  svg+=`</svg>`;
+  const controls=`<div class="year-toggle"><span class="year-toggle-label">Years</span>${allSeries.map(series=>`<button class="${visible[series.year]?'active':''}" onclick="toggleChartYear('${chartId}',${series.year})"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${series.color};margin-right:5px"></span>${series.year}</button>`).join('')}</div>`;
+  return `<div class="card-head"><div><h3>Monthly YoY Acquisition Change</h3><div class="card-sub">Each selected year compared with the same month in the prior year</div></div>${controls}</div><div class="chart">${svg}</div>`;
+}
+
 function renderAcquisitionSection() {
   const ref = enrich(latestActiveRow());
   const highlightsCard = document.getElementById('acquisitionHighlights');
   const monthlyCard = document.getElementById('newGolfersCard');
   const pacingCard = document.getElementById('ytdNewGolfersCard');
   const monthlyYoyBarCard = document.getElementById('newGolfersMonthlyYoyBarCard');
+  const monthlyYoyTrendCard = document.getElementById('acquisitionMonthlyYoyTrendCard');
   const yoyBarCard = document.getElementById('newGolfersYoyBarCard');
   if(!ref || !highlightsCard || !monthlyCard || !pacingCard) return;
 
@@ -8373,16 +8562,15 @@ function renderAcquisitionSection() {
   const priorMonth = BY_YEAR_MONTH[(ref.year-1) + '-' + monthNum(ref.month)];
   const ytdShare = safeShare(ref.ytdNewGolfers, ref.activeGolfers);
   const priorYtdShare = safeShare(ref.priorYtdNewGolfers, priorMonth?.activeGolfers);
-  const monthlyShare = safeShare(ref.newGolfers, ref.activeGolfers);
-  const priorMonthlyShare = safeShare(priorMonth?.newGolfers, priorMonth?.activeGolfers);
 
   highlightsCard.className = 'acquisition-highlights';
   highlightsCard.innerHTML = richKpiBlock([
-    {label:'New golfers', value:ref.newGolfers, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.newGolfers, priorMonth?.newGolfers), `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
-    {label:'New golfers YTD', value:ref.ytdNewGolfers, format:'count', changeHtml:kpiChangeMarkup(ref.ytdNewPct, `Jan–${ref.month} ${ref.year-1}`), sub:`Jan through ${ref.month}`},
-    {label:'YTD as % of active', value:ytdShare, format:'percent', changeHtml:kpiPointChangeMarkup(ytdShare != null && priorYtdShare != null ? ytdShare - priorYtdShare : null, `${ref.month} ${ref.year-1}`), sub:'Current active base'},
-    {label:'Monthly as % of active', value:monthlyShare, format:'percent', changeHtml:kpiPointChangeMarkup(monthlyShare != null && priorMonthlyShare != null ? monthlyShare - priorMonthlyShare : null, `${ref.month} ${ref.year-1}`), sub:'Selected month share'}
+    {label:`New golfers ${ref.month.slice(0,3)}`, value:ref.newGolfers, format:'count', changeHtml:acquisitionStackedChangeMarkup(relChange(ref.newGolfers, priorMonth?.newGolfers), `${ref.month} ${ref.year-1}`), sub:''},
+    {label:'New golfers YTD', value:ref.ytdNewGolfers, format:'count', changeHtml:acquisitionStackedChangeMarkup(ref.ytdNewPct, `Jan–${ref.month} ${ref.year-1}`), sub:''},
+    {label:'YTD as % of active', value:ytdShare, format:'percent', changeHtml:acquisitionStackedChangeMarkup(ytdShare != null && priorYtdShare != null ? ytdShare - priorYtdShare : null, `${ref.month} ${ref.year-1}`, true), sub:''}
   ]);
+
+  if(monthlyYoyTrendCard) monthlyYoyTrendCard.innerHTML = acquisitionMonthlyYoyTrendChart(ref);
 
   const monthlyChange = relChange(ref.newGolfers, priorMonth?.newGolfers);
   const monthlyControls = `<div class="toggle"><button class="${monthlyPref==='bar'?'active':''}" onclick="setChart('newGolfersCard','bar')">Bar chart</button><button class="${monthlyPref==='line'?'active':''}" onclick="setChart('newGolfersCard','line')">Line graph</button></div>${yearToggleControls('newGolfersCard', ref)}`;
@@ -8964,7 +9152,10 @@ function genericChart(rows, field, type, format) {
   const percentMode = format === "percent";
   const w = 1120, h = 455, left = 64, right = 120, top = 18, bottom = 52;
   const vals = rows.map(r => r[field]);
-  const sc = scale(vals, format !== "percent");
+  const baseScale = scale(vals, format !== "percent");
+  const sc = field === 'retentionRate'
+    ? {min:baseScale.min, max:.83, span:.83-baseScale.min}
+    : baseScale;
   const plotW = w - left - right;
   const plotH = h - top - bottom;
   const xMonth = m => left + (m - 1) * plotW / 11;
@@ -9028,14 +9219,24 @@ function genericChart(rows, field, type, format) {
     const pts = rows.filter(r => r.year === year).map(r => [xMonth(monthNum(r.month)), yVal(r[field]), r]);
     const path = pts.map((pt, i) => `${i ? 'L' : 'M'} ${pt[0]} ${pt[1]}`).join(" ");
     const color = colorMap[year] || "#64748b";
+    const isRetentionRate = field === 'onTimeRenewalRate' || field === 'retentionRate';
     svg += `<path d="${path}" fill="none" stroke="${color}" stroke-width="3.25"></path>`;
     pts.forEach(pt => {
       const isHighlight = highlight && pt[2].year === highlight.year && pt[2].month === highlight.month;
       if(isHighlight){
         highlightedPoint = {x:pt[0], y:pt[1], row:pt[2], color};
-        svg += `<circle cx="${pt[0]}" cy="${pt[1]}" r="14" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="6 5"></circle>`;
+        if(!isRetentionRate) {
+          svg += `<circle cx="${pt[0]}" cy="${pt[1]}" r="14" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="6 5"></circle>`;
+        }
       }
-      svg += `<circle class="dot tiptarget" data-tip="${tooltip(['Value','<strong>'+fmt(pt[2][field],format)+'</strong>',pt[2].label, 'Year: '+pt[2].year, isHighlight ? 'Current point' : null])}" cx="${pt[0]}" cy="${pt[1]}" r="4.25" style="stroke:${color}"></circle>`;
+      const metricLabel = field === 'onTimeRenewalRate' ? 'On-time renewal' : (field === 'retentionRate' ? '12M retention' : 'Value');
+      const pointTip = `<div class='chart-hover-tip'><div class='chart-hover-date'>${pt[2].month} ${pt[2].year}</div><div class='chart-hover-row'><span class='chart-hover-label'>${metricLabel}</span><strong class='chart-hover-value'>${fmt(pt[2][field],format)}</strong></div></div>`;
+      svg += `<circle class="chart-hit tiptarget" data-tip-style="light" data-tip="${tooltip([pointTip])}" cx="${pt[0]}" cy="${pt[1]}" r="14" fill="transparent"></circle>`;
+      svg += `<circle class="dot chart-point" cx="${pt[0]}" cy="${pt[1]}" r="4.25" style="stroke:${color};pointer-events:none"></circle>`;
+      if(isRetentionRate && isHighlight) {
+        const labelY = pt[1] < top + 28 ? pt[1] + 20 : pt[1] - 10;
+        svg += `<text x="${pt[0]}" y="${labelY}" text-anchor="middle" style="font-size:16px;font-weight:950;fill:#334155">${fmt(pt[2][field], 'percent')}</text>`;
+      }
     });
   });
 
@@ -9351,6 +9552,64 @@ function updateSections() {
     document.getElementById(sectionId).classList.toggle("hidden", !visible);
   });
 }
+function monthlyYoySectionTrendChart(ref, {chartId, field, title, metricLabel, pointChange=false}) {
+  const years = yearsForChart(chartId, ref).filter(year => year > 2022);
+  if(!YEAR_FILTERS[chartId]) {
+    YEAR_FILTERS[chartId] = {};
+    years.forEach(year => YEAR_FILTERS[chartId][year] = year === ref.year);
+    localStorage.setItem("pa_year_filters", JSON.stringify(YEAR_FILTERS));
+  }
+  const visible = visibleYearsFor(chartId, ref);
+  const colors = {2023:'#a8b3c2',2024:'#8291a6',2025:'#586b84',2026:'#2563eb'};
+  const allSeries = years.map(year => {
+    const rows = [];
+    for(let month=1; month<=12; month++) {
+      const current = BY_YEAR_MONTH[`${year}-${month}`];
+      const prior = BY_YEAR_MONTH[`${year-1}-${month}`];
+      if(current?.[field] == null || prior?.[field] == null) continue;
+      const currentValue = Number(current?.[field]);
+      const priorValue = Number(prior?.[field]);
+      if(!Number.isFinite(currentValue) || !Number.isFinite(priorValue) || (!pointChange && !priorValue)) continue;
+      rows.push({year, month:current.month, monthNum:month, value:pointChange ? currentValue-priorValue : (currentValue-priorValue)/priorValue, current:currentValue, prior:priorValue});
+    }
+    return {year, rows, color:colors[year] || '#64748b'};
+  }).filter(series => series.rows.length);
+  const activeSeries = allSeries.filter(series => visible[series.year]);
+  const allRows = activeSeries.flatMap(series => series.rows);
+  if(!allRows.length) return `<div class="empty-note">Comparable data is not available.</div>`;
+  const w=1200,h=415,left=72,right=30,top=34,bottom=52;
+  const values=allRows.map(row=>row.value),rawMin=Math.min(0,...values),rawMax=Math.max(0,...values);
+  let yMin=Math.floor((rawMin-.02)*20)/20,yMax=Math.ceil((rawMax+.02)*20)/20;
+  if(yMax-yMin<.2){const mid=(yMax+yMin)/2;yMin=mid-.1;yMax=mid+.1;}
+  const plotW=w-left-right,plotH=h-top-bottom,maxMonth=Math.max(...allRows.map(row=>row.monthNum));
+  const x=month=>left+(maxMonth===1?plotW/2:(month-1)*plotW/(maxMonth-1));
+  const y=value=>top+(yMax-value)/(yMax-yMin)*plotH;
+  const valueLabel=value=>pointChange?`${value>=0?'+':''}${(value*100).toFixed(1)} pts`:pct(value);
+  let svg=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${escapeHtml(title)}">`;
+  for(let i=0;i<5;i++) {
+    const value=yMin+(yMax-yMin)*i/4,yy=y(value);
+    svg+=`<line class="gridline" x1="${left}" x2="${w-right}" y1="${yy}" y2="${yy}"></line><text class="axis-label" x="${left-10}" y="${yy+5}" text-anchor="end" style="font-size:14px">${(value*100).toFixed(0)}${pointChange?' pts':'%'}</text>`;
+  }
+  for(let month=1;month<=maxMonth;month++) svg+=`<line class="gridline" x1="${x(month)}" x2="${x(month)}" y1="${top}" y2="${h-bottom}" style="opacity:.55"></line>`;
+  svg+=`<line class="axis" x1="${left}" x2="${left}" y1="${top}" y2="${h-bottom}"></line><line class="axis" x1="${left}" x2="${w-right}" y1="${h-bottom}" y2="${h-bottom}"></line>`;
+  const labelYear=Math.max(...activeSeries.map(series=>series.year));
+  activeSeries.forEach(series=>{
+    const isCurrent=series.year===ref.year;
+    svg+=`<polyline fill="none" stroke="${series.color}" stroke-width="${isCurrent?4:2.5}" opacity="${isCurrent?1:.78}" stroke-linecap="round" stroke-linejoin="round" points="${series.rows.map(row=>`${x(row.monthNum)},${y(row.value)}`).join(' ')}"></polyline>`;
+    series.rows.forEach((row,index)=>{
+      const xx=x(row.monthNum),yy=y(row.value),isFirst=index===0,isLast=index===series.rows.length-1;
+      const labelX=isFirst?xx+13:isLast?xx-9:xx,labelAnchor=isFirst?'start':isLast?'end':'middle',labelY=row.value>=0?yy-13:yy+22;
+      const tip=`<div class='chart-hover-tip'><div class='chart-hover-date'>${row.month} ${row.year}</div><div class='chart-hover-row'><span class='chart-hover-label'>YoY change</span><strong class='chart-hover-value'>${valueLabel(row.value)}</strong></div></div>`;
+      svg+=`<circle class="dot tiptarget" data-tip-style="light" data-tip="${tooltip([tip])}" cx="${xx}" cy="${yy}" r="${isCurrent?6:4.5}" style="stroke:${series.color};cursor:pointer"></circle>`;
+      if(series.year===labelYear) svg+=`<text class="value-label" x="${labelX}" y="${labelY}" text-anchor="${labelAnchor}" style="font-size:18px;paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round">${valueLabel(row.value)}</text>`;
+    });
+  });
+  for(let month=1;month<=maxMonth;month++) svg+=`<line class="axis" x1="${x(month)}" x2="${x(month)}" y1="${h-bottom}" y2="${h-bottom+6}"></line><text class="axis-label" x="${x(month)}" y="${h-17}" text-anchor="middle" style="font-size:14px">${monthName(month).slice(0,3)}</text>`;
+  svg+=`</svg>`;
+  const controls=`<div class="year-toggle"><span class="year-toggle-label">Years</span>${allSeries.map(series=>`<button class="${visible[series.year]?'active':''}" onclick="toggleChartYear('${chartId}',${series.year})"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${series.color};margin-right:5px"></span>${series.year}</button>`).join('')}</div>`;
+  return `<div class="card-head"><div><h3>${title}</h3><div class="card-sub">Each selected year compared with the same month in the prior year</div></div>${controls}</div><div class="chart">${svg}</div>`;
+}
+
 function renderRetentionSection() {
   const ref = enrich(latestActiveRow());
   const highlightsCard = document.getElementById('retentionHighlights');
@@ -9376,6 +9635,14 @@ function renderRetentionSection() {
   const rollingChange = ref.retentionRate != null && priorYearRow?.retentionRate != null ? ref.retentionRate - priorYearRow.retentionRate : null;
   const priorYearSnapshotLabel = reportDateLabelForRow(priorYearRow);
   const priorCohortBaseLabel = reportDateLabelForRow(BY_YEAR_MONTH[(ref.year-2) + '-' + month]);
+  const compactRetentionDate = label => String(label || '')
+    .replace(/^September\b/, 'Sept.')
+    .replace(/, (\d{2})(\d{2})$/, ", '$2");
+  const priorYearSnapshotCompact = compactRetentionDate(priorYearSnapshotLabel);
+  const priorCohortBaseCompact = compactRetentionDate(priorCohortBaseLabel);
+  const splitRetentionChange = html => html.includes(' vs ')
+    ? html.replace(' vs ', '<span class="retention-change-basis">vs ').replace('</div>', '</span></div>')
+    : html;
 
   highlightsCard.className = 'retention-highlights';
   highlightsCard.innerHTML = '';
@@ -9386,10 +9653,10 @@ function renderRetentionSection() {
   if(ref.renewed != null && ref.upForRenewal != null) renewalCopyBits.push(`${fmt(ref.renewed)} of ${fmt(ref.upForRenewal)} golfers renewed on time.`);
   const renewalCopy = renewalCopyBits.join(' ');
   const renewalKpis = richKpiBlock([
-    {label:'On time renewal rate', value:ref.onTimeRenewalRate, format:'percent', changeHtml:kpiPointChangeMarkup(onTimeChange, `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
-    {label:'Up for renewal', value:ref.upForRenewal, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.upForRenewal, priorYearRow?.upForRenewal), `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
-    {label:'Renewed', value:ref.renewed, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.renewed, priorYearRow?.renewed), `${ref.month} ${ref.year-1}`), sub:'On time renewals'},
-    {label:'Not renewed', value:ref.notRenewed, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.notRenewed, priorYearRow?.notRenewed), `${ref.month} ${ref.year-1}`), sub:'Not renewed on time'}
+    {label:'On time renewal rate', value:ref.onTimeRenewalRate, format:'percent', changeHtml:kpiPointChangeMarkup(onTimeChange, `${ref.month === 'September' ? 'Sept.' : ref.month.slice(0,3) + '.'} '${String(ref.year-1).slice(2)}`), sub:''},
+    {label:'Up for renewal', value:ref.upForRenewal, format:'count', changeHtml:kpiChangeMarkup(null, ''), sub:''},
+    {label:'Renewed', value:ref.renewed, format:'count', changeHtml:kpiChangeMarkup(null, ''), sub:''},
+    {label:'Not renewed', value:ref.notRenewed, format:'count', changeHtml:kpiChangeMarkup(null, ''), sub:''}
   ]);
 
   renewalCard.innerHTML = `
@@ -9400,14 +9667,14 @@ function renderRetentionSection() {
 
   const retentionControls = `<div class="toggle"><button class="${retentionPref==='bar'?'active':''}" onclick="setChart('retentionCard','bar')">Bar chart</button><button class="${retentionPref==='line'?'active':''}" onclick="setChart('retentionCard','line')">Line graph</button></div>${yearToggleControls('retentionCard', ref)}`;
   const retentionCopyBits = [];
-  if(rollingChange != null) retentionCopyBits.push(`${rollingChange >= 0 ? '+' : ''}${(rollingChange*100).toFixed(1)} pts vs ${priorYearSnapshotLabel}.`);
+  if(rollingChange != null) retentionCopyBits.push(`${rollingChange >= 0 ? '+' : ''}${(rollingChange*100).toFixed(1)} pts vs ${priorYearSnapshotCompact}.`);
   if(ref.retainedGolfers != null && ref.priorYearActiveGolfers != null) retentionCopyBits.push(`Equivalent to ${fmt(ref.retainedGolfers)} retained golfers from the prior-year active base of ${fmt(ref.priorYearActiveGolfers)}.`);
   const retentionCopy = retentionCopyBits.join(' ');
   const retentionKpis = richKpiBlock([
-    {label:'12M retention', value:ref.retentionRate, format:'percent', changeHtml:kpiPointChangeMarkup(rollingChange, priorYearSnapshotLabel), sub:`As of ${reportDateLabelForRow(ref)}`},
-    {label:'Up for renewal during the last 12 months', value:ref.priorYearActiveGolfers, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.priorYearActiveGolfers, priorYearRow?.priorYearActiveGolfers), `${priorCohortBaseLabel} base`), sub:`${priorYearSnapshotLabel} active base`},
-    {label:'Retained golfers', value:ref.retainedGolfers, format:'count', changeHtml:kpiChangeMarkup(retainedChange, 'prior 12M cohort'), sub:'Still active now'},
-    {label:'Not renewed', value:retentionNotRenewed, format:'count', changeHtml:kpiChangeMarkup(relChange(retentionNotRenewed, priorRetentionNotRenewed), 'prior 12M cohort'), sub:'No longer active'}
+    {label:'12M retention', value:ref.retentionRate, format:'percent', changeHtml:splitRetentionChange(kpiPointChangeMarkup(rollingChange, priorYearSnapshotCompact)), sub:''},
+    {label:'Up for renewal (last 12 mos.)', value:ref.priorYearActiveGolfers, format:'count', changeHtml:splitRetentionChange(kpiChangeMarkup(relChange(ref.priorYearActiveGolfers, priorYearRow?.priorYearActiveGolfers), `${priorCohortBaseCompact} base`)), sub:''},
+    {label:'Retained golfers', value:ref.retainedGolfers, format:'count', changeHtml:splitRetentionChange(kpiChangeMarkup(retainedChange, 'prior 12M cohort')), sub:''},
+    {label:'Not renewed', value:retentionNotRenewed, format:'count', changeHtml:splitRetentionChange(kpiChangeMarkup(relChange(retentionNotRenewed, priorRetentionNotRenewed), 'prior 12M cohort')), sub:''}
   ]);
 
   retentionCard.innerHTML = `
@@ -9645,7 +9912,7 @@ function renderRecoverySection() {
   const ytdShare = safeShare(ref.ytdReactivations, ref.activeGolfers);
   const priorYtdShare = safeShare(ref.priorYtdReactivations, priorMonth?.activeGolfers);
 
-  highlightsCard.className = 'acquisition-highlights';
+  highlightsCard.className = 'recovery-highlights';
   highlightsCard.innerHTML = richKpiBlock([
     {label:'Reactivations', value:ref.reactivations, format:'count', changeHtml:kpiChangeMarkup(relChange(ref.reactivations, priorMonth?.reactivations), `${ref.month} ${ref.year-1}`), sub:`${ref.month} ${ref.year}`},
     {label:'Reactivations YTD', value:ref.ytdReactivations, format:'count', changeHtml:kpiChangeMarkup(ref.ytdReactivationsPct, `Jan–${ref.month} ${ref.year-1}`), sub:`Jan through ${ref.month}`},
@@ -10580,6 +10847,7 @@ document.addEventListener("mouseover", e => {
   if(!t) return;
   const tt = document.getElementById("tooltip");
   tt.innerHTML = t.dataset.tip || "";
+  tt.classList.toggle("tooltip-light", t.dataset.tipStyle === "light");
   tt.style.display = "block";
 });
 function positionTooltip(tt,clientX,clientY) {

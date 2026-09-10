@@ -7,18 +7,18 @@
   "marketing": [
     {
       "label": "RapidTee Golf",
-      "value": 8,
-      "sub": "80.0% of pilot registrations"
+      "value": 10,
+      "sub": "18.5% of pilot registrations"
     },
     {
       "label": "Flighting",
-      "value": 2,
-      "sub": "20.0% of pilot registrations"
+      "value": 4,
+      "sub": "7.4% of pilot registrations"
     },
     {
       "label": "Arccos",
-      "value": 0,
-      "sub": "No registrations"
+      "value": 40,
+      "sub": "74.1% of pilot registrations"
     },
     {
       "label": "Leaderboard",
@@ -29,25 +29,25 @@
   "monthlyPerformance": [
     {
       "month": "Pilot",
-      "registrations": 10,
-      "conversions": 10
+      "registrations": 54,
+      "conversions": 54
     }
   ],
   "partnerPerformance": [
     {
       "partner": "RapidTee Golf",
       "activations": "Weekly email; live banner at bottom of site",
-      "conversions": 8
+      "conversions": 10
     },
     {
       "partner": "Flighting",
       "activations": "Email distribution",
-      "conversions": 2
+      "conversions": 4
     },
     {
       "partner": "Arccos",
       "activations": "No planned activations at the moment",
-      "conversions": 0
+      "conversions": 40
     },
     {
       "partner": "Leaderboard",
