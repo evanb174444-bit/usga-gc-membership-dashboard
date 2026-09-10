@@ -5580,7 +5580,7 @@ async function loadAffiliateAttributionData() {
 }
 
 async function loadMarketingAnalysisData() {
-  const response = await fetch("./data/marketing_analysis.json");
+  const response = await fetch("./data/marketing_analysis.json", {cache:"no-store"});
   if(!response.ok) {
     throw new Error(`Unable to load Paid Media Attribution data: ${response.status} ${response.statusText}`);
   }
@@ -6162,6 +6162,7 @@ function rebuildAttributionSummaryData() {
   const marketingByMonth = Object.fromEntries((MARKETING_MONTHLY_PERFORMANCE_DRAFT || [])
     .filter(row => row.month && row.month !== "YTD")
     .map(row => [String(row.month), Number(row.conversions || 0)]));
+  const affiliateTotal = affiliateTotals().conversions;
 
   ATTRIBUTION_DRAFT_DATA = MONTHS
     .filter(([, monthNumber]) => monthNumber <= refMonth)
@@ -6171,7 +6172,7 @@ function rebuildAttributionSummaryData() {
       const totalNewGolfers = Number(membershipRow?.newGolfers || 0);
       const trials = Number(ghinByMonth[label] || 0);
       const marketing = Number(marketingByMonth[label] || 0);
-      const affiliate = 0;
+      const affiliate = label === 'Aug' ? affiliateTotal : 0;
       const organic = Math.max(0, totalNewGolfers - trials - marketing - affiliate);
 
       return {
@@ -6193,9 +6194,9 @@ function rebuildAttributionSummaryData() {
       label: row.label,
       trials: Number(row.conversions || 0),
       marketing: Number(marketingByMonth[row.label] || 0),
-      affiliate: 0,
+      affiliate: row.label === 'Aug' ? affiliateTotal : 0,
       organic: 0,
-      totalNewGolfers: Number(row.conversions || 0) + Number(marketingByMonth[row.label] || 0),
+      totalNewGolfers: Number(row.conversions || 0) + Number(marketingByMonth[row.label] || 0) + (row.label === 'Aug' ? affiliateTotal : 0),
       residualOrganic: false
     }));
   }
@@ -6235,7 +6236,7 @@ function attributionDraftTotals() {
   const officialTotal = attributionOfficialYtdTotal();
   const trials = Number(GHIN_TRIALS_GC_SUMMARY_DRAFT?.trialConversions ?? GHIN_TRIALS_YEARLY_DRAFT?.trialConversions ?? 0);
   const marketing = Number(marketingYtdPerformance()?.conversions || 0);
-  const affiliate = 0;
+  const affiliate = affiliateTotals().conversions;
   const monthlyResidualOrganic = ATTRIBUTION_DRAFT_DATA.reduce((sum, r) => sum + Number(r.organic || 0), 0);
   const organic = officialTotal
     ? Math.max(0, officialTotal - trials - marketing - affiliate)
@@ -6246,26 +6247,28 @@ function attributionDraftTotals() {
 function paidMediaCoverageLabel() {
   const rows = (MARKETING_MONTHLY_PERFORMANCE_DRAFT || []).filter(row => row.month && row.month !== "YTD");
   if(!rows.length) return "Paid media conversions";
-  const latestMonth = rows[rows.length - 1].month === "Jul" ? "July" : rows[rows.length - 1].month;
+  const monthNames = {Jan:'January',Feb:'February',Mar:'March',Apr:'April',May:'May',Jun:'June',Jul:'July',Aug:'August',Sep:'September',Oct:'October',Nov:'November',Dec:'December'};
+  const latestLabel = rows[rows.length - 1].month;
+  const latestMonth = monthNames[latestLabel] || latestLabel;
   return `Jan–${latestMonth}`;
 }
 
 function attributionDraftSourceRows() {
   const t = attributionDraftTotals();
   return [
-    {key:'trials', label:'GC Conversions YTD', value:t.trials, cls:'attribution-seg-trials'},
+    {key:'trials', label:'GC Trial Conversions', value:t.trials, cls:'attribution-seg-trials'},
     {key:'marketing', label:'Paid Media', value:t.marketing, cls:'attribution-seg-marketing'},
-    {key:'affiliate', label:'Affiliate Program', value:t.affiliate, cls:'attribution-seg-affiliate'},
+    {key:'affiliate', label:'Affiliate Marketing', value:t.affiliate, cls:'attribution-seg-affiliate'},
     {key:'organic', label:'Organic / Other Marketing', value:t.organic, cls:'attribution-seg-organic'}
   ];
 }
 
 function attributionProductionSourceRows() {
-  return attributionDraftSourceRows().filter(r => r.key !== 'affiliate');
+  return attributionDraftSourceRows();
 }
 
 function attributionProductionTotalForRow(row) {
-  return row.trials + row.marketing + row.organic;
+  return row.trials + row.marketing + row.affiliate + row.organic;
 }
 
 function attributionDraftStackedBars() {
@@ -6297,7 +6300,7 @@ function attributionSummaryYearTotalsChart(view = ACQUISITION_ATTRIBUTION_YEAR_V
   const data = [
     { year: '2024', period: 'Full year', total: 171676, trials: 34485, marketing: 21538, affiliate: 0 },
     { year: '2025', period: 'Full year', total: 186889, trials: 68918, marketing: 23526, affiliate: 0 },
-    { year: '2026', period: 'Jan-July YTD', total: 131031, trials: 48732, marketing: 25904, affiliate: 10 }
+    { year: '2026', period: 'Jan-August YTD', total: 149964, trials: 56778, marketing: 29580, affiliate: 54 }
   ].map(row => ({
     ...row,
     organic: Math.max(0, row.total - row.trials - row.marketing - row.affiliate)
@@ -6368,7 +6371,7 @@ function attributionSummaryYearTotalsChart(view = ACQUISITION_ATTRIBUTION_YEAR_V
       const tip = tooltip([
         `${row.year} ${source.label}`,
         `<strong>${fmt(value)}</strong>`,
-        source.key === 'affiliate' ? 'Launched in July' : row.period
+        source.key === 'affiliate' ? 'Launched in August' : row.period
       ]);
       return `<circle class="tiptarget" data-tip="${tip}" cx="${x(index) + barW / 2}" cy="${y(value)}" r="7" fill="#ffffff" stroke="${source.color}" stroke-width="4"><title>${row.year} ${source.label}: ${fmt(value)}</title></circle>`;
     }).join('');
@@ -6432,6 +6435,7 @@ function attributionDraftTrendChart(view = ACQUISITION_ATTRIBUTION_TREND_VIEW) {
   const sources = [
     {key:'trials', label:'GC Trials', color:'#14395f'},
     {key:'marketing', label:'Paid Media', color:'#4f83b8'},
+    {key:'affiliate', label:'Affiliate Marketing', color:'#d85a32'},
     {key:'organic', label:'Organic / Other Marketing', color:'#c6d4e2'}
   ];
   const rows = ATTRIBUTION_DRAFT_DATA;
@@ -6500,14 +6504,16 @@ function attributionDraftTrendChart(view = ACQUISITION_ATTRIBUTION_TREND_VIEW) {
     (_, i) => i * 2000
   ).filter((value, index, arr) => value <= niceLineMax && arr.indexOf(value) === index);
   const lines = sources.map(s => {
-    const pts = rows.map((r,i) => `${lineX(i).toFixed(1)},${yLine(r[s.key]).toFixed(1)}`).join(' ');
-    const dots = rows.map((r,i) => `<circle cx="${lineX(i).toFixed(1)}" cy="${yLine(r[s.key]).toFixed(1)}" r="8" stroke="${s.color}" class="attribution-trend-dot"></circle>`).join('');
+    const plottedRows = rows.map((r,i) => ({r,i})).filter(({r}) => s.key !== 'affiliate' || Number(r[s.key]) > 0);
+    const pts = plottedRows.map(({r,i}) => `${lineX(i).toFixed(1)},${yLine(r[s.key]).toFixed(1)}`).join(' ');
+    const dots = plottedRows.map(({r,i}) => `<circle cx="${lineX(i).toFixed(1)}" cy="${yLine(r[s.key]).toFixed(1)}" r="8" stroke="${s.color}" class="attribution-trend-dot tiptarget" data-tip="${r.month}<br><strong>${s.label}: ${fmt(r[s.key])}</strong>"></circle>`).join('');
     return `<polyline points="${pts}" stroke="${s.color}" class="attribution-trend-line"></polyline>${dots}`;
   }).join('');
   const lineLabelConfig = {
     trials:{anchor:Math.min(rows.length - 1, 4.15), dx:20, dy:28, color:'#14395f'},
     organic:{anchor:Math.min(rows.length - 1, 3.15), dx:18, dy:-28, color:'#64748b'},
-    marketing:{anchor:Math.min(rows.length - 1, 5), dx:-44, dy:58, color:'#4f83b8'}
+    marketing:{anchor:Math.min(rows.length - 1, 5), dx:-44, dy:58, color:'#4f83b8'},
+    affiliate:{anchor:rows.length - 1, dx:-118, dy:-18, color:'#d85a32'}
   };
   const interpolatedLineValue = (key, position) => {
     const leftIndex = Math.max(0, Math.min(rows.length - 1, Math.floor(position)));
@@ -6599,6 +6605,7 @@ function attributionDraftDonutChart(isYtd) {
   const rows = [
     {key:'trials', label:'Trials', value:vals.trials, color:'#14395f', textColor:'#ffffff'},
     {key:'marketing', label:'Paid Media', value:vals.marketing, color:'#4f83b8', textColor:'#ffffff'},
+    {key:'affiliate', label:'Affiliate Marketing', value:vals.affiliate, color:'#d85a32', textColor:'#ffffff'},
     {key:'organic', label:'Organic / Other Marketing', value:vals.organic, color:'#c6d4e2', textColor:'#0f172a'}
   ];
   const total = rows.reduce((s,r) => s + r.value, 0);
@@ -7025,7 +7032,7 @@ function attributionAffiliatePilotKpi(total=0) {
     <div class="attribution-draft-kpi">
       <div class="attribution-draft-kpi-label">Affiliate Marketing YTD</div>
       <div class="attribution-draft-kpi-value">${fmt(total)}</div>
-      <div class="attribution-draft-kpi-sub">Launched in July</div>
+      <div class="attribution-draft-kpi-sub">Launched in August</div>
     </div>
   `;
 }
@@ -7707,7 +7714,7 @@ function marketingYearlyMetricTotalsSvg(metric='conversions'){
     year: series.year,
     color: series.color,
     total: marketingYearlyAggregate(series, metric),
-    period: series.year === "2024" ? "Full year" : series.year === "2025" ? "Apr-Sep" : "Jan-Jul YTD"
+    period: series.year === "2024" ? "Full year" : series.year === "2025" ? "Apr-Sep" : "Jan-Aug YTD"
   }));
   const W=760,H=410;
   const m={l:72,r:40,t:34,b:86};
@@ -8198,6 +8205,7 @@ function renderAcquisitionAttributionDraft() {
   const summaryKpiLabel = (row) => {
     if(isYtd && row.key === 'trials') return 'GHIN Trial YTD';
     if(isYtd && row.key === 'marketing') return 'Paid Media YTD';
+    if(isYtd && row.key === 'affiliate') return 'Affiliate Marketing YTD';
     if(isYtd && row.key === 'organic') return 'Organic / Other Marketing YTD';
     return row.label;
   };
@@ -8426,7 +8434,6 @@ function renderAcquisitionAttributionDraft() {
             '',
             null
           )).join('')}
-          ${attributionAffiliatePilotKpi(affiliateTotalsRow.conversions)}
         </div>
       </div>
 
