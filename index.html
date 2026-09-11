@@ -5262,6 +5262,7 @@ svg{height:100%;width:100%;overflow:visible}
       <div class="retention-secondary-tabs" role="tablist" aria-label="Retention view">
         <button data-retention-subtab="totals" class="active" onclick="setRetentionSubtab('totals')">Totals</button>
         <button data-retention-subtab="cohort" onclick="setRetentionSubtab('cohort')">Retention Analysis</button>
+        <button data-retention-subtab="handicap" onclick="setRetentionSubtab('handicap')">No Handicap Analysis</button>
       </div>
     </div>
 
@@ -5327,7 +5328,13 @@ svg{height:100%;width:100%;overflow:visible}
         </div>
 
       </div>
-    </div>  </section>
+    </div>
+
+    <div class="retention-subpanel" id="retentionHandicapPanel">
+      <div class="retention-analysis-updated">Analysis updated: September 2, 2026</div>
+      <div id="retentionHandicapAnalysis"></div>
+    </div>
+  </section>
   </div>
 
 
@@ -6769,7 +6776,7 @@ function affiliateMonthRows() {
 
 let RETENTION_SUBTAB = localStorage.getItem("pa_retention_subtab") || "totals";
 function setRetentionSubtab(subtab) {
-  const allowed = ["totals", "cohort"];
+  const allowed = ["totals", "cohort", "handicap"];
   RETENTION_SUBTAB = allowed.includes(subtab) ? subtab : "totals";
   localStorage.setItem("pa_retention_subtab", RETENTION_SUBTAB);
   document.querySelectorAll("[data-retention-subtab]").forEach(btn => {
@@ -6777,11 +6784,239 @@ function setRetentionSubtab(subtab) {
   });
   const totals = document.getElementById("retentionTotalsPanel");
   const cohort = document.getElementById("retentionCohortPanel");
+  const handicap = document.getElementById("retentionHandicapPanel");
   if(totals) totals.classList.toggle("active", RETENTION_SUBTAB === "totals");
   if(cohort) cohort.classList.toggle("active", RETENTION_SUBTAB === "cohort");
+  if(handicap) handicap.classList.toggle("active", RETENTION_SUBTAB === "handicap");
+  if(RETENTION_SUBTAB === "handicap") renderRetentionHandicapAnalysis();
 }
 function initRetentionSubtab() {
   setRetentionSubtab(RETENTION_SUBTAB);
+}
+
+const HANDICAP_ANALYSIS = {
+  activeGolfers:537485,
+  nhGolfers:25783,
+  averageIndex:14.8,
+  medianIndex:14.0,
+  distribution:[
+    {label:'Plus', count:7814, share:1.45},
+    {label:'0.0 to 4.9', count:35382, share:6.582881382736262},
+    {label:'5.0 to 9.9', count:97533, share:18.14618082362365},
+    {label:'10.0 to 14.9', count:141338, share:26.296175707229966},
+    {label:'15.0 to 19.9', count:117361, share:21.835214005042},
+    {label:'20.0 to 24.9', count:61623, share:11.465064141324874},
+    {label:'25.0 to 29.9', count:27892, share:5.189354121510363},
+    {label:'30.0 to 36.0', count:13761, share:2.56},
+    {label:'36.1 to 54.0', count:8995, share:1.67},
+    {label:'NH', count:25783, share:4.80}
+  ],
+  renewal:[
+    {label:'10.0 to 14.9', eligible:15717, renewed:13480, rate:85.7670038811478},
+    {label:'15.0 to 19.9', eligible:13415, renewed:11429, rate:85.19567648155051},
+    {label:'5.0 to 9.9', eligible:10527, renewed:8897, rate:84.51600645958013},
+    {label:'20.0 to 24.9', eligible:6874, renewed:5757, rate:83.7503636892639},
+    {label:'0.0 to 4.9', eligible:3468, renewed:2884, rate:83.1603229527105},
+    {label:'25.0 to 29.9', eligible:3110, renewed:2567, rate:82.54019292604502},
+    {label:'30.0 to 36.0', eligible:1522, renewed:1237, rate:81.27463863337714},
+    {label:'36.1 to 54.0', eligible:925, renewed:729, rate:78.81081081081082},
+    {label:'Plus', eligible:674, renewed:527, rate:78.18991097922848},
+    {label:'NH', eligible:2167, renewed:1556, rate:71.80433779418551}
+  ],
+  nhTenure:[
+    {label:'Less than 1 month', count:3423, share:13.28},
+    {label:'1 to <3 months', count:5043, share:19.55939960439049},
+    {label:'3 to <6 months', count:5204, share:20.18},
+    {label:'6 to <12 months', count:3265, share:12.66},
+    {label:'1 to <2 years', count:5490, share:21.29},
+    {label:'2 to <3 years', count:2005, share:7.776441841523485},
+    {label:'3 to <4 years', count:1240, share:4.809370515455921},
+    {label:'4+ years', count:113, share:0.438273280843967}
+  ],
+  gender:[
+    {label:'Male', count:22321, share:86.57254780281582},
+    {label:'Female', count:3462, share:13.427452197184191}
+  ],
+  age:[
+    {label:'Under 25', count:2548, share:11.252925849048271},
+    {label:'25 to 34', count:4309, share:19.030163847546703},
+    {label:'35 to 44', count:5114, share:22.585346464691074},
+    {label:'45 to 54', count:3909, share:17.263613478779313},
+    {label:'55 to 64', count:3805, share:16.804310382899793},
+    {label:'65+', count:2958, share:13.063639977034846}
+  ],
+  associations:[
+    {club:'Puerto Rico',nh:34,active:330,share:10.30},
+    {club:'Mississippi',nh:140,active:1644,share:8.52},
+    {club:'Alaska',nh:47,active:590,share:7.97},
+    {club:'NCGA',nh:804,active:10670,share:7.54},
+    {club:'Vermont',nh:51,active:682,share:7.48},
+    {club:'Missouri',nh:118,active:1723,share:6.85},
+    {club:'ASGA',nh:129,active:1997,share:6.46},
+    {club:'Wyoming State',nh:79,active:1287,share:6.14},
+    {club:'Hawaii',nh:111,active:1832,share:6.06},
+    {club:'West Virginia',nh:57,active:948,share:6.01},
+    {club:'Alabama',nh:358,active:6159,share:5.81},
+    {club:'Utah',nh:482,active:8351,share:5.77},
+    {club:'Iowa',nh:237,active:4159,share:5.70},
+    {club:'MiamiValleyGolf',nh:51,active:894,share:5.70},
+    {club:'Maine',nh:182,active:3229,share:5.64},
+    {club:'Indiana',nh:380,active:6887,share:5.52},
+    {club:'Nevada Golf',nh:244,active:4464,share:5.47},
+    {club:'Idaho eClub',nh:222,active:4090,share:5.43},
+    {club:'SCGA',nh:1014,active:18685,share:5.43},
+    {club:'GAP',nh:1529,active:28660,share:5.33},
+    {club:'Montana',nh:142,active:2685,share:5.29},
+    {club:'NYSGA',nh:290,active:5512,share:5.26},
+    {club:'Tennessee',nh:588,active:11289,share:5.21},
+    {club:'CSGA',nh:233,active:4488,share:5.19},
+    {club:'Louisiana',nh:234,active:4601,share:5.09},
+    {club:'Sun Country',nh:115,active:2278,share:5.05},
+    {club:'Nebraska',nh:206,active:4095,share:5.03},
+    {club:'Kentucky',nh:220,active:4381,share:5.02},
+    {club:'Oregon',nh:281,active:5614,share:5.01},
+    {club:'NH Golf',nh:204,active:4099,share:4.98},
+    {club:'Central Links',nh:263,active:5310,share:4.95},
+    {club:'MGA',nh:1287,active:25976,share:4.95},
+    {club:'Oklahoma',nh:153,active:3130,share:4.89},
+    {club:'Greater Cincinnati',nh:202,active:4146,share:4.87},
+    {club:'Colorado State',nh:784,active:16264,share:4.82},
+    {club:'South Dakota',nh:70,active:1452,share:4.82},
+    {club:'GSGA',nh:1417,active:29467,share:4.81},
+    {club:'Carolinas',nh:1469,active:30686,share:4.79},
+    {club:'Washington',nh:569,active:11909,share:4.78},
+    {club:'Florida',nh:1941,active:40966,share:4.74},
+    {club:'NJ',nh:401,active:8453,share:4.74},
+    {club:'MetAmateur',nh:272,active:5801,share:4.69},
+    {club:'VSGA',nh:861,active:18480,share:4.66},
+    {club:'Texas',nh:2169,active:47098,share:4.61},
+    {club:'RDGA',nh:70,active:1531,share:4.57},
+    {club:'RI',nh:108,active:2371,share:4.56},
+    {club:'Wisconsin',nh:375,active:8239,share:4.55},
+    {club:'Western Pennsylvania',nh:399,active:9164,share:4.35},
+    {club:'Maryland-DC',nh:496,active:11602,share:4.28},
+    {club:'GAM',nh:663,active:16406,share:4.04},
+    {club:'Mass Golf',nh:892,active:22092,share:4.04},
+    {club:'Chicago District',nh:685,active:18184,share:3.77},
+    {club:'Arizona',nh:497,active:14103,share:3.52},
+    {club:'North Dakota',nh:109,active:3132,share:3.48},
+    {club:'Ohio GA',nh:206,active:5920,share:3.48},
+    {club:'Minnesota',nh:359,active:10535,share:3.41},
+    {club:'Northern Ohio',nh:289,active:8990,share:3.21}
+  ]
+};
+
+function handicapBars(rows, valueKey, valueFormatter, maxValue){
+  const max = maxValue || Math.max(...rows.map(row => Number(row[valueKey] || 0)));
+  return `<div class="handicap-bars">${rows.map(row => {
+    const value = Number(row[valueKey] || 0);
+    const rawTip = valueKey === 'rate' ? tooltip([
+      `<div class='chart-hover-tip'><div class='chart-hover-date'>${htmlEscape(row.label)}</div><div class='chart-hover-row'><span class='chart-hover-label'>Eligible</span><strong class='chart-hover-value'>${fmt(row.eligible)}</strong></div><div class='chart-hover-row'><span class='chart-hover-label'>Renewed</span><strong class='chart-hover-value'>${fmt(row.renewed)}</strong></div><div class='chart-hover-row'><span class='chart-hover-label'>Not renewed</span><strong class='chart-hover-value'>${fmt(row.eligible-row.renewed)}</strong></div><div class='chart-hover-row'><span class='chart-hover-label'>Renewal rate</span><strong class='chart-hover-value'>${row.rate.toFixed(1)}%</strong></div></div>`
+    ]) : tooltip([
+      `<div class='chart-hover-tip'><div class='chart-hover-date'>${htmlEscape(row.label)}</div><div class='chart-hover-row'><span class='chart-hover-label'>GC Golfers</span><strong class='chart-hover-value'>${fmt(row.count)}</strong></div><div class='chart-hover-row'><span class='chart-hover-label'>Share</span><strong class='chart-hover-value'>${row.share.toFixed(1)}%</strong></div></div>`
+    ]);
+    return `<div class="handicap-bar-row${row.label === 'NH' ? ' nh' : ''}${rawTip ? ' tiptarget' : ''}"${rawTip ? ` data-tip-style="light" data-tip="${rawTip}"` : ''}>
+      <div class="handicap-bar-label">${htmlEscape(row.label)}</div>
+      <div class="handicap-bar-track"><div class="handicap-bar-fill" style="width:${Math.max(1, value / max * 100).toFixed(1)}%"></div></div>
+      <div class="handicap-bar-value">${valueFormatter(row)}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+let HANDICAP_ASSOC_SORT = {key:'share', direction:'desc'};
+function handicapAssociationTable(rows){
+  const {key,direction} = HANDICAP_ASSOC_SORT;
+  const sorted = [...rows].sort((a,b) => {
+    const comparison = key === 'club'
+      ? a.club.localeCompare(b.club)
+      : Number(a[key] || 0) - Number(b[key] || 0);
+    return direction === 'asc' ? comparison : -comparison;
+  });
+  const heading = (label, sortKey) => {
+    const active = key === sortKey;
+    const arrow = active ? (direction === 'asc' ? '↑' : '↓') : '';
+    return `<button type="button" class="handicap-sort${active ? ' active' : ''}" data-handicap-sort="${sortKey}">${label}<span aria-hidden="true">${arrow}</span></button>`;
+  };
+  return `<div class="handicap-association-table">
+    <div class="handicap-club-row header">${heading('Association','club')}${heading('Active GC golfers','active')}${heading('NH GC golfers','nh')}${heading('NH share','share')}</div>
+    ${sorted.map(row => `<div class="handicap-club-row"><span>${htmlEscape(row.club)}</span><span>${fmt(row.active)}</span><span>${fmt(row.nh)}</span><strong>${row.share.toFixed(1)}%</strong></div>`).join('')}
+  </div>`;
+}
+
+function renderRetentionHandicapAnalysis(){
+  const mount = document.getElementById('retentionHandicapAnalysis');
+  if(!mount) return;
+  const d = HANDICAP_ANALYSIS;
+  mount.innerHTML = `
+    <div class="handicap-insight handicap-insight-simple">
+      <span class="handicap-insight-label">Key findings</span>
+      <ul>
+        <li>Approximately 5% of active GC golfers do not have a Handicap Index.</li>
+        <li>NH GC golfers are 1.8x as likely not to renew.</li>
+        <li>Women represent 13.4% of NH GC golfers versus 6.1% of all active GC golfers.</li>
+        <li>65.7% of active NH GC golfers have been members for less than one year.</li>
+      </ul>
+    </div>
+    <div class="handicap-kpis">
+      <div class="kpi"><div class="kpi-label">Active GC golfers</div><div class="kpi-value">${fmt(d.activeGolfers)}</div><div class="kpi-sub">Unique active GC Golfer GHINs</div></div>
+      <div class="kpi"><div class="kpi-label">Active NH GC golfers</div><div class="kpi-value">${fmt(d.nhGolfers)}</div><div class="kpi-sub">4.8% of active GC golfers</div></div>
+      <div class="kpi"><div class="kpi-label">Avg. age of NH GC golfer</div><div class="kpi-value">44.3</div><div class="kpi-sub">Years old</div></div>
+      <div class="kpi"><div class="kpi-label">Median NH tenure</div><div class="kpi-value">5 months</div><div class="kpi-sub">Based on creation date</div></div>
+      <div class="kpi"><div class="kpi-label">OTR Rate of NH GC Golfers</div><div class="kpi-value">71.8%</div><div class="kpi-sub">On-time renewal rate</div></div>
+    </div>
+    <div class="handicap-grid">
+      <div class="card retention-card handicap-card">
+        <div class="card-head"><div><h3>Active GC Golfers by Handicap Index</h3><div class="card-sub">Unique active GC Golfer GHINs as of September 2, 2026</div></div></div>
+        ${handicapBars(d.distribution,'share',row => `${row.share.toFixed(1)}%`,30)}
+      </div>
+      <div class="card retention-card handicap-card">
+        <div class="card-head"><div><h3>On-Time Renewal Rate by Handicap Index</h3><div class="card-sub">Determined by Sept. Active/Inactive status of GC golfers up for renewal in July. July cohort = 58,539.</div></div></div>
+        ${handicapBars(d.renewal,'rate',row => `${row.rate.toFixed(1)}%`,100)}
+      </div>
+      <div class="card retention-card handicap-card handicap-profile-card handicap-demographics-card">
+        <div class="card-head"><div><h3>Active NH GC Golfer Demographics</h3><div class="card-sub">Gender and age as of September 2, 2026</div></div></div>
+        <div class="handicap-gender-group">${handicapBars(d.gender,'share',row => `${row.share.toFixed(1)}%`,100)}</div>
+        <div class="handicap-demographic-divider" aria-hidden="true"></div>
+        ${handicapBars(d.age,'share',row => `${row.share.toFixed(1)}%`,25)}
+        <div class="handicap-footnote">Average age is 44.3 and median age is 43. Date of birth is unavailable for 12.2% of active NH GC golfers.</div>
+      </div>
+      <div class="card retention-card handicap-card handicap-profile-card handicap-tenure-card">
+        <div class="card-head"><div><h3>Active NH GC Golfers by Membership Tenure</h3><div class="card-sub">Tenure measured from Membership Creation Date through September 2, 2026</div></div></div>
+        ${handicapBars(d.nhTenure,'share',row => `${row.share.toFixed(1)}%`,25)}
+        <div class="handicap-footnote">Membership tenure is calculated from each GC golfer's Membership Creation Date. Average tenure is 10.1 months and median tenure is approximately 5 months. 65.7% of active NH GC golfers have been members for less than one year.</div>
+      </div>
+      <div class="card retention-card handicap-card handicap-clubs-card">
+        <div class="card-head"><div><h3>Active NH GC Golfers by Association</h3><div class="card-sub">All ${d.associations.length} associations. Select any column heading to sort.</div></div></div>
+        ${handicapAssociationTable(d.associations)}
+        <div class="handicap-footnote">All counts use unique active GC Golfer GHINs within each association as of September 2, 2026.</div>
+      </div>
+      <div class="card retention-card handicap-card handicap-renewal-outcomes-card">
+        <div class="card-head"><div><h3>July NH Renewal Cohort Outcomes</h3><div class="card-sub">Determined by Sept. Active/Inactive status of NH GC golfers up for renewal in July</div></div></div>
+        <div class="handicap-renewal-visual">
+          <div class="handicap-renewal-donut" role="img" aria-label="71.8% renewed on time and 28.2% did not renew on time">
+            <div><strong>71.8%</strong><span>Renewed<br>on time</span></div>
+          </div>
+          <div class="handicap-renewal-legend">
+            <div><span class="renewal-dot renewed"></span><span>Renewed on time</span><strong>1,556</strong></div>
+            <div><span class="renewal-dot not-renewed"></span><span>Not renewed on time</span><strong>611</strong></div>
+          </div>
+        </div>
+        <div class="handicap-outcome-kpis">
+          <div><span>Eligible NH GC golfers</span><strong>2,167</strong></div>
+          <div><span>Indexed renewal rate</span><strong>84.5%</strong></div>
+          <div><span>Renewal-rate gap</span><strong>12.7 pts</strong></div>
+        </div>
+      </div>
+    </div>`;
+  mount.querySelectorAll('[data-handicap-sort]').forEach(button => button.addEventListener('click', () => {
+    const nextKey = button.dataset.handicapSort;
+    if(HANDICAP_ASSOC_SORT.key === nextKey){
+      HANDICAP_ASSOC_SORT.direction = HANDICAP_ASSOC_SORT.direction === 'asc' ? 'desc' : 'asc';
+    }else{
+      HANDICAP_ASSOC_SORT = {key:nextKey, direction:nextKey === 'club' ? 'asc' : 'desc'};
+    }
+    renderRetentionHandicapAnalysis();
+  }));
 }
 
 let RECOVERY_SUBTAB = localStorage.getItem("pa_recovery_subtab") || "totals";
@@ -14355,6 +14590,119 @@ initializeDashboard().catch(error => {
     width:100% !important;
     max-width:100% !important;
   }
+}
+
+/* Retention Handicap Analysis */
+.handicap-kpis{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:16px;
+}
+.handicap-kpis .kpi{
+  background:#fff;
+  border:1px solid #d7e0eb;
+  border-radius:14px;
+  min-height:118px;
+  padding:22px;
+}
+.handicap-kpis .kpi-label{font-size:13px}
+.handicap-kpis .kpi-value{font-size:25px}
+.handicap-kpis .kpi-sub{font-size:13px}
+.handicap-insight{
+  display:block;
+  margin:14px 0 24px;
+  padding:20px 24px;
+  border-radius:14px;
+  color:#fff;
+  background:#14395f;
+}
+.handicap-insight strong{display:block;font-size:20px;line-height:1.3}
+.handicap-insight p{max-width:none;margin:6px 0 0;color:#dbe8f5;font-size:14px;line-height:1.45}
+.handicap-insight ul{display:grid;gap:6px;margin:4px 0 0;padding-left:21px;color:#fff;font-size:18px;font-weight:750;line-height:1.4}
+.handicap-insight-label{display:block;margin-bottom:5px;color:#b9cde1;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.handicap-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.handicap-card{min-height:560px;padding:28px;container-type:inline-size}
+.handicap-card.full{grid-column:1 / -1;min-height:500px}
+.handicap-card .card-head h3{font-size:22px}
+.handicap-card .card-sub{font-size:14px}
+.handicap-bars{display:grid;gap:16px;margin-top:26px}
+.handicap-bar-row{display:grid;grid-template-columns:132px minmax(90px,1fr) 76px;align-items:center;gap:15px;cursor:pointer}
+.handicap-bar-label{color:#334155;font-size:15px;font-weight:750}
+.handicap-bar-track{height:23px;overflow:hidden;border-radius:999px;background:#e8eef5}
+.handicap-bar-fill{height:100%;border-radius:999px;background:#4f83b8}
+.handicap-bar-row.nh .handicap-bar-fill{background:#d85a32}
+.handicap-bar-row.nh .handicap-bar-label,.handicap-bar-row.nh .handicap-bar-value{color:#c2411d;font-weight:850}
+.handicap-bar-value{text-align:right;color:#475569;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.handicap-footnote{margin-top:24px;padding-top:18px;border-top:1px solid #e2e8f0;color:#64748b;font-size:14px;line-height:1.5}
+.handicap-card-insight{margin-top:22px;padding-top:17px;border-top:1px solid #dbe4ee;color:#14395f;font-size:17px;font-weight:850;line-height:1.35}
+.handicap-section-label{margin:24px 0 0;color:#64748b;font-size:12px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
+.handicap-profile-card{min-height:0}
+.handicap-profile-card .handicap-bars{gap:16px;margin-top:14px}
+.handicap-profile-card .handicap-bar-row{grid-template-columns:150px minmax(90px,1fr) 76px}
+.handicap-gender-group{margin-top:24px}
+.handicap-gender-group .handicap-bars{margin-top:0}
+.handicap-tenure-card .handicap-bars{margin-top:24px}
+.handicap-demographic-divider{margin:34px 0 20px;border-top:1px solid #e2e8f0}
+.handicap-clubs-card{min-height:0}
+.handicap-club-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;margin-top:24px}
+.handicap-club-block h4{margin:0 0 12px;color:#14395f;font-size:16px}
+.handicap-club-table{overflow:hidden;border:1px solid #dbe4ee;border-radius:12px}
+.handicap-association-table{margin-top:24px}
+.handicap-club-row{display:grid;grid-template-columns:minmax(135px,1fr) 132px 118px 82px;gap:10px;padding:11px 14px;border-top:1px solid #e6edf4;color:#475569;font-size:14px;font-variant-numeric:tabular-nums}
+.handicap-club-row:first-child{border-top:0}
+.handicap-club-row:nth-child(even){background:#f8fafc}
+.handicap-club-row span:not(:first-child),.handicap-club-row strong{text-align:right}
+.handicap-club-row.header{background:#14395f;color:#fff;font-size:12px;font-weight:850;letter-spacing:.04em;text-transform:uppercase}
+.handicap-sort{display:flex;align-items:center;gap:5px;padding:0;border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;white-space:nowrap;cursor:pointer}
+.handicap-sort:not(:first-child){justify-content:flex-end;text-align:right}
+.handicap-sort span{display:inline-block;min-width:10px;color:#14395f;font-size:13px}
+.handicap-sort.active{color:#14395f}
+.handicap-club-row.header .handicap-sort,.handicap-club-row.header .handicap-sort.active{color:#fff}
+.handicap-club-row.header .handicap-sort span{color:#b9cde1}
+.handicap-club-row strong{color:#14395f}
+.handicap-association-table .handicap-club-row span:not(:first-child),.handicap-association-table .handicap-club-row strong{text-align:center}
+.handicap-association-table .handicap-sort:not(:first-child){justify-content:center;text-align:center}
+.handicap-renewal-outcomes-card{align-self:start;min-height:0}
+.handicap-renewal-visual{display:grid;grid-template-columns:230px minmax(0,1fr);align-items:center;gap:34px;margin-top:34px;padding:30px;border-radius:16px;background:#f4f7fb}
+.handicap-renewal-donut{display:grid;place-items:center;width:210px;aspect-ratio:1;border-radius:50%;background:conic-gradient(#14395f 0 71.8%,#d85a32 71.8% 100%)}
+.handicap-renewal-donut::before{content:"";grid-area:1/1;width:132px;aspect-ratio:1;border-radius:50%;background:#fff}
+.handicap-renewal-donut>div{z-index:1;grid-area:1/1;text-align:center}
+.handicap-renewal-donut strong{display:block;color:#14395f;font-size:34px;line-height:1}
+.handicap-renewal-donut span{display:block;margin-top:8px;color:#64748b;font-size:13px;font-weight:750;line-height:1.25;text-transform:uppercase}
+.handicap-renewal-legend{display:grid;gap:18px}
+.handicap-renewal-legend>div{display:grid;grid-template-columns:14px minmax(0,1fr) auto;align-items:center;gap:10px;padding-bottom:16px;border-bottom:1px solid #dbe4ee;color:#475569;font-size:14px}
+.handicap-renewal-legend>div:last-child{padding-bottom:0;border-bottom:0}
+.handicap-renewal-legend strong{color:#1f2937;font-size:20px;font-variant-numeric:tabular-nums}
+.renewal-dot{width:12px;height:12px;border-radius:50%}
+.renewal-dot.renewed{background:#14395f}
+.renewal-dot.not-renewed{background:#d85a32}
+.handicap-outcome-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+.handicap-outcome-kpis>div{padding:18px;border:1px solid #dbe4ee;border-radius:14px;background:#fff}
+.handicap-outcome-kpis span{display:block;min-height:34px;color:#64748b;font-size:12px;font-weight:800;line-height:1.35;text-transform:uppercase}
+.handicap-outcome-kpis strong{display:block;margin-top:8px;color:#14395f;font-size:25px;font-variant-numeric:tabular-nums}
+@media (max-width:1200px){
+  .handicap-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:900px){
+  .handicap-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .handicap-grid{grid-template-columns:1fr}
+  .handicap-card.full{grid-column:auto}
+  .handicap-bar-row{grid-template-columns:94px minmax(70px,1fr) 105px}
+  .handicap-profile-card .handicap-bar-row{grid-template-columns:94px minmax(70px,1fr) 105px}
+  .handicap-club-grid{grid-template-columns:1fr}
+  .handicap-renewal-visual{grid-template-columns:1fr;justify-items:center}
+  .handicap-renewal-legend{width:100%}
+  .handicap-outcome-kpis{grid-template-columns:1fr}
+}
+@container (max-width:430px){
+  .handicap-bar-row,.handicap-profile-card .handicap-bar-row{
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:5px 10px;
+  }
+  .handicap-bar-label{grid-column:1;grid-row:1}
+  .handicap-bar-value{grid-column:2;grid-row:1;white-space:nowrap}
+  .handicap-bar-track{grid-column:1 / -1;grid-row:2}
 }
 
 </style>

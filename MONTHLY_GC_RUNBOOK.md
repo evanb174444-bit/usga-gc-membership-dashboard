@@ -61,6 +61,9 @@ When running `--ghin-only`, the five Tableau exports refresh only the “All Con
 - Reactivations and Recovery latest-month recoveries must use exactly the same filter: current Active row, status date in the activity month, creation date outside that month, and creation date not after status date.
 - The membership and Recovery modules must reconcile to the same latest-month reactivation count before publication.
 - On-time renewal uses the three-months-prior eligibility file and the established renewal calculation in the updater.
+- No Handicap renewal analysis must use the same three-month-prior methodology every month. For a September report, use the June snapshot to identify active GC golfers due to expire in July, classify each golfer as NH or indexed in that June file, allow August as the renewal window, and determine the outcome from Active/Inactive status in the September Golfer Detail snapshot.
+- For every No Handicap renewal cohort, retain the cohort month, eligible count, renewed count, not-renewed count, renewal rate, indexed-golfer renewal rate, and the percentage-point gap. Use active-anywhere status for the outcome and preserve the same definitions each month so cohorts remain comparable.
+- Beginning with the November 2026 dashboard update, add line charts to the No Handicap Analysis page showing the monthly NH renewal rate, indexed-golfer renewal rate, renewal-rate gap, and cohort size using all accumulated comparable cohorts.
 - Rolling 12-month retention uses the established active-anywhere methodology: distinct active GHINs in the same-date prior-year snapshot form the denominator, and those GHINs Active anywhere in the current Golfer Detail snapshot form the numerator.
 - Retention is not a same-club metric.
 
